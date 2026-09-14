@@ -19,11 +19,16 @@ class IntelCache:
         p = self._p(cve_id)
         if not p.exists():
             return None
-        d = json.loads(p.read_text())
-        fetched = d.get("fetched_at")
-        if not fetched or datetime.fromisoformat(fetched) < datetime.now(timezone.utc) - self.ttl:
+        try:
+            d = json.loads(p.read_text())
+            if not isinstance(d, dict):
+                return None
+            fetched = d.get("fetched_at")
+            if not fetched or datetime.fromisoformat(fetched) < datetime.now(timezone.utc) - self.ttl:
+                return None
+            return CveIntel(**{k: d.get(k) for k in CveIntel.__dataclass_fields__})
+        except (json.JSONDecodeError, ValueError, TypeError):
             return None
-        return CveIntel(**{k: d.get(k) for k in CveIntel.__dataclass_fields__})
 
     def put(self, cve_id: str, intel: CveIntel) -> None:
         intel.fetched_at = intel.fetched_at or datetime.now(timezone.utc).isoformat()

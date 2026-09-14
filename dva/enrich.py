@@ -73,6 +73,8 @@ def _one(cve_id: str, d: dict) -> CveIntel:
 
 
 def parse_store(payload: dict | list) -> dict[str, CveIntel]:
+    if not isinstance(payload, (dict, list)):
+        raise DvaError("unrecognized CVE server result shape")
     entries = payload
     if isinstance(payload, dict):
         entries = payload.get("results") or payload.get("cves") or payload.get("data") or payload
@@ -124,7 +126,11 @@ def _run(args) -> int:
     path = Path(args.store)
     if not path.exists():
         raise DvaError(f"store file not found: {path}")
-    parsed = parse_store(json.loads(path.read_text()))
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise DvaError(f"store file is not valid JSON: {path}: {exc}")
+    parsed = parse_store(payload)
     for cid, intel in parsed.items():
         cache.put(cid, intel)
     wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else list(parsed)

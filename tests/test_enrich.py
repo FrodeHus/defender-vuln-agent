@@ -1,8 +1,10 @@
 from __future__ import annotations
 import json
+import pytest
 from dva.cache import IntelCache
 from dva.config import load_scoring
 from dva.enrich import select_candidates, parse_store
+from dva.errors import DvaError
 from dva.model import Asset, CveRef, Product
 from dva.scoring import CveIntel
 
@@ -38,6 +40,41 @@ def test_select_top_per_product_and_caps(tmp_path):
     ids = select_candidates({"a/b": hot, "c/d": cold}, assets, cache, cfg, estate_size=10)
     # top 3 by cvss: CVE-0 (cached, skipped), CVE-1, CVE-2 ; cold product below threshold is excluded
     assert ids == ["CVE-1", "CVE-2"]
+
+
+def test_cache_get_corrupt_entry_is_a_miss(tmp_path):
+    c = IntelCache(tmp_path, ttl_days=7)
+    (tmp_path / "CVE-9.json").write_text("{not valid json")
+    assert c.get("CVE-9") is None
+
+
+def test_cache_get_bad_fetched_at_is_a_miss(tmp_path):
+    c = IntelCache(tmp_path, ttl_days=7)
+    (tmp_path / "CVE-9.json").write_text(json.dumps({"cvss": 9.0, "fetched_at": "not-a-date"}))
+    assert c.get("CVE-9") is None
+
+
+def test_store_non_json_file_exits_cleanly(tmp_path, monkeypatch, capsys):
+    from dva.__main__ import main
+    from dva.run import Run
+
+    runs_dir = tmp_path / "runs"
+    run = Run.create(runs_dir)
+    run.write_json("machines.json", [])
+    run.write_jsonl("vulns.jsonl", [])
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not valid json")
+    rc = main(["enrich", "--run", str(run.dir), "--store", str(bad)])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert err.startswith("dva:") and "not valid JSON" in err
+
+
+def test_parse_store_rejects_unrecognized_shape():
+    with pytest.raises(DvaError):
+        parse_store(42)
 
 
 def test_parse_store_normalizes_bulk_shape():
