@@ -396,7 +396,7 @@ def _run(args) -> int:
         for cid, intel in parse_file(path).items():
             parsed[cid] = _merge_intel(parsed.get(cid), intel)
     for cid, intel in parsed.items():
-        cache.put(cid, intel)
+        cache.put(cid, _merge_intel(cache.get(cid), intel))
     wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else list(parsed)
     doc = write_enrichment(run, cache, wanted)
     print(f"stored {len(parsed)}, missing {len(doc['missing'])}")

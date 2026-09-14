@@ -204,6 +204,33 @@ def test_parse_advisories():
     assert len(adv) <= 5
 
 
+def test_store_merges_with_existing_cache_entry_instead_of_replacing_it(tmp_path, monkeypatch, capsys):
+    """A later --store of a partial result (e.g. advisories only) must not wipe out CVSS/EPSS/KEV
+    already cached for the same CVE from an earlier --store call."""
+    from dva.__main__ import main
+    from dva.run import Run
+    from dva.cache import IntelCache
+
+    run = Run.create(tmp_path / "runs")
+    run.write_json("machines.json", [])
+    run.write_jsonl("vulns.jsonl", [])
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+
+    rc = main(["enrich", "--store", str(_FX / "triage-kev.txt"), "--run", str(run.dir)])
+    assert rc == 0
+    cache = IntelCache(tmp_path / "cache" / "cve", 7)
+    before = cache.get("CVE-2021-44228")
+    assert before.cvss is not None and before.kev is True
+
+    capsys.readouterr()
+    rc = main(["enrich", "--store", str(_FX / "advisory.txt"), "--run", str(run.dir)])
+    assert rc == 0
+    cache = IntelCache(tmp_path / "cache" / "cve", 7)
+    after = cache.get("CVE-2021-44228")
+    assert after.advisories  # newly stored
+    assert after.cvss == before.cvss and after.kev is True and after.ransomware is True  # preserved
+
+
 def test_list_prints_describe_ids(tmp_path, monkeypatch, capsys):
     from dva.__main__ import main
     from dva.run import Run
