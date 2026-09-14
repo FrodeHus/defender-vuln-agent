@@ -1,0 +1,4 @@
+DeviceInfo
+| where Timestamp > ago(7d)
+| summarize arg_max(Timestamp, DeviceName, ExposureLevel, AssetValue, DeviceManualTags, DeviceDynamicTags, MachineGroup, AzureResourceId, IsInternetFacing) by DeviceId
+| project DeviceId, DeviceName, ExposureLevel, AssetValue, DeviceManualTags, DeviceDynamicTags, MachineGroup, AzureResourceId, IsInternetFacing
