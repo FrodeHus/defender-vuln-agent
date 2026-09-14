@@ -1,5 +1,8 @@
 mde: true
 hunting: true
+# Defender for Cloud (Azure Resource Graph subassessments). Set cloud: true and list the
+# subscription ids below to enable `python -m dva cloud vulns` and its `dva doctor` ARM checks.
+# Findings are de-duplicated against MDE machines in rollup.build (see .claude/skills/defender-cloud).
 cloud: false
-subscriptions: []
+subscriptions: []  # e.g. ["00000000-0000-0000-0000-000000000000"], only used when cloud: true
 hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions]

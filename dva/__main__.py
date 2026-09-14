@@ -5,7 +5,7 @@ import sys
 from dva.errors import DvaError
 
 # Each module exposes register(subparsers) and its command functions set parser.set_defaults(func=...)
-COMMAND_MODULES = ["dva.doctor", "dva.run", "dva.mde", "dva.hunting", "dva.enrich", "dva.score_cmd", "dva.report_cmd"]
+COMMAND_MODULES = ["dva.doctor", "dva.run", "dva.mde", "dva.hunting", "dva.cloud", "dva.enrich", "dva.score_cmd", "dva.report_cmd"]
 
 
 def build_parser() -> argparse.ArgumentParser:

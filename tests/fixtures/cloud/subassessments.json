@@ -1,0 +1,35 @@
+{
+  "data": [
+    {
+      "id": "/subscriptions/s1/.../assessments/k1/subassessments/x",
+      "subscriptionId": "s1",
+      "resourceGroup": "rg",
+      "assessmentKey": "k1",
+      "cveId": "CVE-2026-21335",
+      "displayName": "Win32k EoP",
+      "severity": "High",
+      "resourceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01",
+      "assessedType": "ServerVulnerability",
+      "cvss": 8.8,
+      "patchable": true,
+      "repo": "",
+      "digest": ""
+    },
+    {
+      "id": "/subscriptions/s1/.../assessments/k2/subassessments/y",
+      "subscriptionId": "s1",
+      "resourceGroup": "rg",
+      "assessmentKey": "k2",
+      "cveId": "CVE-2026-1097",
+      "displayName": "nginx QUIC overflow",
+      "severity": "Critical",
+      "resourceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/prodacr",
+      "assessedType": "AzureContainerRegistryVulnerability",
+      "cvss": 9.1,
+      "patchable": true,
+      "repo": "prodacr.azurecr.io/nginx",
+      "digest": "sha256:abcdef1234567890"
+    }
+  ],
+  "count": 2
+}

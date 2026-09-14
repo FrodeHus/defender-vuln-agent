@@ -26,7 +26,7 @@ class FakeSession:
     """routes: {"GET https://host/path": [FakeResponse, ...]} consumed in order; last one repeats."""
 
     def __init__(self, routes: dict):
-        self.routes = {k: list(v) for k, v in routes.items()}
+        self.routes = {k.split("?")[0]: list(v) for k, v in routes.items()}
         self.calls: list[tuple[str, str, dict]] = []
 
     def request(self, method, url, headers=None, params=None, json=None, timeout=None):
