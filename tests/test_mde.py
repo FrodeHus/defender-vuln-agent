@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import pytest
 from dva.mde import collect_machines, collect_vulns, collect_recommendations, collect_score, collect_changes, MDE_BASE
@@ -45,6 +46,20 @@ def test_recommendations_and_score(tmp_path):
     assert rec["recommended_version"] == "22.7R2.5" and rec["remediation_type"] == "Update"
     collect_score(c, run)
     assert run.read_json("exposure.json") == {"score": 54.2, "by_group": {"Servers": 61.0}, "secure_score": 72.34}
+
+
+def test_score_survives_configuration_score_failure(tmp_path):
+    run = Run.create(tmp_path)
+    c = client({
+        f"GET {MDE_BASE}/exposureScore": [FakeResponse(200, {"score": 54.2})],
+        f"GET {MDE_BASE}/exposureScore/ByMachineGroups": [FakeResponse(200, {"value": [{"rbacGroupName": "Servers", "score": 61.0}]})],
+        f"GET {MDE_BASE}/configurationScore": [FakeResponse(403, {"error": {"message": "denied"}})],
+    })
+    collect_score(c, run)
+    doc = run.read_json("exposure.json")
+    assert doc["score"] == 54.2 and doc["secure_score"] is None
+    assert run.manifest["sources"]["mde.score"]["status"] == "ok"
+
 
 def test_failed_source_marks_manifest(tmp_path):
     run = Run.create(tmp_path)
@@ -112,7 +127,10 @@ def test_changes_sinceTime_and_normalized_rows_skip_null_cve(tmp_path):
                         "cve_id": "CVE-2026-21887", "severity": "Critical", "status": "Fixed", "event_time": "2026-09-13T00:00:00Z"}
     method, url, kwargs = c.session.calls[0]
     assert kwargs["params"]["pageSize"] == 50000
-    assert kwargs["params"]["sinceTime"].endswith("Z")
+    since_value = kwargs["params"]["sinceTime"]
+    since_dt = datetime.fromisoformat(since_value.replace("Z", "+00:00"))
+    expected = datetime.now(timezone.utc) - timedelta(days=7)
+    assert abs((since_dt - expected).total_seconds()) < 60
     assert run.manifest["sources"]["mde.changes"]["status"] == "ok"
 
 

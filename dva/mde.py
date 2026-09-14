@@ -108,10 +108,16 @@ def collect_score(client: Client, run: Run) -> None:
     with _Guard(run, "mde.score"):
         score = _round2(client.get_json("/exposureScore").get("score"))
         groups = {g.get("rbacGroupName"): _round2(g.get("score")) for g in client.get_json("/exposureScore/ByMachineGroups").get("value", [])}
-        secure_score = _round2(client.get_json("/configurationScore").get("score"))
+        try:
+            secure_score = _round2(client.get_json("/configurationScore").get("score"))
+            secure_score_note = f"Secure score: {secure_score}."
+        except DvaError as exc:
+            secure_score = None
+            secure_score_note = "Secure score unavailable."
+            run.log(f"mde.score: configurationScore failed, secure_score set to null: {exc}")
         run.write_json("exposure.json", {"score": score, "by_group": groups, "secure_score": secure_score})
         run.set_source("mde.score", "ok", count=1)
-        run.summary(f"MDE exposure score: {score}. Secure score: {secure_score}.")
+        run.summary(f"MDE exposure score: {score}. {secure_score_note}")
 
 
 def _norm_change(v: dict) -> dict:
