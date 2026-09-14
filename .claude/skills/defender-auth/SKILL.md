@@ -12,7 +12,9 @@ Before the first `dva` run in a new environment, when `dva doctor` reports a fai
 ```
 python -m dva doctor
 ```
-Checks the configured credential and every required permission, printing one PASS/FAIL line per check (e.g. `WindowsDefenderATP Machine.Read.All FAIL unable to list machines`).
+Checks the configured credential and every required permission, printing one line per check in the format `<API> <permission> ok|FAIL <detail>`, e.g.:
+- Success: `MDE   Machine.Read.All                  ok   GET /machines`
+- Failure: `MDE   Machine.Read.All                  FAIL GET https://api.securitycenter.microsoft.com/api/machines failed with HTTP 403: Insufficient privileges to complete the operation.`
 
 ## Environment variables
 
@@ -24,7 +26,7 @@ Optional: `DVA_RUNS_DIR` (default `runs/`), `DVA_CACHE_DIR` (default `.cache/`),
 
 ## Outputs
 
-`dva doctor` prints to stdout only; it writes no files. Token acquisition results are cached under `DVA_CACHE_DIR` per the configured `cache_ttl_days` in `config/scoring.yaml`.
+`dva doctor` prints to stdout only; it writes no files. Tokens are cached under `DVA_CACHE_DIR` until their own expiry (not the `cache_ttl_days` setting in `config/scoring.yaml`, which governs CVE intel freshness only).
 
 ## What each permission unlocks
 

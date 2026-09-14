@@ -21,7 +21,7 @@ Named queries (files in `dva/queries/`, pass the stem as `names`):
 - `product-versions` — installed product/version distribution.
 - `vuln-counts-by-device` — vulnerability counts per device.
 
-`--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--timespan` bounds the query window (e.g. `1d`, `7d`). `--fixture` replaces the live call for offline runs.
+`--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--timespan` bounds the query window as an ISO-8601 duration (e.g. `P1D`, `P7D`, `P30D`), default `P7D`. `--fixture` replaces the live call for offline runs.
 
 ## Outputs
 

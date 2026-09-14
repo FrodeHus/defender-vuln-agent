@@ -17,3 +17,15 @@ def test_skills_and_mcp():
         assert t.startswith("---") and f"name: {s}" in t and "description:" in t
     mcp = json.loads(Path(".mcp.json").read_text())
     assert mcp["mcpServers"]["cve-mcp"]["command"] and "cve_mcp.server" in " ".join(mcp["mcpServers"]["cve-mcp"]["args"])
+
+
+def test_inventory_skill_matches_actual_output_filename():
+    text = Path(".claude/skills/defender-inventory/SKILL.md").read_text()
+    assert "exposure.json" in text
+    assert "score.json" not in text
+
+
+def test_hunting_skill_timespan_examples_are_iso8601():
+    text = Path(".claude/skills/defender-hunting/SKILL.md").read_text()
+    assert "P7D" in text
+    assert "--timespan 7d" not in text

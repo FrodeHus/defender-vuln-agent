@@ -21,7 +21,7 @@ python -m dva mde all [--run RUN] [--fixture FILE]
 
 ## Outputs
 
-Written under the run directory: `machines.json`, `vulns.jsonl`, `recommendations.json`, `score.json`. A one-line summary per collector is printed to stdout — that summary, not the raw files, is what you should read back.
+Written under the run directory: `machines.json`, `vulns.jsonl`, `recommendations.json`, `exposure.json`. A one-line summary per collector is printed to stdout — that summary, not the raw files, is what you should read back.
 
 ## Gotchas
 
