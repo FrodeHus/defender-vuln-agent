@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from dva.model import Asset, CveRef, Product, product_key, EXPLOIT_RANK, SEVERITIES
 from dva.run import Run
 
@@ -13,7 +14,19 @@ def _hunt(run: Run, name: str) -> list[dict]:
 
 
 def _split_tags(s) -> list[str]:
-    return [t.strip() for t in (s or "").split(",") if t.strip()]
+    if not s:
+        return []
+    if isinstance(s, str):
+        try:
+            parsed = json.loads(s)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, list):
+            return [t.strip() for t in parsed if isinstance(t, str) and t.strip()]
+        return [t.strip() for t in s.split(",") if t.strip()]
+    if isinstance(s, list):
+        return [t.strip() for t in s if isinstance(t, str) and t.strip()]
+    return []
 
 
 def _norm_exploitability(e) -> str:

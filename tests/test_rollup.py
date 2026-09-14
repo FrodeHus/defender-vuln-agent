@@ -17,7 +17,7 @@ def seed(tmp_path):
     ])
     run.write_json("recommendations.json", [{"id": "va-_-ivanti-_-connect_secure", "vendor": "ivanti", "product": "connect_secure", "name": "Update Ivanti Connect Secure to 22.7R2.5", "recommended_version": "22.7R2.5", "remediation_type": "Update"}])
     run.write_json("hunt-internet-facing.json", {"results": [{"DeviceId": "m1", "PublicIP": "1.2.3.4"}]})
-    run.write_json("hunt-device-tags.json", {"results": [{"DeviceId": "m2", "DeviceManualTags": "Prod,Finance", "DeviceDynamicTags": "", "ExposureLevel": "Medium", "AssetValue": "Normal"}]})
+    run.write_json("hunt-device-tags.json", {"results": [{"DeviceId": "m2", "DeviceManualTags": "[\"Prod\",\"Finance\"]", "DeviceDynamicTags": "", "ExposureLevel": "Medium", "AssetValue": "Normal"}]})
     run.write_json("hunt-exploited-cves.json", {"results": [{"CveId": "CVE-2025-46512"}]})
     return run
 
@@ -34,6 +34,15 @@ def test_products_and_assets(tmp_path):
     assert assets["m2"].internet_facing is False and sorted(assets["m2"].tags) == ["Finance", "Prod"]
     adobe = products[product_key("adobe", "acrobat_reader_dc")]
     assert adobe.remediation is None and adobe.asset_ids == {"m2"}
+
+
+def test_split_tags_json_array_and_comma_fallback():
+    from dva.rollup import _split_tags
+
+    assert _split_tags('["Tier0","Prod"]') == ["Tier0", "Prod"]
+    assert _split_tags("Prod,Finance") == ["Prod", "Finance"]
+    assert _split_tags("") == []
+    assert _split_tags(None) == []
 
 
 def test_cve_ref_merges_strongest_fields_across_rows(tmp_path):
