@@ -130,6 +130,77 @@ _RE_COMPARE_ROW = re.compile(r"^\s*\d+\s+" + _CVE + r"\s+([\d.]+)\s+(\w+)\s+(Yes
 _RE_EPSS_LINE = re.compile(_CVE + r"\s+([\d.]+)%.*?Percentile:\s*([\d.]+)th", re.I)
 _RE_KEV_SENTENCE = re.compile(_CVE + r" is (NOT )?in the CISA KEV", re.I)
 _RE_POC_HEADER = re.compile(r"PoC Intelligence:\s*" + _CVE)
+_RE_EXPLOIT_AVAIL = re.compile(r"=== Exploit Availability: " + _CVE + r" ===")
+_RE_ADV_BLOCK = re.compile(r"^=== Vendor Advisories: " + _CVE + r" ===\s*\n(.*?)(?=^===|\Z)", re.M | re.S)
+_RE_ADV_SECTION = re.compile(r"^(.+?)\s{2,}\(\d+ entr(?:y|ies)\):\s*$", re.M)
+_RE_ADV_ENTRY = re.compile(r"^\s*\[([^\]]*)\]\s*(.*)$")
+_RE_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_MATURITY_MAP = {
+    "PUBLIC_EXPLOIT": 1.0,
+    "WEAPONIZED": 1.0,
+    "HIGH": 1.0,
+    "MEDIUM": 0.85,
+    "LOW": 0.7,
+    "POC": 0.7,
+    "NONE": 0.0,
+}
+
+
+def _maturity_from_label(label: str | None) -> float | None:
+    if not label:
+        return None
+    return _MATURITY_MAP.get(label.upper())
+
+
+def _advisory_url(source: str, cid: str, entry_id: str | None) -> str | None:
+    s = source.strip().lower()
+    if "red hat" in s:
+        return f"https://access.redhat.com/errata/{entry_id}" if entry_id else None
+    if "msrc" in s or "microsoft" in s:
+        return f"https://msrc.microsoft.com/update-guide/vulnerability/{cid}"
+    if "ubuntu" in s:
+        return f"https://ubuntu.com/security/{cid}"
+    return None
+
+
+def _parse_advisories(cid: str, block: str, limit: int = 5) -> list[dict]:
+    out: list[dict] = []
+    sections = list(_RE_ADV_SECTION.finditer(block))
+    for i, sm in enumerate(sections):
+        source = sm.group(1).strip()
+        start = sm.end()
+        end = sections[i + 1].start() if i + 1 < len(sections) else len(block)
+        for line in block[start:end].splitlines():
+            if not line.strip():
+                continue
+            em = _RE_ADV_ENTRY.match(line)
+            if not em:
+                continue
+            severity = em.group(1).strip()
+            rest = em.group(2).strip()
+            parts = re.split(r"\s{2,}", rest) if rest else []
+            label = id_ = date = None
+            if parts and _RE_DATE.match(parts[-1]):
+                date = parts[-1]
+                rest_parts = parts[:-1]
+                if rest_parts:
+                    id_ = rest_parts[-1]
+                    if len(rest_parts) > 1:
+                        label = " ".join(rest_parts[:-1])
+            elif parts:
+                label = " ".join(parts)
+            out.append({
+                "source": source,
+                "severity": severity,
+                "label": label,
+                "id": id_,
+                "date": date,
+                "url": _advisory_url(source, cid, id_),
+            })
+            if len(out) >= limit:
+                return out
+    return out
 
 
 def _f(v):
@@ -148,9 +219,18 @@ def _merge_intel(cur: CveIntel | None, new: CveIntel) -> CveIntel:
     cur.kev = cur.kev or new.kev
     cur.ransomware = cur.ransomware or new.ransomware
     cur.exploit_public = cur.exploit_public or new.exploit_public
+    if new.exploit_maturity is not None:
+        cur.exploit_maturity = new.exploit_maturity if cur.exploit_maturity is None else max(cur.exploit_maturity, new.exploit_maturity)
     for src in new.exploit_sources:
         if src not in cur.exploit_sources:
             cur.exploit_sources.append(src)
+    for adv in new.advisories:
+        aid = adv.get("id")
+        if aid and any(a.get("id") == aid for a in cur.advisories):
+            continue
+        if not aid and adv in cur.advisories:
+            continue
+        cur.advisories.append(adv)
     return cur
 
 
@@ -164,13 +244,26 @@ def _parse_triage_block(cid: str, block: str) -> CveIntel:
     if m:
         intel.epss = _f(m.group(1)) / 100.0 if _f(m.group(1)) is not None else None
         intel.epss_percentile = _f(m.group(2)) / 100.0 if _f(m.group(2)) is not None else None
-    m = re.search(r"^\s*KEV:\s+(YES|NO)", block, re.M | re.I)
-    intel.kev = bool(m and m.group(1).upper() == "YES")
+    m = re.search(r"^\s*KEV:\s+(YES|NO)(.*)$", block, re.M | re.I)
+    if m:
+        intel.kev = m.group(1).upper() == "YES"
+        rest = m.group(2)
+        da = re.search(r"added\s+(\d{4}-\d{2}-\d{2})", rest)
+        if da:
+            intel.kev_added = da.group(1)
+        if re.search(r"ransomware:\s*Known", rest, re.I):
+            intel.ransomware = True
     m = re.search(r"^\s*PoC:\s+(\w+)(?:.*?—\s*(\d+)\s+public source)?", block, re.M)
     if m:
-        intel.exploit_public = m.group(1).upper() != "NONE" or (m.group(2) is not None and int(m.group(2)) > 0)
+        label = m.group(1)
+        n = int(m.group(2)) if m.group(2) else 0
+        intel.exploit_public = label.upper() != "NONE" or n > 0
         if intel.exploit_public:
             intel.exploit_sources.append("poc")
+        maturity = _maturity_from_label(label)
+        if n >= 5:
+            maturity = max(maturity or 0.0, 0.85)
+        intel.exploit_maturity = maturity
     return intel
 
 
@@ -214,13 +307,37 @@ def parse_text(text: str) -> dict[str, CveIntel]:
         add(m.group(1), CveIntel(epss=(_f(m.group(2)) or 0.0) / 100.0, epss_percentile=(_f(m.group(3)) or 0.0) / 100.0))
     # check_kev sentences
     for m in _RE_KEV_SENTENCE.finditer(text):
-        add(m.group(1), CveIntel(kev=m.group(2) is None))
+        block = text[m.end(): m.end() + 500]
+        intel = CveIntel(kev=m.group(2) is None)
+        da = re.search(r"Date Added:\s*(\d{4}-\d{2}-\d{2})", block)
+        if da:
+            intel.kev_added = da.group(1)
+        if re.search(r"Ransomware Use:\s*Known", block, re.I):
+            intel.ransomware = True
+        add(m.group(1), intel)
     # check_poc_exists
     for m in _RE_POC_HEADER.finditer(text):
         block = text[m.end(): m.end() + 2000]
         c = re.search(r"Confidence:\s*(\w+)", block)
         has = bool(c and c.group(1).upper() != "NONE")
-        add(m.group(1), CveIntel(exploit_public=has, exploit_sources=["poc"] if has else []))
+        intel = CveIntel(exploit_public=has, exploit_sources=["poc"] if has else [])
+        if c:
+            intel.exploit_maturity = _maturity_from_label(c.group(1))
+        add(m.group(1), intel)
+    # check_exploit_availability
+    for m in _RE_EXPLOIT_AVAIL.finditer(text):
+        block = text[m.end(): m.end() + 500]
+        n = re.search(r"Public PoCs found:\s*(\d+)", block)
+        if n:
+            count = int(n.group(1))
+            intel = CveIntel(exploit_public=count > 0)
+            if count > 0:
+                intel.exploit_maturity = 0.7
+            add(m.group(1), intel)
+    # get_vendor_advisory blocks
+    for m in _RE_ADV_BLOCK.finditer(text):
+        cid, block = m.group(1), m.group(2)
+        add(cid, CveIntel(advisories=_parse_advisories(cid, block)))
     return out
 
 

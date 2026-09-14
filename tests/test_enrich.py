@@ -188,6 +188,24 @@ def test_lookup_text_yields_description_and_vector():
     assert tri.vector == "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
 
 
+def test_parse_triage_kev_maturity_and_ransomware():
+    i = parse_file(_FX / "triage-kev.txt")["CVE-2021-44228"]
+    assert i.kev and i.ransomware and i.exploit_maturity == 1.0 and i.exploit_public and i.kev_added == "2021-12-10"
+
+
+def test_parse_kev_yes_and_poc_yes_and_exploit_availability():
+    out = parse_text("\n".join((_FX / n).read_text() for n in ["kev-yes.txt", "poc-yes.txt", "exploit-availability.txt"]))["CVE-2021-44228"]
+    assert out.kev and out.ransomware and out.kev_added == "2021-12-10" and out.exploit_maturity == 1.0
+
+
+def test_parse_advisories():
+    adv = parse_file(_FX / "advisory.txt")["CVE-2021-44228"].advisories
+    assert adv[0]["source"] == "Microsoft MSRC" and adv[0]["url"] == "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-44228"
+    rh = [a for a in adv if a["source"] == "Red Hat Security"][0]
+    assert rh["id"].startswith("RHSA-2021:") and rh["url"] == f"https://access.redhat.com/errata/{rh['id']}" and rh["severity"] == "Critical" and rh["date"] == "2021-12-14"
+    assert len(adv) <= 5
+
+
 def test_list_prints_describe_ids(tmp_path, monkeypatch, capsys):
     from dva.__main__ import main
     from dva.run import Run

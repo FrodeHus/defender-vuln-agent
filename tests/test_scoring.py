@@ -42,5 +42,10 @@ def test_product_score_ranks_kev_gateway_above_fleet_mediums():
     assert len(s_gw.driving) == 1 and len(s_fleet.driving) == 3
 
 
+def test_threat_uses_maturity_and_ransomware():
+    i = CveIntel(cvss=10.0, epss_percentile=1.0, kev=True, ransomware=True, exploit_public=True, exploit_maturity=0.85)
+    assert abs(threat_score(ref(cvss=10.0), i, cfg) - (0.35 + 0.25 + 0.25 + 0.15 * 0.85 + 0.10)) < 1e-9
+
+
 def test_label_and_reason():
     assert label_for(80, cfg) == "Critical" and label_for(59, cfg) == "Medium" and label_for(10, cfg) == "Low"

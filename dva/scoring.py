@@ -17,6 +17,8 @@ class CveIntel:
     ransomware: bool = False
     exploit_public: bool = False
     exploit_sources: list[str] = field(default_factory=list)
+    exploit_maturity: float | None = None
+    advisories: list[dict] = field(default_factory=list)
     title: str | None = None
     cwe: str | None = None
     description: str | None = None
@@ -42,8 +44,20 @@ def threat_score(ref: CveRef, intel: CveIntel | None, cfg: Scoring) -> float:
     cvss = (intel.cvss if intel and intel.cvss is not None else ref.cvss) or 0.0
     epss = (intel.epss_percentile if intel and intel.epss_percentile is not None else 0.0)
     kev = 1.0 if intel and intel.kev else 0.0
-    exploit = 1.0 if intel and intel.exploit_public else _EXPLOIT_TERM.get(ref.exploitability, 0.0)
-    return w["cvss"] * cvss / 10.0 + w["epss"] * epss + w["kev"] * kev + w["exploit"] * exploit
+    if intel and intel.exploit_maturity is not None:
+        exploit = intel.exploit_maturity
+    elif intel and intel.exploit_public:
+        exploit = 1.0
+    else:
+        exploit = _EXPLOIT_TERM.get(ref.exploitability, 0.0)
+    ransomware = 1.0 if intel and intel.ransomware else 0.0
+    return (
+        w["cvss"] * cvss / 10.0
+        + w["epss"] * epss
+        + w["kev"] * kev
+        + w["exploit"] * exploit
+        + w.get("ransomware", 0.0) * ransomware
+    )
 
 
 def asset_signals(asset: Asset, cfg: Scoring) -> list[tuple[str, float]]:

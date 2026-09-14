@@ -20,6 +20,11 @@ class Scoring:
     top_n: int
     cache_ttl_days: int
     bands: dict[str, int]
+    sla_days: dict[str, int]
+    overdue_boost: float
+    mitigation_configs: list[str]
+    exception_components: list[str]
+    trend_runs: int
 
 
 @dataclass
