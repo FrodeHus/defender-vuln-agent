@@ -1,0 +1,22 @@
+=== CVE Triage: CVE-2021-44228 ===
+Depth: standard   Scoring version: 1.0
+
+RISK SCORE: 100.0/100  (CRITICAL)
+Urgency:    PATCH IMMEDIATELY
+Action:     CVE-2021-44228 is actively exploited and in the CISA KEV catalog with high exploitation probability; apply vendor patches immediately.
+
+SIGNALS:
+  CVSS:   10.0 CRITICAL
+  Vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H
+  Source: NVD
+  EPSS:   100.00% (percentile 100.0th, as of 2026-09-14)
+  KEV:    YES — added 2021-12-10, due 2021-12-24, ransomware: Known  (HARD OVERRIDE → CRITICAL)
+  PoC:    PUBLIC_EXPLOIT (Exploit code available) — 28 public source(s)
+
+SCORE BREAKDOWN:
+  CVSS 10.0  → 20.0/20 pts
+  EPSS 100.0% → 35.0/35 pts
+  KEV  Yes   → 30/30 pts
+  PoC  PUBLIC_EXPLOIT  → 10/15 pts
+  Boosters: KEV+PoC, CVSS>=9+EPSS>0.7
+  Age: 1739 days since published

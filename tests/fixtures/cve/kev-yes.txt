@@ -1,0 +1,7 @@
+CVE-2021-44228 IS in the CISA KEV catalog.
+
+  Vendor/Product:  Apache — Log4j2
+  Vulnerability:   Apache Log4j2 Remote Code Execution Vulnerability
+  Date Added:      2021-12-10
+  Remediation Due: 2021-12-24
+  Ransomware Use:  Known

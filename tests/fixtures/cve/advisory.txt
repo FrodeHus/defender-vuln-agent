@@ -1,0 +1,13 @@
+=== Vendor Advisories: CVE-2021-44228 ===
+
+Microsoft MSRC  (1 entries):
+  []   Apache Log4j Remote Code Execution Vulnerability
+
+Red Hat Security  (63 entries):
+  [Critical] openshift-logging/elasticsearch6-rhel8:v5.0.10-1  RHSA-2021:5137  2021-12-14
+  [Critical] openshift-logging/elasticsearch6-rhel8:v6.8.1-67  RHSA-2021:5128  2021-12-14
+  [Critical] openshift-logging/elasticsearch6-rhel8:v6.8.1-66  RHSA-2021:5127  2021-12-14
+  [Critical] openshift-logging/elasticsearch6-rhel8:v6.8.1-65  RHSA-2021:5129  2021-12-14
+  [Critical]   RHSA-2021:5133  2021-12-14
+
+Ubuntu Security  (1 entries):

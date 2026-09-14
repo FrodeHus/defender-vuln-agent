@@ -1,0 +1,9 @@
+PoC Intelligence: CVE-2021-44228
+Confidence: PUBLIC_EXPLOIT — Exploit code available
+
+GitHub Repositories (28):
+  • fullhunt/log4j-scan ⭐3421 — https://github.com/fullhunt/log4j-scan
+  • NCSC-NL/log4shell ⭐1881 — https://github.com/NCSC-NL/log4shell
+  • kozmer/log4j-shell-poc ⭐1847 — https://github.com/kozmer/log4j-shell-poc
+  • cisagov/log4j-scanner ⭐1278 — https://github.com/cisagov/log4j-scanner
+  • christophetd/log4shell-vulnerable-app ⭐1140 — https://github.com/christophetd/log4shell-vulnerable-app
