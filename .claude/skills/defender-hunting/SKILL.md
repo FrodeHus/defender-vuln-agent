@@ -19,6 +19,7 @@ Named queries (files in `dva/queries/`, pass the stem as `names`):
 - `exploited-cves` — CVEs on devices with known exploitation activity.
 - `device-tags` — device tag assignments.
 - `product-versions` — installed product/version distribution.
+- `evidence` — dynamic, not a file: disk and registry installation paths (DeviceTvmSoftwareEvidenceBeta) for the products the report will list, generalized and counted per device. Run it after `mde vulns`; it is skipped with a note when no products are known yet.
 - `vuln-counts-by-device` — vulnerability counts per device.
 
 `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--timespan` bounds the query window as an ISO-8601 duration (e.g. `P1D`, `P7D`, `P30D`), default `P7D`. `--fixture` replaces the live call for offline runs.

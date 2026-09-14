@@ -32,7 +32,7 @@ export DVA_TENANT=contoso                                   # optional
 export DVA_RUN=$(python3 -m dva run new)                    # new run directory
 python3 -m dva doctor
 python3 -m dva mde all                                      # machines, vulns, recommendations, exposure score
-python3 -m dva hunt internet-facing exploited-cves device-tags
+python3 -m dva hunt internet-facing exploited-cves device-tags evidence
 python3 -m dva cloud vulns                                  # only if sources.yaml has cloud: true
 python3 -m dva enrich --list                                # prints the CVE ids to look up, 20 per line
 ```
@@ -56,6 +56,7 @@ python3 -m dva report --all                                 # report.md, report.
 | `exploited-cves` | CVEs present in the estate that Defender's knowledge base marks as having a public exploit |
 | `vuln-counts-by-device` | Open CVE counts per device by severity |
 | `product-versions` | Device count per software vendor, product and version |
+| `evidence` | Dynamic: disk and registry installation paths of the products the report will list, generalized (`%ProgramFiles%`, `%LOCALAPPDATA%`, `<version>`, `<drive>:`) and counted per device; shown collapsed under each product. Run after `mde all`. |
 
 Ad hoc KQL: `python3 -m dva hunt --kql "DeviceInfo | summarize count() by OSPlatform" --name os-mix`. Every query is capped at 10,000 rows server-side; a capped result marks the source `partial` in the manifest, so narrow the query with `where` or `summarize`. Management and ingestion commands are rejected.
 

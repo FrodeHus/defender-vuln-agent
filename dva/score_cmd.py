@@ -37,6 +37,9 @@ def _breakdown(assets, cfg: Scoring) -> str:
 
 def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None) -> dict:
     products, assets = build(run)
+    from dva.evidence import summarize as _summarize_paths
+    ev = run.read_json("hunt-evidence.json").get("results", []) if run.path("hunt-evidence.json").exists() else []
+    paths_by_key = _summarize_paths(ev)
     estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
     intel = cache.all_fresh(all_ids)
@@ -62,6 +65,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                               "title": intel[r.id].title if r.id in intel else None} for r, _ in sp.driving],
             "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
             "risk_summary": _risk(sp, intel, pa, cfg, display_name(p)),
+            "paths": paths_by_key.get(p.key, []),
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
             "partial_intel": any(r.id not in intel for r, _ in sp.driving),
         })

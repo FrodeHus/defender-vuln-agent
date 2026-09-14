@@ -54,7 +54,7 @@ An executive summary with the estate's exposure score and what changed since the
 export DVA_TENANT=contoso
 export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all
-python3 -m dva hunt internet-facing exploited-cves device-tags
+python3 -m dva hunt internet-facing exploited-cves device-tags evidence
 python3 -m dva enrich --list                                  # CVE ids to look up
 # call the CVE server's triage_cve for each id, saving to $DVA_RUN/cve-triage-<id>.txt, then:
 python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt

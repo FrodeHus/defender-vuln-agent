@@ -45,6 +45,11 @@ def render(doc: dict) -> str:
         more = a["count"] - len(a["top"])
         if more > 0:
             out.append(f"+ {more} more in findings.json")
+        paths = r.get("paths") or []
+        if paths:
+            out += ["", f"<details><summary>Installation paths ({len(paths)})</summary>", ""]
+            out += [f"- `{x['path']}` — {x['devices']} device{'s' if x['devices'] != 1 else ''}" + (" (registry)" if x.get("kind") == "registry" else "") for x in paths]
+            out += ["", "</details>"]
     if rest:
         out += ["", "## All prioritized products", "", "| # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |", "|---|---|---|---|---|---|---|---|---|---|"] + [_row(r) for r in rest]
     out += ["", "## Method", "", METHOD, "", "## Sources", ""]

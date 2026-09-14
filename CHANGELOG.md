@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Installation-path evidence per product (DeviceTvmSoftwareEvidenceBeta), generalized across devices and shown collapsed in both reports; `dva hunt evidence`.
 - Plain-language risk summary per product, built from the driving CVE, its description (via `lookup_cve`), CVSS vector and asset exposure.
 - Tenant display name resolved through Graph `findTenantInformationByTenantId` (optional `CrossTenantInformation.ReadBasic.All`), with `DVA_TENANT_NAME` and directory-name fallbacks.
 - Exposure scores rounded to two decimals.

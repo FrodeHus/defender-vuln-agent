@@ -40,6 +40,13 @@ Affected assets (6): All 6 internet-facing · 6 Tier0 · exposure High
 - vpn-gw-05 — Internet-facing · Tier0
 + 1 more in findings.json
 
+<details><summary>Installation paths (2)</summary>
+
+- `/opt/ivanti/ics/bin/web` — 6 devices
+- `/opt/ivanti/ics/etc/version` — 6 devices
+
+</details>
+
 ### 2. FortiClient EMS (Fortinet) — 91 Critical
 
 Why: Management server reachable from the internet, KEV-listed SQL injection
@@ -98,6 +105,12 @@ Affected assets (312): 40 Tier0 · 9 internet-facing · 118 exposure High · 9 d
 - sccm-01 — Tier0 · High
 + 307 more in findings.json
 
+<details><summary>Installation paths (1)</summary>
+
+- `%WINDIR%\System32\ntoskrnl.exe` — 312 devices
+
+</details>
+
 ### 5. Acrobat Reader DC (Adobe) — 66 High
 
 Why: Installed on most workstations, one KEV-listed CVE, no exposed hosts
@@ -118,6 +131,14 @@ Affected assets (1140): 1,140 workstations · 0 internet-facing · 62 High value
 - ws-exec-003 — High value
 - ws-finance-102 — High value
 + 1135 more in findings.json
+
+<details><summary>Installation paths (3)</summary>
+
+- `%ProgramFiles(x86)%\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe` — 1102 devices
+- `%ProgramFiles%\Adobe\Acrobat DC\Acrobat\Acrobat.exe` — 38 devices
+- `HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{<guid>}` — 1140 devices (registry)
+
+</details>
 
 ### 6. Zoom Workplace (Zoom) — 18 Low
 

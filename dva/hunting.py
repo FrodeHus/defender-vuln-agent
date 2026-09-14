@@ -48,11 +48,24 @@ def run_query(client: Client, run: Run, name: str, kql: str, timespan: str = "P7
     return out
 
 
+def _evidence_kql(run: Run) -> str | None:
+    """Installation-path evidence scoped to the products the report will list (needs vulns.jsonl)."""
+    from dva.config import load_scoring
+    from dva.evidence import build_query, listed_pairs
+    pairs = listed_pairs(run, load_scoring())
+    return build_query(pairs) if pairs else None
+
+
 def run_named(client: Client, run: Run, names: list[str]) -> int:
     failures = 0
     for n in names:
         try:
-            kql = load_query(n)
+            kql = _evidence_kql(run) if n == "evidence" else load_query(n)
+            if kql is None:
+                run.write_json("hunt-evidence.json", {"schema": [], "results": [], "capped": False})
+                run.set_source("hunting.evidence", "ok", count=0)
+                run.summary("Hunting evidence: no listed products yet; skipped.")
+                continue
         except DvaError as e:
             source = f"hunting.{n}"
             run.set_source(source, "failed", error=str(e))
@@ -78,7 +91,7 @@ def _client(args) -> Client:
 def register(sub) -> None:
     p = sub.add_parser("hunt", help="Run Advanced Hunting queries")
     add_run_arg(p)
-    p.add_argument("names", nargs="*", help="named queries from dva/queries")
+    p.add_argument("names", nargs="*", help="named queries from dva/queries, or 'evidence' (installation paths of the listed products; run after mde vulns)")
     p.add_argument("--kql", help="ad hoc KQL (read-only)")
     p.add_argument("--name", default="adhoc", help="output name for --kql")
     p.add_argument("--timespan", default="P7D")
