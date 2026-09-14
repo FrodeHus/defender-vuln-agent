@@ -51,9 +51,11 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         )
         if m.get("azure_resource_id"):
             azure_id_map[m["azure_resource_id"].lower()] = m["id"]
-        label = (m.get("name") or m["id"]).split(".")[0].strip().lower()
-        if label:
-            name_label_map.setdefault(label, m["id"])
+        else:
+            # hostname-label fallback only applies to MDE assets with no azure_resource_id to match against
+            label = (m.get("name") or m["id"]).split(".")[0].strip().lower()
+            if label:
+                name_label_map.setdefault(label, m["id"])
     for row in _hunt(run, "device-tags"):
         a = assets.setdefault(row["DeviceId"], Asset(id=row["DeviceId"], name=row.get("DeviceName") or row["DeviceId"]))
         a.exposure_level = a.exposure_level or row.get("ExposureLevel")
@@ -103,24 +105,27 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         products[key].versions = {ver: len(devices) for ver, devices in versions.items()}
 
     if run.path("cloud-vulns.jsonl").exists():
-        _merge_cloud(run, products, assets, azure_id_map, name_label_map)
+        _merge_cloud(run, products, assets, azure_id_map, name_label_map, exploited)
 
     return products, assets
 
 
 def _merge_cloud(run: Run, products: dict[str, Product], assets: dict[str, Asset],
-                  azure_id_map: dict[str, str], name_label_map: dict[str, str]) -> None:
+                  azure_id_map: dict[str, str], name_label_map: dict[str, str], exploited: set[str]) -> None:
     image_version_images: dict[str, dict[str, set[str]]] = {}
     for row in run.read_jsonl("cloud-vulns.jsonl"):
         resource_id = row.get("resource_id") or ""
+        repo = row.get("image_repo")
         dup_asset_id = azure_id_map.get(resource_id.lower())
-        if dup_asset_id is None:
+        if dup_asset_id is None and not repo:
+            # hostname-label fallback: server rows only, and only when the resource-id match found nothing
             last_seg = resource_id.rstrip("/").split("/")[-1].strip().lower()
             dup_asset_id = name_label_map.get(last_seg) if last_seg else None
         if dup_asset_id is not None:
             continue  # duplicate of an MDE asset; skip
 
-        repo = row.get("image_repo")
+        expl = "ExploitIsPublic" if row.get("cve_id") in exploited else "NoExploit"
+
         if repo:
             digest = row.get("image_digest") or ""
             short_digest = digest[:12]
@@ -133,16 +138,26 @@ def _merge_cloud(run: Run, products: dict[str, Product], assets: dict[str, Asset
             if image_name not in assets:
                 assets[image_name] = Asset(id=image_name, name=image_name, kind="image")
             p.asset_ids.add(image_name)
-            version_key = row.get("image_tag") or short_digest
-            image_version_images.setdefault(key, {}).setdefault(version_key, set()).add(image_name)
+            image_version_images.setdefault(key, {}).setdefault(short_digest, set()).add(image_name)
             if row.get("cve_id"):
                 cur = p.cves.get(row["cve_id"])
                 new_ref = CveRef(id=row["cve_id"], severity=row.get("severity") or "Low", cvss=_norm_cvss(row.get("cvss")),
-                                  exploitability="NoExploit", first_seen=None)
+                                  exploitability=expl, first_seen=None)
                 p.cves[row["cve_id"]] = _merge_cve_ref(cur, new_ref)
         else:
             if resource_id and resource_id not in assets:
                 assets[resource_id] = Asset(id=resource_id, name=row.get("display_name") or resource_id, kind="device")
+            if resource_id and row.get("cve_id"):
+                # grouped by finding name (not installed software: Defender for Cloud server findings carry no vendor/product)
+                key = product_key("defender-for-cloud", row.get("display_name") or row["cve_id"])
+                p = products.get(key)
+                if p is None:
+                    p = products[key] = Product(key=key, vendor="defender-for-cloud", name=row.get("display_name") or row["cve_id"])
+                p.asset_ids.add(resource_id)
+                cur = p.cves.get(row["cve_id"])
+                new_ref = CveRef(id=row["cve_id"], severity=row.get("severity") or "Low", cvss=_norm_cvss(row.get("cvss")),
+                                  exploitability=expl, first_seen=None)
+                p.cves[row["cve_id"]] = _merge_cve_ref(cur, new_ref)
 
     for key, versions in image_version_images.items():
         products[key].versions.update({ver: len(images) for ver, images in versions.items()})
