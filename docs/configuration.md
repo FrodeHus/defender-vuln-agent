@@ -10,7 +10,7 @@
 | `DVA_TENANTS_DIR` | Where tenant directories live | `tenants/` |
 | `DVA_TENANT_NAME` | Friendly name shown in reports | looked up from Graph (`CrossTenantInformation.ReadBasic.All`, cached per tenant), else the tenant directory name, else `DVA_TENANT_ID` |
 | `DVA_RUNS_DIR` | Where run directories are created | `runs/`, or `tenants/<name>/runs/` |
-| `DVA_CACHE_DIR` | Token cache, CVE intel and the `dva.sqlite` store (CVE intel, run history) | `.cache/`, or `tenants/<name>/.cache/` |
+| `DVA_CACHE_DIR` | Token cache, `dva.sqlite` (run history) and `cve/dva.sqlite` (CVE intel) — see below | `.cache/`, or `tenants/<name>/.cache/` |
 | `DVA_RUN` | Pin commands to one run directory instead of the latest | latest run |
 | `CVE_MCP_PYTHON` | Interpreter Claude Code uses to start the CVE server | `.venv/bin/python3` |
 
@@ -54,7 +54,12 @@ A tenant's `tenants/<name>/sources.yaml` is merged over the defaults, so it can 
 
 ## `dva.sqlite` store
 
-Each tenant's cache directory holds `dva.sqlite` (mode 600, WAL journaling): a `cve_intel` table backing `IntelCache` and a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score`, and per-product scores) for trend reporting without rescanning old `findings.json` files. The store is the sole source of truth for CVE intel: `dva/cache.py`'s `IntelCache.get`/`put`/`all_fresh` read and write only the store. Pre-existing per-CVE JSON files from before this cache was store-backed are imported into the store once, the first time a cache directory is opened; after that the JSON files are never read again, even if new ones are dropped in later. `dva/score_cmd.py`'s `compute()` reads trend rows from the store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.
+Each tenant's cache directory holds two SQLite files (both mode 600, WAL journaling), not one:
+
+- `<cache>/dva.sqlite` — run history: a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score`, and per-product scores) for trend reporting without rescanning old `findings.json` files. Opened by `open_store()`, always per tenant.
+- `<cache>/cve/dva.sqlite` — CVE intel: the `cve_intel` table backing `IntelCache`. Opened by `open_intel_store()`; when `shared_cve_cache` is true this instead points at the repo-level `<repo>/.cache/cve.sqlite`, shared across tenants.
+
+The intel store is the sole source of truth for CVE intel: `dva/cache.py`'s `IntelCache.get`/`put`/`all_fresh` read and write only it. Pre-existing per-CVE JSON files from before this cache was store-backed are imported into it once, the first time a cache directory is opened; after that the JSON files are never read again, even if new ones are dropped in later. `dva/score_cmd.py`'s `compute()` reads trend rows from the run-history store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.
 
 ## `exceptions.yaml`
 
@@ -70,7 +75,7 @@ tenants/
     sources.yaml      optional, merged over config/sources.yaml
     exceptions.yaml   accepted-risk exceptions for this tenant (mode 600)
     runs/             this tenant's runs
-    .cache/           this tenant's token and CVE caches, and dva.sqlite
+    .cache/           this tenant's token cache, dva.sqlite (run history) and cve/dva.sqlite (CVE intel)
 ```
 
 `dva tenant init NAME` creates the skeleton; `dva tenant list` and `dva tenant show` inspect. Nothing is shared between tenants except code and the repo-level defaults. The whole `tenants/` directory is gitignored.

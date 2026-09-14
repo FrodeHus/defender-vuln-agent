@@ -1,16 +1,20 @@
-"""Per-tenant SQLite store for CVE intel and run history.
+"""SQLite storage for CVE intel and per-tenant run history, split across two files.
 
-One file, ``<DVA_CACHE_DIR>/dva.sqlite`` by default, holds three tables:
+Run history lives in ``<DVA_CACHE_DIR>/dva.sqlite`` (opened by ``open_store()``), always
+per tenant:
 
-    cve_intel(cve_id TEXT PRIMARY KEY, fields TEXT, fetched_at TEXT)
     runs(run_id TEXT PRIMARY KEY, tenant TEXT, generated_at TEXT, exposure_score REAL,
          secure_score REAL, summary TEXT)
     product_history(run_id TEXT, key TEXT, score INT, label TEXT, PRIMARY KEY(run_id, key))
 
+CVE intel lives in ``<DVA_CACHE_DIR>/cve/dva.sqlite`` (opened by ``open_intel_store()``):
+
+    cve_intel(cve_id TEXT PRIMARY KEY, fields TEXT, fetched_at TEXT)
+
 CVE intel can instead be shared across tenants at ``<repo>/.cache/cve.sqlite`` when
 ``sources.yaml``'s ``shared_cve_cache`` is true; run history always stays per tenant.
 
-The file is created with mode 600 inside a mode-700 directory, opened with WAL journaling.
+Both files are created with mode 600 inside a mode-700 directory, opened with WAL journaling.
 Every failure surfaces as a single-line ``DvaError``.
 """
 from __future__ import annotations
