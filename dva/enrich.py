@@ -53,7 +53,7 @@ def select_describe(products: dict[str, Product], assets: dict[str, Asset], cach
         if not p.cves:
             continue
         top = sorted(p.cves.values(), key=_rank_key)[0]
-        cached = cache.get(top.id)
+        cached = cache.get(top.id, stale_ok=True)  # descriptions never change: an expired entry that has one still counts
         if cached is not None and cached.description:
             continue
         if top.id not in out:
@@ -237,6 +237,22 @@ def _merge_intel(cur: CveIntel | None, new: CveIntel) -> CveIntel:
     return cur
 
 
+STABLE_FIELDS = ("cvss", "vector", "description", "title", "cwe", "kev_added")
+
+
+def _refresh_intel(stale: CveIntel | None, new: CveIntel) -> CveIntel:
+    """Merge a freshly fetched result over an expired cache entry: the new EPSS/KEV/PoC signals win outright,
+    while fields that never change (and were maybe fetched by a different tool) fill in when the new result lacks them."""
+    if stale is None:
+        return new
+    for f in STABLE_FIELDS:
+        if getattr(new, f) is None and getattr(stale, f) is not None:
+            setattr(new, f, getattr(stale, f))
+    if not new.advisories and stale.advisories:
+        new.advisories = list(stale.advisories)
+    return new
+
+
 def _parse_triage_block(cid: str, block: str) -> CveIntel:
     intel = CveIntel()
     m = re.search(r"^\s*CVSS:\s+([\d.]+)", block, re.M)
@@ -403,7 +419,8 @@ def _store(run: Run, cache: IntelCache, files: list[Path]) -> None:
         for cid, intel in parse_file(path).items():
             parsed[cid] = _merge_intel(parsed.get(cid), intel)
     for cid, intel in parsed.items():
-        cache.put(cid, _merge_intel(cache.get(cid), intel))
+        fresh = cache.get(cid)
+        cache.put(cid, _merge_intel(fresh, intel) if fresh is not None else _refresh_intel(cache.get(cid, stale_ok=True), intel))
     wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else list(parsed)
     doc = write_enrichment(run, cache, wanted)
     print(f"stored {len(parsed)}, missing {len(doc['missing'])}")

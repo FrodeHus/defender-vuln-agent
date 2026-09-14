@@ -12,7 +12,7 @@ Use the vuln-assessor agent to run a vulnerability assessment for contoso
 What should fabrikam patch first this week?
 ```
 
-The agent lists tenants, matches the name (a unique prefix is enough; it stops and asks if the name is missing or ambiguous), verifies permissions with `dva doctor`, creates a run, collects inventory and vulnerabilities, runs the hunting queries, runs `dva enrich --fetch` (which sends the selected CVEs to the CVE server one `triage_cve` call at a time and stores the results), scores, renders the reports, and replies with the top products, the count needing action and any source that was partial or failed. It only ever reads `report.md`; raw data never enters the conversation.
+The agent lists tenants, matches the name (a unique prefix is enough; it stops and asks if the name is missing or ambiguous), verifies permissions with `dva doctor`, creates a run, collects inventory and vulnerabilities, runs the hunting queries, runs `dva enrich --fetch` (which sends the selected CVEs to the CVE server one `triage_cve` call at a time and stores the results), scores, renders the reports, and replies with the top products, the count needing action and any source that was partial or failed. It replies from `dva report --brief` (a dozen lines) and reads `report.md` only when asked for more; raw data never enters the conversation.
 
 Follow-ups that work well:
 
@@ -39,6 +39,7 @@ python3 -m dva enrich --fetch                               # calls the CVE serv
 python3 -m dva score                                        # writes findings.json
 python3 -m dva report --all                                 # report.md, report.html, report.json, tickets.json
 python3 -m dva exception suggest                             # suggested accepted-risk exceptions, writes exception-suggestions.json
+python3 -m dva report --brief                               # a dozen-line summary for the reply; writes nothing
 ```
 
 `python3 -m dva --help` and `python3 -m dva <command> --help` list every flag. The package also installs a `dva` console script, so `dva doctor` works inside the venv.
@@ -120,7 +121,7 @@ This is exactly what `tests/test_e2e.py` runs.
 | `enrich-candidates.json`, `enrich-describe.json` | `enrich --fetch`/`--list` | CVE ids selected for enrichment and for descriptions |
 | `cve-triage-*.txt`, `cve-lookup-*.txt`, `cve-advisory-*.txt` | `enrich --fetch` | Saved CVE server results (triage, descriptions, vendor advisories) |
 | `enrichment.json` | `enrich --fetch`/`--store` | Parsed CVE intel for this run |
-| `findings.json` | `score` | Scored products, accepted risks, trend, posture and the diff from the previous run |
+| `findings.json` | `score` | Scored products, accepted risks, long-standing products, trend, posture and the diff from the previous run |
 | `tickets.json` | `report --tickets`/`--all` | One ticket per listed product not under exception |
 | `exception-suggestions.json` | `exception suggest` | Suggested accepted-risk exceptions with reasons |
 | `report.md` / `.html` / `.json` | `report` | Rendered reports |

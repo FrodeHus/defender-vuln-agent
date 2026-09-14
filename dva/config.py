@@ -25,6 +25,7 @@ class Scoring:
     mitigation_configs: list[str]
     exception_components: list[str]
     trend_runs: int
+    long_standing_days: int = 90
 
 
 @dataclass

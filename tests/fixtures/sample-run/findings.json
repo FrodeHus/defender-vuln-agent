@@ -29,7 +29,9 @@
     "overdue_cves_total": 1,
     "eos_products": 1,
     "secure_score": 68.5,
-    "patched_7d_critical": 2
+    "patched_7d_critical": 2,
+    "long_standing_days": 90,
+    "long_standing_products": 2
   },
   "products": [
     {
@@ -3180,6 +3182,42 @@
       "generated_at": "2026-09-14T08:00:00+00:00",
       "exposure_score": 61.0,
       "secure_score": 68.5
+    }
+  ],
+  "long_standing": [
+    {
+      "key": "microsoft/windows-server-2019",
+      "product": "Windows Server 2019",
+      "vendor": "Microsoft",
+      "score": 79,
+      "label": "High",
+      "devices": 312,
+      "cves_over_threshold": 41,
+      "total_cves": 128,
+      "oldest_days": 402,
+      "by_severity": {
+        "critical": 2,
+        "high": 9,
+        "medium": 20,
+        "low": 10
+      }
+    },
+    {
+      "key": "7-zip/7-zip",
+      "product": "7-Zip",
+      "vendor": "7-Zip",
+      "score": 12,
+      "label": "Low",
+      "devices": 880,
+      "cves_over_threshold": 3,
+      "total_cves": 3,
+      "oldest_days": 233,
+      "by_severity": {
+        "critical": 0,
+        "high": 1,
+        "medium": 2,
+        "low": 0
+      }
     }
   ]
 }

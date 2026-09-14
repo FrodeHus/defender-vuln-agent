@@ -30,12 +30,13 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 | `enrich_threshold` | 20 | Products whose preliminary score is below this are not enriched |
 | `report_threshold` | 40 | Score at which a product counts as needing action |
 | `top_n` | 10 | Products always listed and tracked in the run-to-run diff |
-| `cache_ttl_days` | 7 | How long CVE intel stays fresh before it is fetched again |
+| `cache_ttl_days` | 7 | How long a CVE's EPSS/KEV/PoC signals stay fresh before `enrich --fetch` triages it again; its description, vector, CWE and advisories are kept across refreshes |
 | `bands` | critical 80, high 60, medium 40 | Label thresholds |
 | `sla_days` | critical 14, high 30, medium 90, low 180 | Age (from a CVE's earliest `first_seen`) after which it counts as an SLA breach for its severity |
 | `overdue_boost` | 1.10 | Multiplier applied to a product's score, before the cap, when it has any overdue CVE |
 | `mitigation_configs` | [] | `DeviceTvmSecureConfigurationAssessment` `ConfigurationId`s treated as compensating controls for the `mitigations` hunting query and the `mitigated` asset bonus; pick ids from the `mitigation-catalog` query. Empty list skips the query. |
 | `exception_components` | openssl, zlib, curl, libxml2, libxslt, sqlite, log4j, jre, jdk, java, python, node, ".net runtime", redistributable, msxml, expat, libpng | Case-insensitive substrings of a product's name that `dva exception suggest` flags as a commonly-bundled embedded component |
+| `long_standing_days` | 90 | Age (from a CVE's earliest `first_seen`) after which it counts as long-standing; products carrying such CVEs are listed in their own report section regardless of score |
 | `trend_runs` | 8 | How many previous runs' `findings.json` feed the run-to-run trend table when no SQLite store history is available |
 
 Edit, then re-run only `dva score` and `dva report --all`; no re-collection needed. A tenant can carry its own copy at `tenants/<name>/scoring.yaml`, which replaces the defaults entirely for that tenant.

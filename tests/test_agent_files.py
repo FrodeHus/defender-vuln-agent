@@ -9,7 +9,7 @@ def test_agent_definition():
     # dva enrich --fetch talks to the CVE server itself: the agent needs no MCP tools and relays no CVE text.
     assert "mcp__cve-mcp__" not in fm
     for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --fetch", "fetched", "privileged-logons",
-                 "certificates", "dva score", "dva report --all", "exception suggest", "exception add"]:
+                 "certificates", "dva score", "dva report --all", "dva report --brief", "long-standing", "exception suggest", "exception add"]:
         assert step in text
     for gone in ["triage_cve", "lookup_cve", "get_vendor_advisory", "<<'TXT'", "enrich --list", "enrich --store"]:
         assert gone not in text, gone
@@ -19,6 +19,7 @@ def test_agent_definition():
 def test_report_skill_documents_fetch():
     text = Path("skills/vuln-prioritize-report/SKILL.md").read_text()
     assert "enrich --fetch" in text and "--server" in text and "DVA_CVE_MCP" in text
+    assert "report --brief" in text and "long_standing_days" in text
 
 def test_skills_and_mcp():
     for s in ["defender-auth", "defender-inventory", "defender-hunting", "vuln-prioritize-report"]:

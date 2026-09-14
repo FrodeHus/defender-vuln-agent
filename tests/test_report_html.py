@@ -52,7 +52,7 @@ def test_html_sparkline_filters_null_exposure_scores_instead_of_mapping_to_zero(
     doc = json.loads(FX.read_text())
     out = render(doc)
     assert "exposure_score == null ? 0" not in out
-    assert "function segments(" in out
+    assert "typeof r[key] === 'number'" in out  # a null score breaks the line instead of being drawn as zero
 
 
 def test_html_renders_without_exception_when_trend_has_null_exposure_score():
@@ -82,3 +82,13 @@ def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)
     assert "x</script>" not in out
+
+
+def test_html_score_trend_uses_two_panels_with_direction_hints():
+    """Exposure (0-100, lower is better) and secure score (%, higher is better) never share one axis."""
+    out = render(json.loads(FX.read_text()))
+    script = out.split("<script")[-1]
+    assert "lower is better" in script and "higher is better" in script
+    assert "function scorePanel(" in script
+    assert "not collected" in script  # a series with no values says so instead of drawing nothing
+    assert 'class="spark"' in script  # sparklines are framed boxes, not bare lines

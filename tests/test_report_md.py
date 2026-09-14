@@ -36,3 +36,15 @@ def test_markdown_shows_vendor_advisories_with_link():
     assert "Vendor advisories:" in out
     assert "- [RHSA-2026:1234](https://access.redhat.com/errata/RHSA-2026:1234) — Red Hat, ivanti-connect-secure security update (2026-09-05)" in out
     assert "- advisory — MSRC" in out
+
+
+def test_markdown_lists_long_standing_products():
+    out = render(json.loads(FX.read_text()))
+    assert "## Long-standing vulnerabilities (open for more than 90 days)" in out
+    assert "| 7-Zip | 7-Zip | 12 Low | 880 | 3 of 3 | 233 | 0 / 1 / 2 / 0 |" in out
+    assert out.index("## Long-standing") < out.index("## Method")
+
+
+def test_markdown_tolerates_findings_without_long_standing():
+    doc = json.loads(FX.read_text()); doc.pop("long_standing"); doc["summary"].pop("long_standing_products")
+    assert "Long-standing" not in render(doc)

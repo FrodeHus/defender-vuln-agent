@@ -35,7 +35,7 @@ From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks
 
 - **Read-only.** No writes to Defender, Graph or Azure beyond `GET` and the Advanced Hunting/Resource Graph query POSTs. The app registration has no write permissions.
 - **Tenant isolation.** Everything a tenant produces or needs lives under `tenants/<name>/`; never add shared state keyed by tenant, never read one tenant's `.env` or data while reporting on another.
-- **Raw run files stay unread by the agent.** It reads only command summaries and `report.md`, never `vulns.jsonl`, `machines.json`, `hunt-*.json`, `cve-*.txt`, `enrichment.json`, `findings.json`.
+- **Raw run files stay unread by the agent.** It reads only command summaries and `dva report --brief` (and `report.md` on request), never `vulns.jsonl`, `machines.json`, `hunt-*.json`, `cve-*.txt`, `enrichment.json`, `findings.json`.
 
 ## Conventions
 

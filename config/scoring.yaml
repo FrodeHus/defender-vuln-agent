@@ -23,3 +23,4 @@ overdue_boost: 1.10
 mitigation_configs: []
 exception_components: [openssl, zlib, curl, libxml2, libxslt, sqlite, log4j, jre, jdk, java, python, node, ".net runtime", redistributable, msxml, expat, libpng]
 trend_runs: 8
+long_standing_days: 90

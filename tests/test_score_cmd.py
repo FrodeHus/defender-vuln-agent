@@ -237,3 +237,28 @@ def test_score_trend_excludes_rows_older_than_365_days(tmp_path):
     current_row = {"run_id": run.id, "generated_at": now.isoformat(), "exposure_score": 54.0, "secure_score": 70.0}
     st = score_trend(run, current_row, store=None, now=now)
     assert len(st) == 1 and st[0]["run_id"] == run.id
+
+
+def test_long_standing_cves_listed_even_below_threshold(tmp_path):
+    """A product whose CVEs have sat open past stale_days is reported even when it scores too low for the ranking."""
+    run = Run.create(tmp_path / "runs")
+    run.write_json("machines.json", [{"id": "m1", "name": "d1", "tags": [], "exposure_level": "Low", "device_value": "Normal", "group": None, "is_internet_facing": False, "azure_resource_id": None},
+                                     {"id": "m2", "name": "d2", "tags": [], "exposure_level": "Low", "device_value": "Normal", "group": None, "is_internet_facing": False, "azure_resource_id": None}])
+    row = {"device_id": "m1", "device_name": "d1", "vendor": "x", "product": "old", "version": "1.0", "exploitability": "NoExploit", "recommendation_ref": None}
+    run.write_jsonl("vulns.jsonl", [
+        dict(row, cve_id="CVE-2026-1", severity="Low", cvss=3.1, first_seen="2026-05-01"),      # 136 days: stale, but within the Low SLA
+        dict(row, cve_id="CVE-2026-2", severity="Medium", cvss=5.0, first_seen="2026-04-01"),   # 166 days
+        dict(row, cve_id="CVE-2026-3", severity="Low", cvss=3.0, first_seen="2026-09-01"),      # 13 days
+        dict(row, device_id="m2", device_name="d2", cve_id="CVE-2026-1", severity="Low", cvss=3.1, first_seen="2026-09-10"),  # earliest first_seen wins
+        dict(row, product="fresh", cve_id="CVE-2026-4", severity="High", cvss=7.5, first_seen="2026-09-01"),
+    ])
+    run.write_json("recommendations.json", [])
+    now = datetime(2026, 9, 14, tzinfo=timezone.utc)
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7), now=now)
+    assert doc["summary"]["long_standing_days"] == 90
+    assert doc["summary"]["long_standing_products"] == 1
+    assert doc["long_standing"] == [{
+        "key": "x/old", "product": "Old", "vendor": "X", "score": doc["long_standing"][0]["score"], "label": doc["long_standing"][0]["label"],
+        "devices": 2, "cves_over_threshold": 2, "total_cves": 3, "oldest_days": 166,
+        "by_severity": {"critical": 0, "high": 0, "medium": 1, "low": 1},
+    }]

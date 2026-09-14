@@ -65,6 +65,7 @@ python3 -m dva enrich --fetch                                 # calls the CVE se
 python3 -m dva score
 python3 -m dva report --all                                   # includes tickets.json
 python3 -m dva exception suggest                               # suggested accepted-risk exceptions
+python3 -m dva report --brief                                 # dozen-line summary for the reply
 ```
 
 ## Requirements

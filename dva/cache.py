@@ -38,7 +38,9 @@ class IntelCache:
                 continue
             self.store.put_intel(cve_id, d, fetched)
 
-    def get(self, cve_id: str) -> CveIntel | None:
+    def get(self, cve_id: str, stale_ok: bool = False) -> CveIntel | None:
+        """The cached intel for a CVE, or None when absent or older than the TTL. ``stale_ok`` returns an
+        expired entry too, for the fields that never change (description, vector, CWE, advisories)."""
         row = self.store.get_intel(cve_id)
         if row is None:
             return None
@@ -46,7 +48,7 @@ class IntelCache:
         if not fetched_at:
             return None
         try:
-            if datetime.fromisoformat(fetched_at) < datetime.now(timezone.utc) - self.ttl:
+            if not stale_ok and datetime.fromisoformat(fetched_at) < datetime.now(timezone.utc) - self.ttl:
                 return None
             # Rows written by an older release may lack newer fields; fall back to the dataclass defaults.
             return CveIntel(**{k: v for k, v in fields.items() if k in CveIntel.__dataclass_fields__ and v is not None})

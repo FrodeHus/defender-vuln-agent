@@ -148,6 +148,19 @@ def render(doc: dict) -> str:
                 out.append("")
             out.append("Expired (back in the ranking; flagged `Exception expired`):")
             out += [f"- {e['product']} (until {e['until']}, owner {e.get('owner') or '-'}): {e['reason']}" for e in expired]
+    stale = doc.get("long_standing") or []
+    if stale:
+        days = s.get("long_standing_days", 90)
+        shown = stale[:20]
+        out += ["", f"## Long-standing vulnerabilities (open for more than {days} days)", "",
+                f"{len(stale)} product{'s' if len(stale) != 1 else ''} still carr{'y' if len(stale) != 1 else 'ies'} CVEs first seen more than {days} days ago, ranked or not. "
+                "A working patch regime closes CVEs well before that, so these are the products no process is picking up.", "",
+                f"| Product | Vendor | Score | Devices | CVEs > {days} days | Oldest (days) | Crit / High / Med / Low |", "|---|---|---|---|---|---|---|"]
+        for r in shown:
+            b = r["by_severity"]
+            out.append(f"| {r['product']} | {r['vendor']} | {r['score']} {r['label']} | {r['devices']} | {r['cves_over_threshold']} of {r['total_cves']} | {r['oldest_days']} | {b['critical']} / {b['high']} / {b['medium']} / {b['low']} |")
+        if len(stale) > len(shown):
+            out.append(f"+ {len(stale) - len(shown)} more in findings.json")
     posture = doc.get("posture") or {}
     certs, findings, by_impact = posture.get("certificates_expiring") or [], posture.get("config_findings") or [], posture.get("config_by_impact") or {}
     if certs or findings:

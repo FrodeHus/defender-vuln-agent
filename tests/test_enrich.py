@@ -244,3 +244,46 @@ def test_list_prints_describe_ids(tmp_path, monkeypatch, capsys):
     lines = [json.loads(l) for l in capsys.readouterr().out.splitlines() if l.startswith("{")]
     assert any("describe" in l and l["describe"] == ["CVE-2024-0001"] for l in lines)
     assert run.read_json("enrich-describe.json") == ["CVE-2024-0001"]
+
+
+def test_cache_get_stale_ok_returns_an_expired_entry(tmp_path):
+    c = IntelCache(tmp_path, ttl_days=7)
+    c.put("CVE-1", CveIntel(cvss=9.0, description="old but still true"))
+    c.store.touch_intel("CVE-1", "2020-01-01T00:00:00+00:00")
+    assert c.get("CVE-1") is None
+    assert c.get("CVE-1", stale_ok=True).description == "old but still true"
+
+
+def test_select_describe_trusts_a_stale_description(tmp_path):
+    """Descriptions never change, so an expired cache entry that has one still spares the lookup_cve call."""
+    from dva.enrich import select_describe
+    cache = IntelCache(tmp_path, 7)
+    p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"}, cves={"CVE-5": ref(5, 9.8, "ExploitIsInKit")})
+    assets = {"x": Asset(id="x", name="x", internet_facing=True)}
+    cache.put("CVE-5", CveIntel(cvss=9.8, description="desc"))
+    cache.store.touch_intel("CVE-5", "2020-01-01T00:00:00+00:00")
+    assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == []
+    cache.put("CVE-5", CveIntel(cvss=9.8))  # fresh, but without a description: still needs one
+    assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == ["CVE-5"]
+
+
+def test_store_refreshes_volatile_signals_but_keeps_stable_fields_of_a_stale_entry(tmp_path, monkeypatch, capsys):
+    """Re-triaging an expired CVE must take the new EPSS/KEV/PoC signals and keep the description,
+    vector, CWE and advisories that were fetched once and never change."""
+    from dva.__main__ import main
+    from dva.run import Run
+    run = Run.create(tmp_path / "runs")
+    run.write_json("machines.json", [])
+    run.write_jsonl("vulns.jsonl", [])
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    cache = IntelCache(tmp_path / "cache" / "cve", 7)
+    cache.put("CVE-2024-6345", CveIntel(cvss=8.8, epss=0.5, kev=True, ransomware=True, exploit_public=True, exploit_sources=["poc"],
+                                        description="Stable description", cwe="CWE-94", advisories=[{"source": "MSRC", "id": "x"}]))
+    cache.store.touch_intel("CVE-2024-6345", "2020-01-01T00:00:00+00:00")
+    cache.close()
+    assert main(["enrich", "--store", str(_FX / "triage-standard.txt"), "--run", str(run.dir)]) == 0
+    after = IntelCache(tmp_path / "cache" / "cve", 7).get("CVE-2024-6345")
+    assert after is not None  # fresh again
+    assert after.epss == 0.0194 and after.kev is False and after.ransomware is False and after.exploit_public is False
+    assert after.description == "Stable description" and after.cwe == "CWE-94" and after.advisories == [{"source": "MSRC", "id": "x"}]
+    assert after.vector == "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"

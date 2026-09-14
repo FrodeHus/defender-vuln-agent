@@ -58,6 +58,27 @@ def _sla(p, cfg: Scoring, now: datetime) -> dict:
     return {"oldest_days": max(ages) if ages else None, "overdue_cves": overdue_cves, "overdue_by_days": overdue_by_days}
 
 
+def _long_standing(products: dict, assets: dict, scored_by_key: dict, cfg: Scoring, now: datetime) -> list[dict]:
+    """Products carrying CVEs open for more than ``long_standing_days``, whatever their score: a patch regime that
+    works closes CVEs long before that, so these are the ones nothing is picking up."""
+    out = []
+    for key, p in products.items():
+        over = [(ref, age) for ref in p.cves.values() if (age := age_days(ref.first_seen, now)) is not None and age > cfg.long_standing_days]
+        if not over:
+            continue
+        by_sev = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        for ref, _ in over:
+            sev = (ref.severity or "").lower()
+            if sev in by_sev:
+                by_sev[sev] += 1
+        sp = scored_by_key[key]
+        out.append({"key": key, "product": display_name(p), "vendor": display_vendor(p), "score": sp.score, "label": sp.label,
+                    "devices": len(p.asset_ids), "cves_over_threshold": len(over), "total_cves": len(p.cves),
+                    "oldest_days": max(age for _, age in over), "by_severity": by_sev})
+    out.sort(key=lambda r: (-r["oldest_days"], -r["cves_over_threshold"], r["key"]))
+    return out
+
+
 def _fixes(p, total: int) -> list[dict]:
     ranked = sorted(p.fixes.items(), key=lambda kv: (-len(kv[1]), kv[0]))
     return [{"update": u, "cves": len(ids), "share": round(len(ids) / total, 2) if total else 0.0} for u, ids in ranked[:5]]
@@ -380,6 +401,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     current_score_row = {"run_id": run.id, "generated_at": generated_at, "exposure_score": exposure_score, "secure_score": secure_score}
     excepted_cve_ids = {i.cve for i in active_exceptions if i.cve}
     new_cves, fixed_cves = _new_and_fixed_cves(rows, products, prev_doc, excepted_cve_ids)
+    long_standing = _long_standing(listed_products, assets, {s.product.key: s for s in scored}, cfg, now)
     return {
         "run": run.manifest,
         "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),
@@ -390,6 +412,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                     "exposure_score": exposure_score,
                     "secure_score": secure_score,
                     "patched_7d_critical": patched_7d_critical,
+                    "long_standing_days": cfg.long_standing_days,
+                    "long_standing_products": len(long_standing),
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
                     "generated_at": generated_at, "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
         "products": rows,
@@ -398,6 +422,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                                "new_kev": [r["key"] for r in rows if r["flags"]["kev"] and r["key"] not in kev_prev],
                                "new_cves": new_cves, "fixed_cves": fixed_cves},
         "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
+        "long_standing": long_standing,
         "posture": _posture(run),
         "trend": (store and _trend_from_store(store, run, cfg, current_trend_row)) or _trend(run, prevs, current_trend_row),
         "score_trend": score_trend(run, current_score_row, store=store, now=now),

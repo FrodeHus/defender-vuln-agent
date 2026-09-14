@@ -187,6 +187,15 @@ Affected assets (690): 690 workstations · 0 internet-facing · 41 High value
 Expired (back in the ranking; flagged `Exception expired`):
 - Java Runtime 8 (until 2026-08-01, owner frode): Legacy line-of-business app, migration planned
 
+## Long-standing vulnerabilities (open for more than 90 days)
+
+2 products still carry CVEs first seen more than 90 days ago, ranked or not. A working patch regime closes CVEs well before that, so these are the products no process is picking up.
+
+| Product | Vendor | Score | Devices | CVEs > 90 days | Oldest (days) | Crit / High / Med / Low |
+|---|---|---|---|---|---|---|
+| Windows Server 2019 | Microsoft | 79 High | 312 | 41 of 128 | 402 | 2 / 9 / 20 / 10 |
+| 7-Zip | 7-Zip | 12 Low | 880 | 3 of 3 | 233 | 0 / 1 / 2 / 0 |
+
 ## Posture
 
 ### Certificates expiring within 30 days
