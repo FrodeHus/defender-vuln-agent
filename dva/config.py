@@ -34,6 +34,7 @@ class Sources:
     cloud: bool = False
     subscriptions: list[str] = field(default_factory=list)
     hunting_queries: list[str] = field(default_factory=list)
+    shared_cve_cache: bool = False
 
 
 def _read(path: Path) -> dict:

@@ -108,6 +108,21 @@ def _cve_counts_by_severity(rows: list[dict]) -> dict[str, int]:
     return totals
 
 
+def _trend_from_store(store, run: Run, cfg: Scoring, current_row: dict) -> list[dict] | None:
+    """Trend rows built from the store's recorded runs, oldest first, or None when the store
+    has no rows yet (caller should fall back to the file scan)."""
+    prev = [r for r in store.recent_runs(cfg.trend_runs) if r["run_id"] != run.id]
+    if not prev:
+        return None
+    rows = [{
+        "run_id": r["run_id"], "generated_at": r.get("generated_at"), "exposure_score": r.get("exposure_score"),
+        "products_action": r.get("products_action"), "kev_cves": r.get("kev_cves"), "sla_breaches": r.get("sla_breaches"),
+        "cves_by_severity": r.get("cves_by_severity") or {"critical": 0, "high": 0, "medium": 0, "low": 0},
+    } for r in prev[-cfg.trend_runs:]]
+    rows.append(current_row)
+    return rows
+
+
 def _trend(run: Run, prevs: list[Run], current_row: dict) -> list[dict]:
     rows = []
     for r in reversed(prevs):  # oldest first
@@ -180,7 +195,7 @@ def _posture(run: Run) -> dict:
     return {"certificates_expiring": certificates_expiring, "config_findings": config_findings, "config_by_impact": config_by_impact}
 
 
-def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None) -> dict:
+def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None, store=None) -> dict:
     now = now or datetime.now(timezone.utc)
     products, assets = build(run)
     from dva.evidence import summarize as _summarize_paths
@@ -279,7 +294,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                                "new_cves": new_cves, "fixed_cves": fixed_cves},
         "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
         "posture": _posture(run),
-        "trend": _trend(run, prevs, current_trend_row),
+        "trend": (store and _trend_from_store(store, run, cfg, current_trend_row)) or _trend(run, prevs, current_trend_row),
     }
 
 
@@ -293,9 +308,14 @@ def _run(args) -> int:
     from dva.hunting import GRAPH_BASE
     from dva.auth import GRAPH_SCOPE
     from dva.mde import make_client
+    from dva.store import open_store
     tenant_name = resolve_display_name(cache_dir(), client_factory=lambda: make_client(GRAPH_SCOPE, GRAPH_BASE), log=run.log)
-    doc = compute(run, cfg, IntelCache(cache_dir() / "cve", cfg.cache_ttl_days), tenant_name=tenant_name)
+    store = open_store()
+    doc = compute(run, cfg, IntelCache(cache_dir() / "cve", cfg.cache_ttl_days), tenant_name=tenant_name, store=store)
     run.write_json("findings.json", doc)
+    run_summary = dict(doc["summary"])
+    run_summary["cves_by_severity"] = doc["trend"][-1]["cves_by_severity"] if doc["trend"] else {}
+    store.record_run(run.id, tenant_name, run_summary, doc["products"])
     top = ", ".join(f"{r['product']} ({r['score']})" for r in doc["products"][:3])
     run.summary(f"Scored {doc['summary']['products_total']} products; {doc['summary']['products_action']} need action; top: {top}.")
     return 0

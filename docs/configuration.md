@@ -10,7 +10,7 @@
 | `DVA_TENANTS_DIR` | Where tenant directories live | `tenants/` |
 | `DVA_TENANT_NAME` | Friendly name shown in reports | looked up from Graph (`CrossTenantInformation.ReadBasic.All`, cached per tenant), else the tenant directory name, else `DVA_TENANT_ID` |
 | `DVA_RUNS_DIR` | Where run directories are created | `runs/`, or `tenants/<name>/runs/` |
-| `DVA_CACHE_DIR` | Token cache and CVE intel cache | `.cache/`, or `tenants/<name>/.cache/` |
+| `DVA_CACHE_DIR` | Token cache, CVE intel and the `dva.sqlite` store (CVE intel, run history) | `.cache/`, or `tenants/<name>/.cache/` |
 | `DVA_RUN` | Pin commands to one run directory instead of the latest | latest run |
 | `CVE_MCP_PYTHON` | Interpreter Claude Code uses to start the CVE server | `.venv/bin/python3` |
 
@@ -43,8 +43,13 @@ Edit, then re-run only `dva score` and `dva report --all`; no re-collection need
 | `cloud` | false | Collect Defender for Cloud findings via Azure Resource Graph |
 | `subscriptions` | [] | Subscription ids for `cloud` (the app needs `Reader` on each) |
 | `hunting_queries` | the five named queries | Queries `dva hunt` runs when given no names |
+| `shared_cve_cache` | false | When true, CVE intel is shared across all tenants in one file at `<repo>/.cache/cve.sqlite` instead of each tenant's own cache. Run history stays per tenant regardless. |
 
 A tenant's `tenants/<name>/sources.yaml` is merged over the defaults, so it can contain only the keys that differ, typically `cloud` and `subscriptions`.
+
+## `dva.sqlite` store
+
+Each tenant's cache directory holds `dva.sqlite` (mode 600, WAL journaling): a `cve_intel` table backing `IntelCache` and a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score` once Task 9 lands, and per-product scores) for trend reporting without rescanning old `findings.json` files. `dva/cache.py`'s `IntelCache` keeps its file-based per-CVE JSON cache for backward compatibility and freshness checks, mirroring every write into the store; pre-existing per-file JSON entries are imported into the store once, the first time a cache directory is opened. `dva/score_cmd.py`'s `compute()` reads trend rows from the store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.
 
 ## Tenants
 
