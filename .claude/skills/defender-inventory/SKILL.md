@@ -14,14 +14,17 @@ python3 -m dva mde machines [--run RUN] [--fixture FILE]
 python3 -m dva mde vulns [--run RUN] [--fixture FILE]
 python3 -m dva mde recommendations [--run RUN] [--fixture FILE]
 python3 -m dva mde score [--run RUN] [--fixture FILE]
+python3 -m dva mde changes [--run RUN] [--fixture FILE] [--since-days N]
 python3 -m dva mde all [--run RUN] [--fixture FILE]
 ```
 
-`mde all` runs the four collectors in sequence against one run directory; prefer it over calling each collector separately. `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--fixture` replaces the live API call with a canned JSON response file, for offline runs and tests.
+`mde all` runs all five collectors in sequence against one run directory (including `changes`); prefer it over calling each collector separately. `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--fixture` replaces the live API call with a canned JSON response file, for offline runs and tests.
+
+`mde score` also reads the organization's secure score (`GET /configurationScore`) alongside the exposure score, written to `exposure.json`'s `secure_score` field; it feeds the report's 12-month score trend chart. `mde changes` reads vulnerability status deltas since `--since-days` (default 7, max 14 — the MDE delta API caps `sinceTime` at 14 days) into `vuln-changes.jsonl`, which drives the report's "patched in the last 7 days" counts per product.
 
 ## Outputs
 
-Written under the run directory: `machines.json`, `vulns.jsonl`, `recommendations.json`, `exposure.json`. A one-line summary per collector is printed to stdout — that summary, not the raw files, is what you should read back.
+Written under the run directory: `machines.json`, `vulns.jsonl`, `recommendations.json`, `exposure.json`, `vuln-changes.jsonl`. A one-line summary per collector is printed to stdout — that summary, not the raw files, is what you should read back.
 
 ## Gotchas
 

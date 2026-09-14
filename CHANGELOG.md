@@ -2,11 +2,21 @@
 
 ## Unreleased
 
+- Accepted-risk exceptions: `dva exception list|add|remove|suggest` records known, accepted risks per tenant (a product or a CVE, with a reason, owner and expiry); excepted products are pulled out of scoring and the report and listed under `accepted_risks`, and re-enter ranking flagged once expired. `dva exception suggest` proposes candidates (embedded components, evidence bundled across unrelated products, no vendor fix, end of support).
+- SLA age: products carrying a CVE overdue against `scoring.yaml`'s `sla_days` get an `overdue_boost` to their score; the report shows an "Overdue by N days" pill and the estate-wide `sla_breaches` count.
+- End of support, fix-version rollups and vendor advisories: `Product.eos` flags software Defender marks end-of-support; `Product.fixes` rolls up which vendor update fixes how many open CVEs; the agent now also calls `get_vendor_advisory` per described CVE and the report links advisory ids (Red Hat, MSRC, Ubuntu).
+- Exploit maturity and ransomware signals parsed from the CVE server feed a fifth threat-score weight (`ransomware`) alongside CVSS/EPSS/KEV/exploit.
+- Identity context and compensating controls: `privileged-logons` and `mitigations` hunting queries feed new `privileged_user` and `mitigated` asset bonuses; `mitigation-catalog` helps pick compensating-control ids.
+- Attack paths (cloud tenants): `dva cloud attack-paths` and the new `attack_path` asset bonus.
+- Trend and ticket export: `findings.json` gains a run-to-run `trend` and a 12-month `score_trend` (secure score included), plus new/fixed CVE diffs by severity; `dva report --tickets` (included in `--all`) writes `tickets.json`, one ticket per action item.
+- Posture appendix: `certificates` and `config-findings` hunting queries surface expiring certificates and non-compliant configuration in both reports (not scored).
+- Per-tenant SQLite store (`dva.sqlite`) is now the sole source of truth for CVE intel and backs run history for trend reporting without rescanning old runs.
+- `dva mde changes` collects vulnerability status deltas (`vuln-changes.jsonl`); `mde score` also records the organization's secure score; the report shows CVEs patched in the last 7 days per product and an estate-wide total.
 - Installation-path evidence per product (DeviceTvmSoftwareEvidenceBeta), generalized across devices and shown collapsed in both reports; `dva hunt evidence`.
 - Plain-language risk summary per product, built from the driving CVE, its description (via `lookup_cve`), CVSS vector and asset exposure.
 - Tenant display name resolved through Graph `findTenantInformationByTenantId` (optional `CrossTenantInformation.ReadBasic.All`), with `DVA_TENANT_NAME` and directory-name fallbacks.
 - Exposure scores rounded to two decimals.
-- HTML report: filter and sort bar now sits directly above the list it controls.
+- HTML report: filter and sort bar now sits directly above the list it controls; new inline SVG sparklines for the trend and 12-month score chart.
 
 ## 0.2.0 - 2026-09-14
 

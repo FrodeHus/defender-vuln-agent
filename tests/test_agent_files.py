@@ -6,7 +6,9 @@ def test_agent_definition():
     fm = text.split("---")[1]
     assert "name: vuln-assessor" in fm and "model: sonnet" in fm
     assert re.search(r"tools:.*Bash", fm) and "mcp__cve-mcp__" in fm
-    for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --list", "triage_cve", "depth", "lookup_cve", "describe", "dva enrich --store", "dva score", "dva report --all"]:
+    for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --list", "triage_cve", "depth", "lookup_cve", "describe",
+                 "get_vendor_advisory", "privileged-logons", "certificates", "dva enrich --store", "dva score", "dva report --all",
+                 "exception suggest", "exception add"]:
         assert step in text
     assert "never read raw" in text.lower() or "never cat" in text.lower()
     assert "<<'TXT'" in text

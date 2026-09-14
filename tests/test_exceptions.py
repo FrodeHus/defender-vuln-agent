@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -10,6 +10,7 @@ from dva.errors import DvaError
 from dva.config import load_scoring
 from dva.cache import IntelCache
 from dva.rollup import build
+from dva.run import Run
 from tests.test_rollup import seed
 
 
@@ -198,3 +199,72 @@ def test_cli_add_without_product_or_cve_exits_1(tmp_path, monkeypatch, capsys):
     rc = main(["exception", "add", "--reason", "x", "--until", "2099-01-01"])
     assert rc == 1
     assert "requires --product or --cve" in capsys.readouterr().err
+
+
+def test_suggest_embedded_component_and_bundled_across_products(tmp_path, monkeypatch):
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    (tmp_path / "tenant").mkdir()
+    run = Run.create(tmp_path / "runs")
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "d1", "vendor": "openssl", "product": "openssl", "version": "1.1.1",
+         "cve_id": "CVE-2023-0286", "severity": "High", "cvss": 7.4, "exploitability": "NoExploit",
+         "first_seen": "2026-01-01", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    run.write_json("hunt-evidence.json", {"results": [
+        {"SoftwareVendor": "openssl", "SoftwareName": "openssl", "Kind": "disk", "Path": r"C:\Program Files\VendorA\lib\libssl.dll", "Devices": 1},
+        {"SoftwareVendor": "openssl", "SoftwareName": "openssl", "Kind": "disk", "Path": r"C:\Program Files\VendorB\lib\libssl.dll", "Devices": 1},
+        {"SoftwareVendor": "openssl", "SoftwareName": "openssl", "Kind": "disk", "Path": "/opt/nginx/lib/libssl.so", "Devices": 1},
+    ]})
+    suggestions = exc.suggest(run, load_scoring())
+    row = next(s for s in suggestions if s["product"] == "openssl/openssl")
+    assert "embedded component" in row["reasons"]
+    assert "bundled across 3 products" in row["reasons"]
+    assert "no vendor fix" in row["reasons"]  # no Defender recommendation at all
+    assert row["suggested_until"] == (date.today() + timedelta(days=90)).isoformat()
+
+
+def test_suggest_end_of_support_reason(tmp_path, monkeypatch):
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    (tmp_path / "tenant").mkdir()
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-product-versions.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.0",
+         "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-01-01", "Devices": 1},
+    ]})
+    suggestions = exc.suggest(run, load_scoring())
+    row = next(s for s in suggestions if s["product"] == "ivanti/connect-secure")
+    assert "end of support" in row["reasons"]
+
+
+def test_suggest_skips_already_excepted_products(tmp_path, monkeypatch):
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    (tmp_path / "tenant").mkdir()
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-product-versions.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.0",
+         "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-01-01", "Devices": 1},
+    ]})
+    items = [exc.Exception_(product="ivanti/connect-secure", cve=None, reason="already tracked", until="2099-01-01",
+                             owner="frode", added=datetime.now(timezone.utc).isoformat(), source="user")]
+    exc.save(exc.path_for_current(), items)
+    suggestions = exc.suggest(run, load_scoring())
+    assert not any(s["product"] == "ivanti/connect-secure" for s in suggestions)
+
+
+def test_cli_suggest_writes_file_and_exits_0(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    monkeypatch.setenv("DVA_RUNS_DIR", str(tmp_path / "runs"))
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    (tmp_path / "tenant").mkdir()
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-product-versions.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.0",
+         "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-01-01", "Devices": 1},
+    ]})
+    from dva.__main__ import main
+    rc = main(["exception", "suggest"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"product": "ivanti/connect-secure"' in out or '"product":"ivanti/connect-secure"' in out
+    assert run.path("exception-suggestions.json").exists()

@@ -20,8 +20,8 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 
 | Key | Default | Meaning |
 |---|---|---|
-| `threat_weights` | cvss 0.35, epss 0.25, kev 0.25, exploit 0.15 | Weights of the four threat signals in a CVE's threat score |
-| `asset_bonus` | internet_facing 0.6, exposure_high 0.4, exposure_medium 0.2, device_value_high 0.4, criticality_tag 0.5, public_lb 0.6 | Additive multiplier bonuses for asset context |
+| `threat_weights` | cvss 0.35, epss 0.25, kev 0.25, exploit 0.15, ransomware 0.10 | Weights of the five threat signals in a CVE's threat score (they sum to 1.10 before the score is capped at 1) |
+| `asset_bonus` | internet_facing 0.6, exposure_high 0.4, exposure_medium 0.2, device_value_high 0.4, criticality_tag 0.5, public_lb 0.6, privileged_user 0.4, attack_path 0.6, mitigated -0.2 | Additive multiplier bonuses (and one discount, `mitigated`) for asset context |
 | `asset_cap` | 2.5 | Ceiling for the asset multiplier |
 | `criticality_tags` | Tier0, Prod, DMZ | Device tags (case-insensitive) that earn `criticality_tag` |
 | `enrich_top_per_product` | 3 | CVEs per product sent for enrichment, ranked by Defender CVSS, exploitability, then recency |
@@ -31,6 +31,11 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 | `top_n` | 10 | Products always listed and tracked in the run-to-run diff |
 | `cache_ttl_days` | 7 | How long CVE intel stays fresh before it is fetched again |
 | `bands` | critical 80, high 60, medium 40 | Label thresholds |
+| `sla_days` | critical 14, high 30, medium 90, low 180 | Age (from a CVE's earliest `first_seen`) after which it counts as an SLA breach for its severity |
+| `overdue_boost` | 1.10 | Multiplier applied to a product's score, before the cap, when it has any overdue CVE |
+| `mitigation_configs` | [] | `DeviceTvmSecureConfigurationAssessment` `ConfigurationId`s treated as compensating controls for the `mitigations` hunting query and the `mitigated` asset bonus; pick ids from the `mitigation-catalog` query. Empty list skips the query. |
+| `exception_components` | openssl, zlib, curl, libxml2, libxslt, sqlite, log4j, jre, jdk, java, python, node, ".net runtime", redistributable, msxml, expat, libpng | Case-insensitive substrings of a product's name that `dva exception suggest` flags as a commonly-bundled embedded component |
+| `trend_runs` | 8 | How many previous runs' `findings.json` feed the run-to-run trend table when no SQLite store history is available |
 
 Edit, then re-run only `dva score` and `dva report --all`; no re-collection needed. A tenant can carry its own copy at `tenants/<name>/scoring.yaml`, which replaces the defaults entirely for that tenant.
 
@@ -42,25 +47,30 @@ Edit, then re-run only `dva score` and `dva report --all`; no re-collection need
 | `hunting` | true | Run Advanced Hunting queries |
 | `cloud` | false | Collect Defender for Cloud findings via Azure Resource Graph |
 | `subscriptions` | [] | Subscription ids for `cloud` (the app needs `Reader` on each) |
-| `hunting_queries` | the five named queries | Queries `dva hunt` runs when given no names |
+| `hunting_queries` | internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, privileged-logons, mitigations, certificates, config-findings | Queries `dva hunt` runs when given no names |
 | `shared_cve_cache` | false | When true, CVE intel is shared across all tenants in one file at `<repo>/.cache/cve.sqlite` instead of each tenant's own cache. Run history stays per tenant regardless. |
 
 A tenant's `tenants/<name>/sources.yaml` is merged over the defaults, so it can contain only the keys that differ, typically `cloud` and `subscriptions`.
 
 ## `dva.sqlite` store
 
-Each tenant's cache directory holds `dva.sqlite` (mode 600, WAL journaling): a `cve_intel` table backing `IntelCache` and a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score` once Task 9 lands, and per-product scores) for trend reporting without rescanning old `findings.json` files. The store is the sole source of truth for CVE intel: `dva/cache.py`'s `IntelCache.get`/`put`/`all_fresh` read and write only the store. Pre-existing per-CVE JSON files from before this cache was store-backed are imported into the store once, the first time a cache directory is opened; after that the JSON files are never read again, even if new ones are dropped in later. `dva/score_cmd.py`'s `compute()` reads trend rows from the store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.
+Each tenant's cache directory holds `dva.sqlite` (mode 600, WAL journaling): a `cve_intel` table backing `IntelCache` and a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score`, and per-product scores) for trend reporting without rescanning old `findings.json` files. The store is the sole source of truth for CVE intel: `dva/cache.py`'s `IntelCache.get`/`put`/`all_fresh` read and write only the store. Pre-existing per-CVE JSON files from before this cache was store-backed are imported into the store once, the first time a cache directory is opened; after that the JSON files are never read again, even if new ones are dropped in later. `dva/score_cmd.py`'s `compute()` reads trend rows from the store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.
+
+## `exceptions.yaml`
+
+Accepted-risk exceptions live at `tenants/<name>/exceptions.yaml` while a tenant is active, else `config/exceptions.yaml` (`config/exceptions.example.yaml` is the committed template); both are gitignored, mode 600, and per tenant. Each entry names either a `product` (vendor/name key) or a `cve` id, a `reason`, a required `until` ISO date, an optional `owner`, an `added` timestamp and a `source` (`user` or `suggested`). Manage the file only with `dva exception list|add|remove|suggest` — never edit it by hand; the agent follows the same rule and only adds an exception when the user explicitly confirms it, with `--owner` set to their name. See [usage.md](usage.md#exceptions-accepted-risk) for the commands and how exceptions affect scoring.
 
 ## Tenants
 
 ```
 tenants/
   contoso/
-    .env            credentials (mode 600)
-    scoring.yaml    optional, replaces config/scoring.yaml for this tenant
-    sources.yaml    optional, merged over config/sources.yaml
-    runs/           this tenant's runs
-    .cache/         this tenant's token and CVE caches
+    .env             credentials (mode 600)
+    scoring.yaml      optional, replaces config/scoring.yaml for this tenant
+    sources.yaml      optional, merged over config/sources.yaml
+    exceptions.yaml   accepted-risk exceptions for this tenant (mode 600)
+    runs/             this tenant's runs
+    .cache/           this tenant's token and CVE caches, and dva.sqlite
 ```
 
 `dva tenant init NAME` creates the skeleton; `dva tenant list` and `dva tenant show` inspect. Nothing is shared between tenants except code and the repo-level defaults. The whole `tenants/` directory is gitignored.
@@ -71,4 +81,4 @@ The Claude Code agent is `.claude/agents/vuln-assessor.md`; its `model:` line pi
 
 ## CVE server
 
-`.mcp.json` starts `cve-mcp` with the project venv's interpreter. Its API keys come from `../cve-mcp-server/.env`. Only `triage_cve` is required; the parser also understands `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev` and `check_poc_exists` output if you save any of those into the run directory.
+`.mcp.json` starts `cve-mcp` with the project venv's interpreter. Its API keys come from `../cve-mcp-server/.env`. Only `triage_cve` is required; the parser also understands `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists` and `get_vendor_advisory` output if you save any of those into the run directory.

@@ -6,15 +6,21 @@ committed template. Exceptions are managed only through this CLI — never by ha
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
 
 from dva.errors import DvaError
 from dva.model import Product
+
+_TOP_LEVEL_FOLDER_RE = re.compile(
+    r"^(?:%ProgramFiles%\\|%ProgramFiles\(x86\)%\\|%LOCALAPPDATA%\\|/opt/|/usr/lib/)([^\\/]+)"
+)
 
 
 @dataclass
@@ -121,6 +127,51 @@ def apply(products: dict[str, Product], items_active: list[Exception_]) -> tuple
     return remaining, dropped
 
 
+def suggest(run, cfg) -> list[dict]:
+    """Score-reason suggestions for accepted-risk exceptions (spec §1).
+
+    Reuses `score_cmd.compute` for "the products the report would list" so this stays exactly
+    in sync with the report, and so products already under an active exception are skipped for
+    free (`compute` removes them before scoring). Reasons, per product:
+    - "embedded component": `name` contains one of `cfg.exception_components` (case-insensitive);
+    - "bundled across N products": the product's own evidence paths span 3+ distinct top-level
+      product folders (the segment after %ProgramFiles%\\, %ProgramFiles(x86)%\\, %LOCALAPPDATA%\\,
+      /opt/ or /usr/lib/);
+    - "no vendor fix": no Defender recommendation for the product, or its remediation type is
+      Uninstall/ConfigurationChange;
+    - "end of support": the product is flagged EOS.
+    Only products with at least one reason are returned.
+    """
+    from dva.cache import IntelCache
+    from dva.run import cache_dir
+    from dva.score_cmd import compute
+
+    doc = compute(run, cfg, IntelCache(cache_dir() / "cve", cfg.cache_ttl_days))
+    suggested_until = (date.today() + timedelta(days=90)).isoformat()
+    out: list[dict] = []
+    for row in doc["products"]:
+        reasons: list[str] = []
+        name_l = (row.get("product") or "").lower()
+        if any(component.lower() in name_l for component in cfg.exception_components):
+            reasons.append("embedded component")
+        top_level: set[str] = set()
+        for entry in row.get("paths") or []:
+            m = _TOP_LEVEL_FOLDER_RE.match(entry.get("path") or "")
+            if m:
+                top_level.add(m.group(1))
+        if len(top_level) >= 3:
+            reasons.append(f"bundled across {len(top_level)} products")
+        remediation_type = row.get("remediation_type")
+        if not remediation_type or remediation_type in ("Uninstall", "ConfigurationChange"):
+            reasons.append("no vendor fix")
+        if row.get("eos"):
+            reasons.append("end of support")
+        if not reasons:
+            continue
+        out.append({"product": row["key"], "name": row.get("product"), "reasons": reasons, "suggested_until": suggested_until})
+    return out
+
+
 def register(sub) -> None:
     p = sub.add_parser("exception", help="Manage accepted-risk exceptions for the active tenant")
     s = p.add_subparsers(dest="exception_cmd", required=True)
@@ -139,6 +190,11 @@ def register(sub) -> None:
     r.add_argument("--product", help="product key to remove")
     r.add_argument("--cve", help="CVE id to remove")
     r.set_defaults(func=_remove)
+
+    g = s.add_parser("suggest", help="suggest accepted-risk exceptions for products the report would list")
+    from dva.run import add_run_arg
+    add_run_arg(g)
+    g.set_defaults(func=_suggest)
 
 
 def _validate_key_against_latest_run(product: str | None, cve: str | None) -> None:
@@ -193,6 +249,21 @@ def _remove(args) -> int:
         raise DvaError(f"no matching exception found for {'product ' + args.product if args.product else 'CVE ' + args.cve}")
     save(path, kept)
     print(f"removed exception for {'product ' + args.product if args.product else 'CVE ' + args.cve}")
+    return 0
+
+
+def _suggest(args) -> int:
+    from dva.config import load_scoring
+    from dva.run import resolve_run
+    run = resolve_run(args)
+    suggestions = suggest(run, load_scoring())
+    for s in suggestions:
+        print(json.dumps(s))
+    run.write_json("exception-suggestions.json", suggestions)
+    if suggestions:
+        print(f"{len(suggestions)} exception suggestion(s) written to exception-suggestions.json")
+    else:
+        print("no exception suggestions")
     return 0
 
 

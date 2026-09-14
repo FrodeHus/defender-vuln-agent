@@ -2,12 +2,15 @@
 
 A read-only vulnerability assessment tool for Microsoft Defender estates, with a Claude Code agent that runs it end to end.
 
-It pulls device inventory and per-device vulnerabilities from Defender for Endpoint, runs Advanced Hunting queries for exposure context, optionally adds Defender for Cloud findings, enriches the CVEs that matter with CVSS, EPSS, CISA KEV and public-exploit intelligence through a local [CVE MCP server](https://github.com/mukul975/cve-mcp-server), scores **software products** (one patch action each) rather than individual CVEs, and writes Markdown, HTML and JSON reports that say what to patch first and where.
+It pulls device inventory and per-device vulnerabilities from Defender for Endpoint, runs Advanced Hunting queries for exposure context (internet-facing, exploited CVEs, privileged logons, compensating controls, installation evidence, certificates, configuration findings), optionally adds Defender for Cloud findings and attack paths, enriches the CVEs that matter with CVSS, EPSS, CISA KEV, exploit maturity/ransomware, and public-exploit intelligence through a local [CVE MCP server](https://github.com/mukul975/cve-mcp-server), scores **software products** (one patch action each) rather than individual CVEs, and writes Markdown, HTML and JSON reports that say what to patch first and where.
 
 - **Read-only by construction.** The app registration holds only read permissions.
-- **Multi-tenant.** Each tenant has its own credentials, runs, caches and config; ask for an assessment by tenant name.
+- **Multi-tenant.** Each tenant has its own credentials, runs, caches, per-tenant SQLite store and config; ask for an assessment by tenant name.
 - **Nothing sensitive leaves your machine** except CVE identifiers sent to the CVE server you run locally.
 - **Works without the agent.** Every step is a `dva` command; the whole pipeline also runs offline on fixtures.
+- **Prioritized, not just listed.** SLA-age boosts, end-of-support and attack-path flags, fix-version rollups and a 12-month exposure/secure-score trend surface what actually needs attention first.
+- **Accepted risk, tracked.** `dva exception` records known, accepted risks (bundled components, EOS software on a deprecation plan) so they stop competing for attention while staying visible in the report; `dva exception suggest` proposes candidates.
+- **Ticket-ready.** `dva report --tickets` exports one ticket per action item, ready to hand to a ticketing system.
 
 ## Quick start
 
@@ -54,12 +57,13 @@ An executive summary with the estate's exposure score and what changed since the
 export DVA_TENANT=contoso
 export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all
-python3 -m dva hunt internet-facing exploited-cves device-tags evidence
+python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings
 python3 -m dva enrich --list                                  # CVE ids to look up
 # call the CVE server's triage_cve for each id, saving to $DVA_RUN/cve-triage-<id>.txt, then:
 python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt
 python3 -m dva score
-python3 -m dva report --all
+python3 -m dva report --all                                   # includes tickets.json
+python3 -m dva exception suggest                               # suggested accepted-risk exceptions
 ```
 
 ## Requirements
