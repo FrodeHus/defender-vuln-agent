@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.11 or newer, `git`, and `bash`.
+- [uv](https://docs.astral.sh/uv/) (recommended; it installs the right Python and the locked dependencies) or Python 3.11+ with `pip`; `git` and `bash`.
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) if you want the agent (the CLI works without it).
 - The [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) to create the app registration with the provided script (you can also create it by hand).
 - A Microsoft Entra tenant with Defender for Endpoint, and an account that can grant admin consent for application permissions.
@@ -16,9 +16,17 @@ cd defender-vuln-agent
 scripts/install.sh
 ```
 
-The script creates `.venv`, installs this package, clones and installs the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) next to the repo (into the same venv, which is how `.mcp.json` starts it), copies `.env.example` to `.env`, and runs the test suite. Pass `--cve-server-dir DIR` if you already have a clone elsewhere.
+The script uses `uv` when it is installed: `uv sync --locked` creates `.venv` from `uv.lock` (exact, reproducible versions), then it clones and installs the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) next to the repo into the same environment (which is how `.mcp.json` starts it), copies `.env.example` to `.env`, and runs the test suite. Without `uv` it falls back to `python3 -m venv` and `pip`. Pass `--cve-server-dir DIR` if you already have a clone elsewhere.
 
-Manual equivalent:
+Manual equivalent with uv:
+
+```bash
+uv sync --locked
+git clone https://github.com/mukul975/cve-mcp-server ../cve-mcp-server
+uv pip install -e ../cve-mcp-server
+```
+
+Manual equivalent with pip:
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -26,6 +34,8 @@ pip install -e ".[dev]"
 git clone https://github.com/mukul975/cve-mcp-server ../cve-mcp-server
 pip install -e ../cve-mcp-server
 ```
+
+Either way the environment lives in `.venv`; run commands as `uv run dva ...` or activate it (`source .venv/bin/activate`) and use `python3 -m dva ...`. The docs show the activated form.
 
 ## 2. NVD API key
 
@@ -106,4 +116,4 @@ Continue with [usage.md](usage.md).
 
 ## Upgrading
 
-`git pull`, then `pip install -e ".[dev]"` again if `pyproject.toml` changed. Run directories, caches and tenant folders are untouched by upgrades. Check `CHANGELOG.md` for changes to `config/scoring.yaml` keys; a missing key fails loudly at startup.
+`git pull`, then `uv sync --locked` (or `pip install -e ".[dev]"` without uv) if `pyproject.toml` or `uv.lock` changed. Run directories, caches and tenant folders are untouched by upgrades. Check `CHANGELOG.md` for changes to `config/scoring.yaml` keys; a missing key fails loudly at startup.

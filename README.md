@@ -17,7 +17,7 @@ It pulls device inventory and per-device vulnerabilities from Defender for Endpo
 ```bash
 git clone https://github.com/frodehus/defender-vuln-agent
 cd defender-vuln-agent
-scripts/install.sh                                   # venv, package, cve-mcp-server, tests
+scripts/install.sh                                   # uv sync (or venv+pip), cve-mcp-server, tests
 echo "NVD_API_KEY=<your key>" >> ../cve-mcp-server/.env
 az login
 setup/create-app.sh --tenant contoso                 # app registration + tenants/contoso/.env

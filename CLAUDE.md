@@ -7,11 +7,11 @@ A read-only vulnerability assessment tool for Microsoft Defender estates. `dva` 
 ## Build and test
 
 ```bash
-source .venv/bin/activate
-python3 -m pytest -q        # 197 tests, no credentials or network needed
+uv sync --locked            # creates .venv from uv.lock (pip fallback: pip install -e ".[dev]")
+uv run pytest -q -W error   # ~200 tests, no credentials or network needed; CI runs the same
 ```
 
-`scripts/install.sh` creates `.venv`, installs this package and `cve-mcp-server` next to it, and runs the suite. The whole pipeline also runs offline with `--fixture` inputs (`tests/test_e2e.py`).
+`scripts/install.sh` runs `uv sync --locked` (falls back to venv + pip), installs `cve-mcp-server` next to the repo into the same `.venv`, and runs the suite. Commands in docs assume an activated `.venv` (`source .venv/bin/activate`); `uv run ...` works without activating. The whole pipeline also runs offline with `--fixture` inputs (`tests/test_e2e.py`).
 
 Golden report files regenerate with `DVA_UPDATE_GOLDEN=1 python3 -m pytest tests/test_report_md.py`; review the diff before committing.
 

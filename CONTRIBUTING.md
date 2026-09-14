@@ -5,9 +5,9 @@ Thanks for helping. This project is small and test-driven; the bar for a change 
 ## Set up
 
 ```bash
-scripts/install.sh          # venv, package, cve-mcp-server, runs the tests
-source .venv/bin/activate
-python3 -m pytest -q        # 90+ tests, no credentials or network needed
+scripts/install.sh          # uv sync --locked (or venv+pip), cve-mcp-server, runs the tests
+uv run pytest -q -W error   # ~200 tests, no credentials or network needed
+# or: source .venv/bin/activate && python3 -m pytest -q -W error
 ```
 
 The whole pipeline runs offline with `--fixture` inputs (see [docs/usage.md](docs/usage.md#offline-demo)); `tests/test_e2e.py` exercises it end to end.

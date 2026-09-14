@@ -323,7 +323,7 @@ wheels = [
 
 [[package]]
 name = "defender-vuln-agent"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "msal" },
@@ -336,6 +336,11 @@ dev = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "msal", specifier = ">=1.28" },
@@ -344,6 +349,9 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "idna"

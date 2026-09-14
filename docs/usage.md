@@ -27,7 +27,7 @@ The agent runs on Claude Sonnet by design (see `agents/vuln-assessor.md`); chang
 Every command accepts `--tenant NAME` before the subcommand, or `DVA_TENANT=NAME` in the environment. Omit both for a single-tenant install.
 
 ```bash
-source .venv/bin/activate
+source .venv/bin/activate                                   # or prefix each command with: uv run
 export DVA_TENANT=contoso                                   # optional
 export DVA_RUN=$(python3 -m dva run new)                    # new run directory
 python3 -m dva doctor
