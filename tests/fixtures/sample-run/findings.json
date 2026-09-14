@@ -1,0 +1,583 @@
+{
+  "run": {
+    "run_id": "20260914T080000Z",
+    "started_at": "2026-09-14T08:00:00+00:00",
+    "sources": {
+      "mde.machines": {
+        "status": "ok",
+        "count": 4200,
+        "error": null
+      },
+      "hunting.internet-facing": {
+        "status": "ok",
+        "count": 187,
+        "error": null
+      }
+    }
+  },
+  "summary": {
+    "devices": 4200,
+    "products_total": 42,
+    "products_action": 6,
+    "kev_cves": 6,
+    "internet_facing_at_risk": 23,
+    "exposure_score": 61.0,
+    "previous_exposure_score": 54.0,
+    "generated_at": "2026-09-14T08:00:00+00:00",
+    "tenant": "Contoso"
+  },
+  "products": [
+    {
+      "rank": 1,
+      "key": "ivanti/connect-secure",
+      "vendor": "Ivanti",
+      "product": "Connect Secure",
+      "score": 97,
+      "label": "Critical",
+      "counts": {
+        "critical": 4,
+        "high": 7,
+        "medium": 12,
+        "low": 3
+      },
+      "flags": {
+        "kev": true,
+        "exploit": true,
+        "internet_facing": true
+      },
+      "reason": "VPN gateways, all internet-facing, two KEV entries added this week",
+      "remediation": "Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.",
+      "remediation_type": "version_update",
+      "recommended_version": "22.7R2.5",
+      "versions": [
+        "22.6R1",
+        "22.7R1"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2026-21887",
+          "severity": "Critical",
+          "cvss": 9.8,
+          "epss": 0.94,
+          "kev": true,
+          "poc": true,
+          "title": "Unauthenticated remote code execution in web component"
+        },
+        {
+          "id": "CVE-2026-20124",
+          "severity": "Critical",
+          "cvss": 9.1,
+          "epss": 0.71,
+          "kev": true,
+          "poc": false,
+          "title": "Authentication bypass in SAML endpoint"
+        },
+        {
+          "id": "CVE-2025-46512",
+          "severity": "High",
+          "cvss": 8.2,
+          "epss": 0.33,
+          "kev": false,
+          "poc": true,
+          "title": "Path traversal allowing config read"
+        }
+      ],
+      "assets": {
+        "count": 6,
+        "breakdown": "All 6 internet-facing \u00b7 6 Tier0 \u00b7 exposure High",
+        "top": [
+          {
+            "name": "vpn-gw-01",
+            "why": "Internet-facing \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "vpn-gw-02",
+            "why": "Internet-facing \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "vpn-gw-03",
+            "why": "Internet-facing \u00b7 Tier0"
+          },
+          {
+            "name": "vpn-gw-04",
+            "why": "Internet-facing \u00b7 Tier0"
+          },
+          {
+            "name": "vpn-gw-05",
+            "why": "Internet-facing \u00b7 Tier0"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2025-46512",
+        "CVE-2026-20124",
+        "CVE-2026-21887"
+      ],
+      "all_assets": [
+        "vpn-gw-01",
+        "vpn-gw-02",
+        "vpn-gw-03",
+        "vpn-gw-04",
+        "vpn-gw-05"
+      ],
+      "partial_intel": false
+    },
+    {
+      "rank": 2,
+      "key": "fortinet/forticlient-ems",
+      "vendor": "Fortinet",
+      "product": "FortiClient EMS",
+      "score": 91,
+      "label": "Critical",
+      "counts": {
+        "critical": 2,
+        "high": 3,
+        "medium": 5,
+        "low": 1
+      },
+      "flags": {
+        "kev": true,
+        "exploit": true,
+        "internet_facing": true
+      },
+      "reason": "Management server reachable from the internet, KEV-listed SQL injection",
+      "remediation": "Upgrade to 7.4.3. Restrict admin interface to the management VLAN.",
+      "remediation_type": "version_update",
+      "recommended_version": "7.4.3",
+      "versions": [
+        "7.2.4"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2026-24471",
+          "severity": "Critical",
+          "cvss": 9.8,
+          "epss": 0.89,
+          "kev": true,
+          "poc": true,
+          "title": "SQL injection in DAS component"
+        },
+        {
+          "id": "CVE-2025-52970",
+          "severity": "Critical",
+          "cvss": 9.1,
+          "epss": 0.42,
+          "kev": false,
+          "poc": false,
+          "title": "Improper access control on API"
+        },
+        {
+          "id": "CVE-2025-49202",
+          "severity": "High",
+          "cvss": 7.5,
+          "epss": 0.12,
+          "kev": false,
+          "poc": false,
+          "title": "Information disclosure via log endpoint"
+        }
+      ],
+      "assets": {
+        "count": 3,
+        "breakdown": "3 internet-facing \u00b7 3 Prod \u00b7 Azure VMs",
+        "top": [
+          {
+            "name": "ems-prod-01",
+            "why": "Internet-facing \u00b7 Prod \u00b7 High"
+          },
+          {
+            "name": "ems-prod-02",
+            "why": "Internet-facing \u00b7 Prod \u00b7 High"
+          },
+          {
+            "name": "ems-dr-01",
+            "why": "Internet-facing \u00b7 DR"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2025-49202",
+        "CVE-2025-52970",
+        "CVE-2026-24471"
+      ],
+      "all_assets": [
+        "ems-dr-01",
+        "ems-prod-01",
+        "ems-prod-02"
+      ],
+      "partial_intel": false
+    },
+    {
+      "rank": 3,
+      "key": "microsoft/exchange-server-2019",
+      "vendor": "Microsoft",
+      "product": "Exchange Server 2019",
+      "score": 88,
+      "label": "Critical",
+      "counts": {
+        "critical": 3,
+        "high": 5,
+        "medium": 9,
+        "low": 4
+      },
+      "flags": {
+        "kev": true,
+        "exploit": true,
+        "internet_facing": true
+      },
+      "reason": "OWA published externally, KEV entry with public proof of concept",
+      "remediation": "Install September 2026 SU (KB5052xxx). Enable Extended Protection.",
+      "remediation_type": "patch",
+      "recommended_version": null,
+      "versions": [
+        "15.2.1544"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2026-21410",
+          "severity": "Critical",
+          "cvss": 9.8,
+          "epss": 0.82,
+          "kev": true,
+          "poc": true,
+          "title": "Remote code execution via NTLM relay"
+        },
+        {
+          "id": "CVE-2026-21334",
+          "severity": "Critical",
+          "cvss": 8.8,
+          "epss": 0.55,
+          "kev": false,
+          "poc": true,
+          "title": "Privilege escalation in PowerShell backend"
+        },
+        {
+          "id": "CVE-2025-53786",
+          "severity": "High",
+          "cvss": 8.0,
+          "epss": 0.19,
+          "kev": false,
+          "poc": false,
+          "title": "Hybrid configuration elevation of privilege"
+        }
+      ],
+      "assets": {
+        "count": 4,
+        "breakdown": "4 internet-facing \u00b7 4 Tier0 \u00b7 device group Messaging",
+        "top": [
+          {
+            "name": "exch-01",
+            "why": "Internet-facing \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "exch-02",
+            "why": "Internet-facing \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "exch-03",
+            "why": "Internet-facing \u00b7 Tier0"
+          },
+          {
+            "name": "exch-04",
+            "why": "Internet-facing \u00b7 Tier0"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2025-53786",
+        "CVE-2026-21334",
+        "CVE-2026-21410"
+      ],
+      "all_assets": [
+        "exch-01",
+        "exch-02",
+        "exch-03",
+        "exch-04"
+      ],
+      "partial_intel": false
+    },
+    {
+      "rank": 4,
+      "key": "microsoft/windows-server-2019",
+      "vendor": "Microsoft",
+      "product": "Windows Server 2019",
+      "score": 79,
+      "label": "High",
+      "counts": {
+        "critical": 5,
+        "high": 22,
+        "medium": 61,
+        "low": 40
+      },
+      "flags": {
+        "kev": true,
+        "exploit": true,
+        "internet_facing": false
+      },
+      "reason": "Largest fleet, one KEV-listed kernel CVE, 40 hosts marked High value",
+      "remediation": "Deploy September 2026 cumulative update via ring 2. Reboot required.",
+      "remediation_type": "patch",
+      "recommended_version": null,
+      "versions": [
+        "10.0.17763"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2026-21335",
+          "severity": "Critical",
+          "cvss": 8.8,
+          "epss": 0.61,
+          "kev": true,
+          "poc": true,
+          "title": "Win32k elevation of privilege"
+        },
+        {
+          "id": "CVE-2026-21290",
+          "severity": "Critical",
+          "cvss": 9.0,
+          "epss": 0.27,
+          "kev": false,
+          "poc": false,
+          "title": "LDAP remote code execution"
+        },
+        {
+          "id": "CVE-2026-21250",
+          "severity": "High",
+          "cvss": 7.8,
+          "epss": 0.14,
+          "kev": false,
+          "poc": false,
+          "title": "Kerberos elevation of privilege"
+        }
+      ],
+      "assets": {
+        "count": 312,
+        "breakdown": "40 Tier0 \u00b7 9 internet-facing \u00b7 118 exposure High \u00b7 9 device groups",
+        "top": [
+          {
+            "name": "dc-01",
+            "why": "Domain controller \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "dc-02",
+            "why": "Domain controller \u00b7 Tier0 \u00b7 High"
+          },
+          {
+            "name": "adfs-01",
+            "why": "Internet-facing \u00b7 Tier0"
+          },
+          {
+            "name": "web-frontend-03",
+            "why": "Internet-facing \u00b7 Prod"
+          },
+          {
+            "name": "sccm-01",
+            "why": "Tier0 \u00b7 High"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2026-21250",
+        "CVE-2026-21290",
+        "CVE-2026-21335"
+      ],
+      "all_assets": [
+        "adfs-01",
+        "dc-01",
+        "dc-02",
+        "sccm-01",
+        "web-frontend-03"
+      ],
+      "partial_intel": false
+    },
+    {
+      "rank": 5,
+      "key": "adobe/acrobat-reader-dc",
+      "vendor": "Adobe",
+      "product": "Acrobat Reader DC",
+      "score": 66,
+      "label": "High",
+      "counts": {
+        "critical": 3,
+        "high": 11,
+        "medium": 24,
+        "low": 8
+      },
+      "flags": {
+        "kev": true,
+        "exploit": false,
+        "internet_facing": false
+      },
+      "reason": "Installed on most workstations, one KEV-listed CVE, no exposed hosts",
+      "remediation": "Push 24.003.20xxx via Intune. Auto-update policy currently disabled.",
+      "remediation_type": "version_update",
+      "recommended_version": "24.003.20xxx",
+      "versions": [
+        "23.008"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2026-24433",
+          "severity": "Critical",
+          "cvss": 8.6,
+          "epss": 0.45,
+          "kev": true,
+          "poc": false,
+          "title": "Use after free leading to code execution"
+        },
+        {
+          "id": "CVE-2026-24432",
+          "severity": "Critical",
+          "cvss": 7.8,
+          "epss": 0.11,
+          "kev": false,
+          "poc": false,
+          "title": "Out of bounds write in font parser"
+        },
+        {
+          "id": "CVE-2025-47172",
+          "severity": "High",
+          "cvss": 7.8,
+          "epss": 0.06,
+          "kev": false,
+          "poc": false,
+          "title": "Integer overflow in JavaScript engine"
+        }
+      ],
+      "assets": {
+        "count": 1140,
+        "breakdown": "1,140 workstations \u00b7 0 internet-facing \u00b7 62 High value",
+        "top": [
+          {
+            "name": "ws-finance-114",
+            "why": "High value \u00b7 CFO office"
+          },
+          {
+            "name": "ws-legal-021",
+            "why": "High value"
+          },
+          {
+            "name": "ws-hr-007",
+            "why": "High value \u00b7 PII"
+          },
+          {
+            "name": "ws-exec-003",
+            "why": "High value"
+          },
+          {
+            "name": "ws-finance-102",
+            "why": "High value"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2025-47172",
+        "CVE-2026-24432",
+        "CVE-2026-24433"
+      ],
+      "all_assets": [
+        "ws-exec-003",
+        "ws-finance-102",
+        "ws-finance-114",
+        "ws-hr-007",
+        "ws-legal-021"
+      ],
+      "partial_intel": false
+    },
+    {
+      "rank": 6,
+      "key": "zoom/workplace",
+      "vendor": "Zoom",
+      "product": "Zoom Workplace",
+      "score": 18,
+      "label": "Low",
+      "counts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 4,
+        "low": 2
+      },
+      "flags": {
+        "kev": false,
+        "exploit": false,
+        "internet_facing": false
+      },
+      "reason": "Medium severity only, auto-update enabled",
+      "remediation": "No action; auto-update will resolve within 14 days.",
+      "remediation_type": "none",
+      "recommended_version": null,
+      "versions": [
+        "6.1.0"
+      ],
+      "driving_cves": [
+        {
+          "id": "CVE-2025-30663",
+          "severity": "Medium",
+          "cvss": 6.6,
+          "epss": 0.01,
+          "kev": false,
+          "poc": false,
+          "title": "Time-of-check time-of-use race"
+        },
+        {
+          "id": "CVE-2025-30664",
+          "severity": "Medium",
+          "cvss": 6.6,
+          "epss": 0.01,
+          "kev": false,
+          "poc": false,
+          "title": "Improper neutralization of special elements"
+        },
+        {
+          "id": "CVE-2025-30665",
+          "severity": "Low",
+          "cvss": 3.3,
+          "epss": 0.0,
+          "kev": false,
+          "poc": false,
+          "title": "Null pointer dereference"
+        }
+      ],
+      "assets": {
+        "count": 690,
+        "breakdown": "690 workstations \u00b7 0 internet-facing \u00b7 41 High value",
+        "top": [
+          {
+            "name": "ws-exec-003",
+            "why": "High value"
+          },
+          {
+            "name": "ws-exec-004",
+            "why": "High value"
+          },
+          {
+            "name": "ws-finance-114",
+            "why": "High value"
+          }
+        ]
+      },
+      "all_cves": [
+        "CVE-2025-30663",
+        "CVE-2025-30664",
+        "CVE-2025-30665"
+      ],
+      "all_assets": [
+        "ws-exec-003",
+        "ws-exec-004",
+        "ws-finance-114"
+      ],
+      "partial_intel": false
+    }
+  ],
+  "diff_from_previous": {
+    "previous_run_id": "20260907T080000Z",
+    "entered_top10": [
+      "zoom/workplace"
+    ],
+    "left_top10": [
+      "oracle/java-runtime-8"
+    ],
+    "new_kev": [
+      "adobe/acrobat-reader-dc"
+    ]
+  }
+}
