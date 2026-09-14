@@ -3,9 +3,10 @@ import os
 from datetime import datetime, timezone
 from dva.cache import IntelCache
 from dva.config import Scoring, load_scoring
+from dva.errors import DvaError
 from dva.rollup import build, display_name, display_vendor
-from dva.run import Run, add_run_arg, resolve_run, cache_dir, runs_dir
-from dva.scoring import product_score, reason_for, asset_signals
+from dva.run import Run, add_run_arg, resolve_run, cache_dir
+from dva.scoring import product_score, reason_for
 
 
 def _breakdown(assets, cfg: Scoring) -> str:
@@ -45,7 +46,13 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
         })
     exposure = run.read_json("exposure.json") if run.path("exposure.json").exists() else {}
     prev = Run.latest(run.dir.parent, before=run.id)
-    prev_doc = prev.read_json("findings.json") if prev and prev.path("findings.json").exists() else None
+    prev_doc = None
+    if prev and prev.path("findings.json").exists():
+        try:
+            prev_doc = prev.read_json("findings.json")
+        except DvaError as exc:
+            run.log(f"ignoring previous run {prev.id}: {exc}")
+            prev = None
     top_now = [r["key"] for r in rows[: cfg.top_n]]
     top_prev = [r["key"] for r in (prev_doc or {}).get("products", [])[: cfg.top_n]]
     kev_prev = {r["key"] for r in (prev_doc or {}).get("products", []) if r.get("flags", {}).get("kev")}

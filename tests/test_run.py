@@ -53,6 +53,14 @@ def test_latest_skips_corrupt_manifest(tmp_path):
     latest = Run.latest(tmp_path)
     assert latest.id == valid_run.id
 
+def test_read_json_corrupt_raises_dva_error(tmp_path):
+    from dva.errors import DvaError
+    import pytest
+    r = Run.create(tmp_path)
+    (r.dir / "findings.json").write_text("{not valid json")
+    with pytest.raises(DvaError, match="corrupt findings.json"):
+        r.read_json("findings.json")
+
 def test_runs_dir_option(tmp_path, capsys):
     from dva.__main__ import main
     result = main(["run", "new", "--runs-dir", str(tmp_path)])

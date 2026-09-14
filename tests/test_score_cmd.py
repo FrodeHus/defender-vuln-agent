@@ -31,3 +31,16 @@ def test_diff_against_previous(tmp_path):
     d = doc["diff_from_previous"]
     assert d["previous_run_id"] == "20200101T000000Z" and "old/thing" in d["left_top10"] and "ivanti/connect-secure" in d["entered_top10"]
     assert doc["summary"]["previous_exposure_score"] == 61.0
+
+
+def test_corrupt_previous_findings_treated_as_no_previous_run(tmp_path):
+    run = seed(tmp_path / "runs")
+    prev_dir = tmp_path / "runs" / "20200101T000000Z"
+    prev_dir.mkdir()
+    prev_dir.joinpath("manifest.json").write_text('{"run_id": "20200101T000000Z", "sources": {}}')
+    prev_dir.joinpath("findings.json").write_text("{not valid json")
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "c", 7))
+    d = doc["diff_from_previous"]
+    assert d["previous_run_id"] is None
+    assert d["left_top10"] == []
+    assert doc["summary"]["previous_exposure_score"] is None

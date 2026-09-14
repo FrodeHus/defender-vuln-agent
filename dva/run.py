@@ -72,7 +72,10 @@ class Run:
         p = self.path(name)
         if not p.exists():
             raise DvaError(f"missing {name} in run {self.id}; run the collector first")
-        return json.loads(p.read_text())
+        try:
+            return json.loads(p.read_text())
+        except json.JSONDecodeError as exc:
+            raise DvaError(f"corrupt {name} in run {self.id}: {exc}")
 
     def write_jsonl(self, name: str, rows: Iterable[dict]) -> int:
         n = 0
