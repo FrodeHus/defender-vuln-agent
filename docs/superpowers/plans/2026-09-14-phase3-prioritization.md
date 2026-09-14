@@ -159,3 +159,27 @@ CLI: `dva exception list` (table: kind, key, until, owner, status), `add`, `remo
 ## Self-review
 
 Spec §1 → Tasks 2 and 7; §2 → Task 1; §3 → Task 3; §4 → Task 5; §5 → Task 4; §6 → Tasks 1 (advisory parse) and 3; §7 and §8 → Task 6; §9 → Task 4; config additions → Task 1 (all keys added at once so later tasks find them); agent and docs → Task 7. Interfaces named consistently: `Product.eos`, `Product.fixes`, `Asset.privileged_user`, `Asset.mitigations`, `Asset.attack_paths`, `CveIntel.exploit_maturity`, `CveIntel.advisories`, `accepted_risks`, `trend`, `posture`.
+
+---
+
+### Task 8: SQLite store per tenant (CVE intel, run history)
+
+**Files:**
+- Create: `dva/store.py`, `tests/test_store.py`
+- Modify: `dva/cache.py` (`IntelCache` backed by the store; same public API `get/put/all_fresh`), `dva/run.py` (`Run.create` and `score_cmd` record run summaries), `dva/score_cmd.py` (`trend` read from the store when present, falling back to scanning `findings.json` files), `dva/config.py` + `config/sources.yaml` (`shared_cve_cache: false`), `dva/tenant.py` (no change; the store lives at `<cache dir>/dva.sqlite`), `docs/configuration.md`, `docs/architecture.md`
+
+**Interfaces:**
+```python
+class Store:                      # sqlite3 stdlib; WAL mode; file mode 600
+    def __init__(self, path: Path)
+    def get_intel(self, cve_id) -> tuple[dict, str] | None       # (fields, fetched_at)
+    def put_intel(self, cve_id, fields: dict, fetched_at: str)
+    def record_run(self, run_id, tenant, summary: dict, products: list[dict])   # upsert runs + product_history rows
+    def recent_runs(self, n) -> list[dict]                        # oldest first, newest n
+    def product_history(self, key, n) -> list[dict]
+def open_store() -> Store         # <DVA_CACHE_DIR>/dva.sqlite, or <repo>/.cache/cve.sqlite for intel when shared_cve_cache is true (intel only; runs always per tenant)
+```
+Schema: `cve_intel(cve_id TEXT PRIMARY KEY, fields TEXT, fetched_at TEXT)`, `runs(run_id TEXT PRIMARY KEY, tenant TEXT, generated_at TEXT, summary TEXT)`, `product_history(run_id TEXT, key TEXT, score INT, label TEXT, PRIMARY KEY(run_id, key))`. `IntelCache` keeps its constructor signature `(directory, ttl_days)` and uses `directory / "dva.sqlite"` (or the shared file); existing per-file JSON entries are imported once on first open and then ignored.
+
+- [ ] **Step 1: Failing tests**: round trip intel with TTL; `record_run` twice for the same id upserts; `recent_runs(2)` order; legacy JSON import; `shared_cve_cache` routes intel to the repo-level file while runs stay per tenant; `IntelCache` API unchanged (existing `tests/test_enrich.py` cache tests keep passing); `compute` trend equals the file-scan result on the same runs.
+- [ ] **Step 2–4**: implement, suite green, commit `feat: per-tenant SQLite store for CVE intel and run history`.
