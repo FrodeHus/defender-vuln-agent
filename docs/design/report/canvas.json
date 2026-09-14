@@ -1,0 +1,6 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1200, "h": 3600, "title": "Vulnerability Report", "expand": "fill", "print": "flow", "is_interactive": true }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

@@ -1,0 +1,401 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #fff; color: #101d32; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5; font-size: 15px; }
+    a { color: #075bd8; text-decoration: none; } a:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .chip { cursor: pointer; user-select: none; }
+    .rowhead { cursor: pointer; }
+    .tile:hover { border-color: #075bd8 !important; }
+    @media print { .noprint { display: none !important; } }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; min-width: 0;">
+  <div style="background: #f5f7fb; border-bottom: 1px solid #dce3ec; padding: 40px 24px 32px 24px;">
+    <div style="max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;">
+      <p style="margin: 0; color: #526176; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase;">Vulnerability assessment · Microsoft Defender</p>
+      <h1 style="margin: 0; font-size: 44px; letter-spacing: -0.02em; line-height: 1.1; font-weight: 700; text-wrap: balance;">[TENANT NAME]</h1>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; color: #526176; font-size: 14px;">
+        <div>Run at<strong style="display: block; color: #101d32; font-weight: 600;">2026-09-14 06:00 UTC</strong></div><div>Previous run<strong style="display: block; color: #101d32; font-weight: 600;">2026-09-07 06:00 UTC</strong></div><div>Sources<strong style="display: block; color: #101d32; font-weight: 600;">Defender for Endpoint · Advanced Hunting · Defender for Cloud · NVD · EPSS · CISA KEV</strong></div><div>Tool<strong style="display: block; color: #101d32; font-weight: 600;">defender-vuln-agent 0.1.0</strong></div>
+      </div>
+      <p style="margin: 24px 0 0 0; font-size: 21px; line-height: 1.35; letter-spacing: -0.01em; max-width: 900px; text-wrap: pretty;"><strong>Patching 10 software products removes 87% of the critical and known-exploited findings across 2,318 devices.</strong> Three of them run on internet-facing hosts and carry CVEs in CISA's Known Exploited Vulnerabilities catalog; treat those as this week's emergency changes.</p>
+      <p style="margin: 8px 0 0 0; color: #526176; font-size: 15px; max-width: 900px; text-wrap: pretty;">Since the previous run, Ivanti Connect Secure and Fortinet FortiClient EMS entered the top 10 after new KEV additions, and Google Chrome dropped out following the ring 1 rollout. Exposure score fell from 61 to 54. Two subscriptions were unreachable, so Defender for Cloud figures under-count.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 24px;">
+        <div class="tile" style="display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #dce3ec; border-radius: 20px; padding: 20px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-weight: 600; font-size: 15px;">Emergency</span><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fee4e2; color: #b42318;">Critical</span></div><div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; min-height: 32px;"><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: #b42318;">3</span> <span style="color: #526176; font-size: 13px;">products</span></span></div><p style="margin: 0; color: #526176; font-size: 13px;">KEV-listed CVEs on internet-facing hosts. Ranks 1 to 3 below.</p></div><div class="tile" style="display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #dce3ec; border-radius: 20px; padding: 20px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-weight: 600; font-size: 15px;">Products needing action</span><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fef0c7; color: #b54708;">Attention</span></div><div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; min-height: 32px;"><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; ">23</span> <span style="color: #526176; font-size: 13px;">of 214</span></span></div><p style="margin: 0; color: #526176; font-size: 13px;">Products scoring above 40. Ten are prioritized, the rest listed below them.</p></div><div class="tile" style="display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #dce3ec; border-radius: 20px; padding: 20px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-weight: 600; font-size: 15px;">Known exploited</span><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fee4e2; color: #b42318;">+3 this week</span></div><div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; min-height: 32px;"><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: #b42318;">14</span> <span style="color: #526176; font-size: 13px;">CVEs</span></span><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; ">41</span> <span style="color: #526176; font-size: 13px;">exposed devices</span></span></div><p style="margin: 0; color: #526176; font-size: 13px;">CISA KEV entries present in the estate, and internet-facing devices with a critical CVE.</p></div><div class="tile" style="display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #dce3ec; border-radius: 20px; padding: 20px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;"><span style="font-weight: 600; font-size: 15px;">Coverage</span><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fef0c7; color: #b54708;">2 skipped</span></div><div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; min-height: 32px;"><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; ">2,318</span> <span style="color: #526176; font-size: 13px;">devices</span></span><span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; ">54</span> <span style="color: #526176; font-size: 13px;">exposure score</span></span></div><p style="margin: 0; color: #526176; font-size: 13px;">1,940 endpoints and 378 cloud resources. Exposure score down from 61.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1120px; width: 100%; margin: 0 auto; padding: 0 24px 64px 24px; display: flex; flex-direction: column; min-width: 0;">
+    <div class="noprint" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: #fff; border: 1px solid #dce3ec; border-radius: 16px; padding: 10px 12px; margin-top: 24px; box-shadow: 0 6px 24px rgba(16, 29, 50, 0.06);">
+      <span style="color: #526176; font-size: 13px; padding-left: 4px;">Show</span>
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><div class="chip" onClick="{{f.pick}}" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; border: 1px solid {{f.border}}; color: {{f.fg}}; background: {{f.bg}};">{{f.label}}</div></sc-for>
+      <span style="width: 1px; height: 24px; background: #dce3ec;"></span>
+      <span style="color: #526176; font-size: 13px;">Sort</span>
+      <sc-for list="{{sorts}}" as="s" hint-placeholder-count="3"><div class="chip" onClick="{{s.pick}}" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; border: 1px solid {{s.border}}; color: {{s.fg}}; background: {{s.bg}};">{{s.label}}</div></sc-for>
+      <span style="width: 1px; height: 24px; background: #dce3ec;"></span>
+      <div class="chip" onClick="{{expandAll}}" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; border: 1px solid #dce3ec; color: #101d32; background: #fff;">Expand all</div>
+      <div class="chip" onClick="{{collapseAll}}" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; border: 1px solid #dce3ec; color: #101d32; background: #fff;">Collapse all</div>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 40px;">
+      <div><h2 style="margin: 0; font-size: 24px; letter-spacing: -0.01em;">Top 10 products to patch</h2><p style="margin: 4px 0 0 0; color: #526176;">One row per product, so one patch action fixes many CVEs. Ranked by composite score.</p></div>
+      <div style="display: flex; gap: 14px; align-items: center; font-size: 13px; color: #526176; flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #b42318;"></span>Critical</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #c2410c;"></span>High</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #d9910f;"></span>Medium</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #075bd8;"></span>Low</span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+      <sc-for list="{{top}}" as="p" hint-placeholder-count="3">
+        <div style="border: 1px solid #dce3ec; border-radius: 20px; padding: 16px 24px; min-width: 0;">
+          <div class="rowhead" onClick="{{p.toggle}}" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: #0e2138; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex: none;">{{p.rank}}</div>
+            <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 17px; font-weight: 600;">{{p.product}}</span>
+                <span style="color: #526176; font-size: 14px;">{{p.vendor}}</span>
+                <sc-if value="{{p.kev}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fee4e2; color: #b42318;">KEV</span></sc-if>
+<sc-if value="{{p.exploit}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fef0c7; color: #b54708;">Public exploit</span></sc-if>
+<sc-if value="{{p.internet}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #e0ecff; color: #075bd8;">Internet-facing</span></sc-if>
+              </div>
+              <div style="color: #526176; font-size: 14px; text-wrap: pretty;">{{p.reason}}</div>
+            </div>
+            <div style="flex: 0 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+              <div style="display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;">
+  <span style="white-space: nowrap;"><span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: {{p.critInk}};">{{p.crit}}</span> <span style="color: #526176; font-size: 13px;">critical</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: #c2410c;">{{p.high}}</span> <span style="color: #526176; font-size: 13px;">high</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: #b8860b;">{{p.med}}</span> <span style="color: #526176; font-size: 13px;">medium</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: #075bd8;">{{p.low}}</span> <span style="color: #526176; font-size: 13px;">low</span></span>
+</div>
+              <div style="display: flex; height: 6px; gap: 2px; border-radius: 3px; overflow: hidden; width: 200px; max-width: 100%;">
+                <div style="width: {{p.wCrit}}; background: #b42318;"></div>
+                <div style="width: {{p.wHigh}}; background: #c2410c;"></div>
+                <div style="width: {{p.wMed}}; background: #d9910f;"></div>
+                <div style="width: {{p.wLow}}; background: #075bd8;"></div>
+              </div>
+            </div>
+            <div style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end;">
+              <span style="font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1;">{{p.devices}}</span>
+              <span style="color: #526176; font-size: 13px;">devices</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex: 0 0 auto;">
+  <span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: {{p.scoreBg}}; color: {{p.scoreColor}};">{{p.scoreLabel}}</span>
+  <span style="font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; min-width: 40px; text-align: right;">{{p.score}}</span>
+</div><svg style="width: 20px; height: 20px; flex: none; transform: rotate({{p.caret}}); transition: transform 0.15s;" viewBox="0 0 20 20" fill="none" stroke="#526176" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5l5 5-5 5"></path></svg>
+          </div>
+          <sc-if value="{{p.open}}" hint-placeholder-val="{{true}}"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px 32px; margin-top: 16px; align-items: start;">
+  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+    <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Top 3 driving vulnerabilities · {{p.total}} open CVEs in total</div>
+    <div style="display: flex; flex-direction: column;"><sc-for list="{{p.cves}}" as="c" hint-placeholder-count="3">
+  <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 10px 0; border-top: 1px solid #dce3ec; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 auto;">
+      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{c.color}}; flex-shrink: 0;"></span>
+      <a href="#" style="font-size: 14px; font-weight: 600; white-space: nowrap;">{{c.id}}</a>
+    </div>
+    <div style="display: flex; gap: 12px; flex: 0 0 auto; font-size: 13px; color: #526176; white-space: nowrap; align-items: baseline;">
+      <span>CVSS <strong style="color: #101d32; font-weight: 600;">{{c.cvss}}</strong></span>
+      <span>EPSS <strong style="color: #101d32; font-weight: 600;">{{c.epss}}</strong></span>
+      <sc-if value="{{c.kev}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; padding: 1px 8px; font-size: 11px; background: #fee4e2; color: #b42318;">KEV</span></sc-if>
+      <sc-if value="{{c.poc}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; padding: 1px 8px; font-size: 11px; background: #f5f7fb; color: #526176;">Exploit</span></sc-if>
+    </div>
+    <div style="flex: 1 1 220px; min-width: 0; font-size: 14px; color: #526176; text-wrap: pretty;">{{c.title}}</div>
+  </div>
+</sc-for></div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Remediation</div>
+      <div style="font-size: 15px; line-height: 1.5; text-wrap: pretty;">{{p.fix}}</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+  <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Affected assets · {{p.devices}}</div>
+  <div style="font-size: 13px; color: #526176;">{{p.assetBreakdown}}</div>
+  <div style="display: flex; flex-direction: column;">
+    <sc-for list="{{p.assets}}" as="a" hint-placeholder-count="3">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 6px 0; border-top: 1px solid #dce3ec; min-width: 0;">
+        <a href="#" style="font-size: 14px; font-weight: 600; white-space: nowrap;">{{a.name}}</a>
+        <span style="font-size: 13px; color: #526176;">{{a.why}}</span>
+      </div>
+    </sc-for>
+  </div>
+  <sc-if value="{{p.hasMore}}" hint-placeholder-val="{{true}}"><div style="font-size: 13px; color: #526176;">+ {{p.more}} more in findings.json</div></sc-if>
+</div>
+  </div>
+</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 48px; border-top: 1px solid #dce3ec; padding-top: 24px;">
+      <div><h2 style="margin: 0; font-size: 24px; letter-spacing: -0.01em;">All prioritized products</h2><p style="margin: 4px 0 0 0; color: #526176;">Every product above the reporting threshold. Expand a row for its driving CVEs and assets.</p></div>
+      <span style="color: #526176; font-size: 14px; white-space: nowrap;">{{shown}} of {{totalProducts}} products</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <div style="border: 1px solid #dce3ec; border-radius: 16px; padding: 12px 20px; min-width: 0;">
+          <div class="rowhead" onClick="{{r.toggle}}" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0;">
+            <span style="color: #526176; font-size: 14px; width: 28px; flex: none; font-weight: 600;">{{r.rank}}</span>
+            <div style="flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-size: 15px; font-weight: 600;">{{r.product}}</span>
+              <span style="color: #526176; font-size: 14px;">{{r.vendor}}</span>
+              <sc-if value="{{r.kev}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fee4e2; color: #b42318;">KEV</span></sc-if>
+<sc-if value="{{r.exploit}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #fef0c7; color: #b54708;">Public exploit</span></sc-if>
+<sc-if value="{{r.internet}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: #e0ecff; color: #075bd8;">Internet-facing</span></sc-if>
+            </div>
+            <div style="display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;">
+  <span style="white-space: nowrap;"><span style="font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: {{r.critInk}};">{{r.crit}}</span> <span style="color: #526176; font-size: 13px;">critical</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: #c2410c;">{{r.high}}</span> <span style="color: #526176; font-size: 13px;">high</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: #b8860b;">{{r.med}}</span> <span style="color: #526176; font-size: 13px;">medium</span></span>
+  <span style="white-space: nowrap;"><span style="font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: #075bd8;">{{r.low}}</span> <span style="color: #526176; font-size: 13px;">low</span></span>
+</div>
+            <div style="flex: 0 0 auto; display: flex; align-items: baseline; gap: 4px;"><span style="font-size: 15px; font-weight: 700;">{{r.devices}}</span><span style="color: #526176; font-size: 13px;">devices</span></div>
+            <div style="display: flex; align-items: center; gap: 10px; flex: 0 0 auto;">
+  <span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; background: {{r.scoreBg}}; color: {{r.scoreColor}};">{{r.scoreLabel}}</span>
+  <span style="font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; min-width: 40px; text-align: right;">{{r.score}}</span>
+</div><svg style="width: 20px; height: 20px; flex: none; transform: rotate({{r.caret}}); transition: transform 0.15s;" viewBox="0 0 20 20" fill="none" stroke="#526176" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5l5 5-5 5"></path></svg>
+          </div>
+          <sc-if value="{{r.open}}" hint-placeholder-val="{{false}}"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px 32px; margin-top: 16px; align-items: start;">
+  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+    <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Top 3 driving vulnerabilities · {{r.total}} open CVEs in total</div>
+    <div style="display: flex; flex-direction: column;"><sc-for list="{{r.cves}}" as="c" hint-placeholder-count="3">
+  <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 10px 0; border-top: 1px solid #dce3ec; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 auto;">
+      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {{c.color}}; flex-shrink: 0;"></span>
+      <a href="#" style="font-size: 14px; font-weight: 600; white-space: nowrap;">{{c.id}}</a>
+    </div>
+    <div style="display: flex; gap: 12px; flex: 0 0 auto; font-size: 13px; color: #526176; white-space: nowrap; align-items: baseline;">
+      <span>CVSS <strong style="color: #101d32; font-weight: 600;">{{c.cvss}}</strong></span>
+      <span>EPSS <strong style="color: #101d32; font-weight: 600;">{{c.epss}}</strong></span>
+      <sc-if value="{{c.kev}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; padding: 1px 8px; font-size: 11px; background: #fee4e2; color: #b42318;">KEV</span></sc-if>
+      <sc-if value="{{c.poc}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; padding: 1px 8px; font-size: 11px; background: #f5f7fb; color: #526176;">Exploit</span></sc-if>
+    </div>
+    <div style="flex: 1 1 220px; min-width: 0; font-size: 14px; color: #526176; text-wrap: pretty;">{{c.title}}</div>
+  </div>
+</sc-for></div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Remediation</div>
+      <div style="font-size: 15px; line-height: 1.5; text-wrap: pretty;">{{r.fix}}</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+  <div style="color: #526176; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;">Affected assets · {{r.devices}}</div>
+  <div style="font-size: 13px; color: #526176;">{{r.assetBreakdown}}</div>
+  <div style="display: flex; flex-direction: column;">
+    <sc-for list="{{r.assets}}" as="a" hint-placeholder-count="3">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 6px 0; border-top: 1px solid #dce3ec; min-width: 0;">
+        <a href="#" style="font-size: 14px; font-weight: 600; white-space: nowrap;">{{a.name}}</a>
+        <span style="font-size: 13px; color: #526176;">{{a.why}}</span>
+      </div>
+    </sc-for>
+  </div>
+  <sc-if value="{{r.hasMore}}" hint-placeholder-val="{{true}}"><div style="font-size: 13px; color: #526176;">+ {{r.more}} more in findings.json</div></sc-if>
+</div>
+  </div>
+</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid #dce3ec; color: #526176; font-size: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px 32px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><h2 style="margin: 0; font-size: 20px; color: #101d32;">How scores are computed</h2><p style="margin: 0; text-wrap: pretty;">Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Weights live in scoring.yaml.</p></div><div style="display: flex; flex-direction: column; gap: 6px;"><h2 style="margin: 0; font-size: 20px; color: #101d32;">Grouping</h2><p style="margin: 0; text-wrap: pretty;">Findings are grouped by software product so one row maps to one patch action. Only the three CVEs contributing most to a product's score are shown, and only its most critical assets. The full CVE and device lists are in findings.json.</p></div><div style="display: flex; flex-direction: column; gap: 6px;"><h2 style="margin: 0; font-size: 20px; color: #101d32;">Data freshness</h2><p style="margin: 0; text-wrap: pretty;">Defender inventory as of 2026-09-14 05:40 UTC. CVE intelligence is cached for at most 7 days. Defender for Cloud findings for [REGISTRY NAME] are included; 2 subscriptions were unreachable and are marked in findings.json.</p></div>
+    </div>
+    <div style="margin-top: 48px; color: #526176; font-size: 13px;">Generated by defender-vuln-agent. Read-only assessment; no changes were made in Defender.</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1200,"height":3600}}'>
+const SEV = { critical: '#b42318', high: '#c2410c', medium: '#d9910f', low: '#075bd8' };
+
+const PRODUCTS = [
+  { product: 'Connect Secure', vendor: 'Ivanti', score: 97, devices: 6, kev: true, exploit: true, internet: true,
+    counts: [4, 7, 12, 3], reason: 'VPN gateways, all internet-facing, two KEV entries added this week',
+    fix: 'Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.',
+    assetBreakdown: 'All 6 internet-facing · 6 Tier0 · exposure High', assets: [{ name: 'vpn-gw-01', why: 'Internet-facing · Tier0 · High' }, { name: 'vpn-gw-02', why: 'Internet-facing · Tier0 · High' }, { name: 'vpn-gw-03', why: 'Internet-facing · Tier0' }, { name: 'vpn-gw-04', why: 'Internet-facing · Tier0' }, { name: 'vpn-gw-05', why: 'Internet-facing · Tier0' }],
+    cves: [
+      { id: 'CVE-2026-21887', sev: 'critical', cvss: '9.8', epss: '0.94', kev: true, poc: true, title: 'Unauthenticated remote code execution in web component' },
+      { id: 'CVE-2026-20124', sev: 'critical', cvss: '9.1', epss: '0.71', kev: true, poc: false, title: 'Authentication bypass in SAML endpoint' },
+      { id: 'CVE-2025-46512', sev: 'high', cvss: '8.2', epss: '0.33', kev: false, poc: true, title: 'Path traversal allowing config read' } ] },
+  { product: 'FortiClient EMS', vendor: 'Fortinet', score: 91, devices: 3, kev: true, exploit: true, internet: true,
+    counts: [2, 3, 5, 1], reason: 'Management server reachable from the internet, KEV-listed SQL injection',
+    fix: 'Upgrade to 7.4.3. Restrict admin interface to the management VLAN.',
+    assetBreakdown: '3 internet-facing · 3 Prod · Azure VMs', assets: [{ name: 'ems-prod-01', why: 'Internet-facing · Prod · High' }, { name: 'ems-prod-02', why: 'Internet-facing · Prod · High' }, { name: 'ems-dr-01', why: 'Internet-facing · DR' }],
+    cves: [
+      { id: 'CVE-2026-24471', sev: 'critical', cvss: '9.8', epss: '0.89', kev: true, poc: true, title: 'SQL injection in DAS component' },
+      { id: 'CVE-2025-52970', sev: 'critical', cvss: '9.1', epss: '0.42', kev: false, poc: false, title: 'Improper access control on API' },
+      { id: 'CVE-2025-49202', sev: 'high', cvss: '7.5', epss: '0.12', kev: false, poc: false, title: 'Information disclosure via log endpoint' } ] },
+  { product: 'Exchange Server 2019', vendor: 'Microsoft', score: 88, devices: 4, kev: true, exploit: true, internet: true,
+    counts: [3, 5, 9, 4], reason: 'OWA published externally, KEV entry with public proof of concept',
+    fix: 'Install September 2026 SU (KB5052xxx). Enable Extended Protection.',
+    assetBreakdown: '4 internet-facing · 4 Tier0 · device group Messaging', assets: [{ name: 'exch-01', why: 'Internet-facing · Tier0 · High' }, { name: 'exch-02', why: 'Internet-facing · Tier0 · High' }, { name: 'exch-03', why: 'Internet-facing · Tier0' }, { name: 'exch-04', why: 'Internet-facing · Tier0' }],
+    cves: [
+      { id: 'CVE-2026-21410', sev: 'critical', cvss: '9.8', epss: '0.82', kev: true, poc: true, title: 'Remote code execution via NTLM relay' },
+      { id: 'CVE-2026-21334', sev: 'critical', cvss: '8.8', epss: '0.55', kev: false, poc: true, title: 'Privilege escalation in PowerShell backend' },
+      { id: 'CVE-2025-53786', sev: 'high', cvss: '8.0', epss: '0.19', kev: false, poc: false, title: 'Hybrid configuration elevation of privilege' } ] },
+  { product: 'Windows Server 2019', vendor: 'Microsoft', score: 79, devices: 312, kev: true, exploit: true, internet: false,
+    counts: [5, 22, 61, 40], reason: 'Largest fleet, one KEV-listed kernel CVE, 40 hosts marked High value',
+    fix: 'Deploy September 2026 cumulative update via ring 2. Reboot required.',
+    assetBreakdown: '40 Tier0 · 9 internet-facing · 118 exposure High · 9 device groups', assets: [{ name: 'dc-01', why: 'Domain controller · Tier0 · High' }, { name: 'dc-02', why: 'Domain controller · Tier0 · High' }, { name: 'adfs-01', why: 'Internet-facing · Tier0' }, { name: 'web-frontend-03', why: 'Internet-facing · Prod' }, { name: 'sccm-01', why: 'Tier0 · High' }],
+    cves: [
+      { id: 'CVE-2026-21335', sev: 'critical', cvss: '8.8', epss: '0.61', kev: true, poc: true, title: 'Win32k elevation of privilege' },
+      { id: 'CVE-2026-21290', sev: 'critical', cvss: '9.0', epss: '0.27', kev: false, poc: false, title: 'LDAP remote code execution' },
+      { id: 'CVE-2026-21250', sev: 'high', cvss: '7.8', epss: '0.14', kev: false, poc: false, title: 'Kerberos elevation of privilege' } ] },
+  { product: 'nginx:1.24 (image)', vendor: 'ACR prod-registry', score: 74, devices: 58, kev: false, exploit: true, internet: true,
+    counts: [2, 14, 31, 12], reason: 'Ingress image on 58 running pods, two publicly exposed services',
+    fix: 'Rebuild on nginx:1.27.2-alpine. Redeploy ingress controllers.',
+    assetBreakdown: '58 running pods · 2 publicly exposed services · AKS prod-eu, prod-us', assets: [{ name: 'ingress-nginx (prod-eu)', why: 'Public LoadBalancer · 24 pods' }, { name: 'ingress-nginx (prod-us)', why: 'Public LoadBalancer · 22 pods' }, { name: 'edge-proxy (prod-eu)', why: 'Internal · 12 pods' }],
+    cves: [
+      { id: 'CVE-2026-1097', sev: 'critical', cvss: '9.1', epss: '0.38', kev: false, poc: true, title: 'HTTP/3 QUIC buffer overflow' },
+      { id: 'CVE-2025-23419', sev: 'high', cvss: '7.5', epss: '0.09', kev: false, poc: false, title: 'TLS session resumption bypass' },
+      { id: 'CVE-2025-6297', sev: 'high', cvss: '7.2', epss: '0.05', kev: false, poc: false, title: 'zlib heap overflow in base image' } ] },
+  { product: 'Log4j 2.x (embedded)', vendor: 'Apache', score: 71, devices: 27, kev: true, exploit: true, internet: false,
+    counts: [1, 2, 3, 0], reason: 'Bundled in three internal Java services, KEV entry still open',
+    fix: 'Upgrade bundled library to 2.24.1 or rebuild the affected services.',
+    assetBreakdown: '27 devices · 3 services · all tagged Prod', assets: [{ name: 'billing-svc-01', why: 'Prod · High · handles PII' }, { name: 'billing-svc-02', why: 'Prod · High' }, { name: 'report-svc-01', why: 'Prod' }, { name: 'etl-worker-01', why: 'Prod' }, { name: 'etl-worker-02', why: 'Prod' }],
+    cves: [
+      { id: 'CVE-2021-44228', sev: 'critical', cvss: '10.0', epss: '0.97', kev: true, poc: true, title: 'JNDI lookup remote code execution' },
+      { id: 'CVE-2021-45046', sev: 'high', cvss: '9.0', epss: '0.91', kev: true, poc: true, title: 'Incomplete fix, thread context lookup' },
+      { id: 'CVE-2021-45105', sev: 'high', cvss: '5.9', epss: '0.40', kev: false, poc: true, title: 'Uncontrolled recursion denial of service' } ] },
+  { product: 'Acrobat Reader DC', vendor: 'Adobe', score: 66, devices: 1140, kev: true, exploit: false, internet: false,
+    counts: [3, 11, 24, 8], reason: 'Installed on most workstations, one KEV-listed CVE, no exposed hosts',
+    fix: 'Push 24.003.20xxx via Intune. Auto-update policy currently disabled.',
+    assetBreakdown: '1,140 workstations · 0 internet-facing · 62 High value', assets: [{ name: 'ws-finance-114', why: 'High value · CFO office' }, { name: 'ws-legal-021', why: 'High value' }, { name: 'ws-hr-007', why: 'High value · PII' }, { name: 'ws-exec-003', why: 'High value' }, { name: 'ws-finance-102', why: 'High value' }],
+    cves: [
+      { id: 'CVE-2026-24433', sev: 'critical', cvss: '8.6', epss: '0.45', kev: true, poc: false, title: 'Use after free leading to code execution' },
+      { id: 'CVE-2026-24432', sev: 'critical', cvss: '7.8', epss: '0.11', kev: false, poc: false, title: 'Out of bounds write in font parser' },
+      { id: 'CVE-2025-47172', sev: 'high', cvss: '7.8', epss: '0.06', kev: false, poc: false, title: 'Integer overflow in JavaScript engine' } ] },
+  { product: 'vCenter Server', vendor: 'Broadcom', score: 63, devices: 2, kev: true, exploit: true, internet: false,
+    counts: [2, 4, 6, 2], reason: 'Management plane, KEV-listed heap overflow, not internet-facing',
+    fix: 'Apply 8.0 U3e. Isolate management network per hardening guide.',
+    assetBreakdown: '2 devices · both Tier0 · management network', assets: [{ name: 'vcenter-01', why: 'Tier0 · High · hosts 400 VMs' }, { name: 'vcenter-02', why: 'Tier0 · High · DR site' }],
+    cves: [
+      { id: 'CVE-2025-41225', sev: 'critical', cvss: '9.8', epss: '0.78', kev: true, poc: true, title: 'Heap overflow in DCERPC protocol' },
+      { id: 'CVE-2025-41226', sev: 'high', cvss: '7.5', epss: '0.21', kev: false, poc: false, title: 'Denial of service in vAPI' },
+      { id: 'CVE-2025-22225', sev: 'high', cvss: '7.2', epss: '0.09', kev: false, poc: false, title: 'Arbitrary write in VMX' } ] },
+  { product: 'OpenSSH 8.x', vendor: 'OpenBSD', score: 58, devices: 94, kev: false, exploit: true, internet: true,
+    counts: [1, 3, 5, 2], reason: 'Linux fleet, 12 hosts with SSH exposed, exploit reliability is low',
+    fix: 'Upgrade to 9.9p1 via distribution packages. Restrict SSH source ranges.',
+    assetBreakdown: '94 Linux servers · 12 internet-facing · 31 Arc, 63 Azure VMs', assets: [{ name: 'bastion-01', why: 'Internet-facing · Tier0' }, { name: 'bastion-02', why: 'Internet-facing · Tier0' }, { name: 'sftp-ext-01', why: 'Internet-facing · Prod' }, { name: 'sftp-ext-02', why: 'Internet-facing · Prod' }, { name: 'git-mirror-01', why: 'Internet-facing' }],
+    cves: [
+      { id: 'CVE-2024-6387', sev: 'critical', cvss: '8.1', epss: '0.66', kev: false, poc: true, title: 'Signal handler race condition (regreSSHion)' },
+      { id: 'CVE-2025-26465', sev: 'high', cvss: '6.8', epss: '0.08', kev: false, poc: true, title: 'Host key verification bypass' },
+      { id: 'CVE-2025-26466', sev: 'medium', cvss: '5.9', epss: '0.04', kev: false, poc: false, title: 'Pre-auth denial of service' } ] },
+  { product: 'Java Runtime 8', vendor: 'Oracle', score: 54, devices: 221, kev: false, exploit: false, internet: false,
+    counts: [0, 6, 18, 9], reason: 'Legacy runtime on 221 devices, no KEV, high patch fatigue',
+    fix: 'Upgrade to 8u431 or migrate workloads to Java 21 LTS.',
+    assetBreakdown: '221 devices · 30 servers, 191 workstations · 0 internet-facing', assets: [{ name: 'app-legacy-01', why: 'Prod · High' }, { name: 'app-legacy-02', why: 'Prod · High' }, { name: 'jenkins-old-01', why: 'Build server' }, { name: 'ws-eng-044', why: 'Workstation' }, { name: 'ws-eng-051', why: 'Workstation' }],
+    cves: [
+      { id: 'CVE-2026-21032', sev: 'high', cvss: '7.5', epss: '0.10', kev: false, poc: false, title: 'Networking component unauthenticated access' },
+      { id: 'CVE-2025-30698', sev: 'high', cvss: '5.9', epss: '0.03', kev: false, poc: false, title: '2D component partial DoS' },
+      { id: 'CVE-2025-30691', sev: 'medium', cvss: '4.8', epss: '0.02', kev: false, poc: false, title: 'Compiler component integrity impact' } ] },
+  { product: 'Chrome', vendor: 'Google', score: 47, devices: 1260, kev: false, exploit: false, internet: false,
+    counts: [0, 4, 9, 3], reason: 'Auto-update covers 96% of devices, remainder are stale VDI images',
+    fix: 'Rebuild VDI golden image with current stable channel.',
+    assetBreakdown: '48 stale of 1,260 · all in VDI pool · 0 internet-facing', assets: [{ name: 'vdi-gold-2024q1', why: 'Golden image source' }, { name: 'vdi-pool-a-011', why: 'VDI' }, { name: 'vdi-pool-a-012', why: 'VDI' }, { name: 'vdi-pool-b-003', why: 'VDI' }, { name: 'vdi-pool-b-004', why: 'VDI' }],
+    cves: [
+      { id: 'CVE-2026-0801', sev: 'high', cvss: '8.8', epss: '0.15', kev: false, poc: false, title: 'Type confusion in V8' },
+      { id: 'CVE-2026-0798', sev: 'high', cvss: '8.8', epss: '0.07', kev: false, poc: false, title: 'Use after free in WebGPU' },
+      { id: 'CVE-2026-0790', sev: 'medium', cvss: '6.5', epss: '0.02', kev: false, poc: false, title: 'Inappropriate implementation in Navigation' } ] },
+  { product: 'SQL Server 2017', vendor: 'Microsoft', score: 44, devices: 11, kev: false, exploit: false, internet: false,
+    counts: [1, 2, 4, 1], reason: 'End of mainstream support, internal only',
+    fix: 'Apply CU31 GDR. Plan migration to SQL Server 2022.',
+    assetBreakdown: '11 servers · all Prod · 0 internet-facing', assets: [{ name: 'sql-legacy-01', why: 'Prod · High · ERP backend' }, { name: 'sql-legacy-02', why: 'Prod · High' }, { name: 'sql-legacy-03', why: 'Prod' }, { name: 'sql-legacy-04', why: 'Prod' }, { name: 'sql-legacy-05', why: 'Prod' }],
+    cves: [
+      { id: 'CVE-2026-21301', sev: 'critical', cvss: '8.8', epss: '0.09', kev: false, poc: false, title: 'Remote code execution via OLE DB' },
+      { id: 'CVE-2025-49717', sev: 'high', cvss: '7.5', epss: '0.04', kev: false, poc: false, title: 'Heap-based buffer overflow' },
+      { id: 'CVE-2025-49718', sev: 'high', cvss: '7.5', epss: '0.03', kev: false, poc: false, title: 'Information disclosure' } ] },
+  { product: 'python:3.9 (image)', vendor: 'ACR prod-registry', score: 39, devices: 34, kev: false, exploit: false, internet: false,
+    counts: [0, 5, 22, 17], reason: 'Base image on internal batch jobs, no exposed services',
+    fix: 'Rebuild on python:3.12-slim.',
+    assetBreakdown: '34 pods · namespace batch · no exposed services', assets: [{ name: 'nightly-etl', why: 'Internal · 20 pods' }, { name: 'report-gen', why: 'Internal · 8 pods' }, { name: 'cleanup-cron', why: 'Internal · 6 pods' }],
+    cves: [
+      { id: 'CVE-2025-4516', sev: 'high', cvss: '7.5', epss: '0.05', kev: false, poc: false, title: 'CPython DecodeError DoS' },
+      { id: 'CVE-2025-4802', sev: 'high', cvss: '7.8', epss: '0.02', kev: false, poc: false, title: 'glibc static setuid LD_LIBRARY_PATH' },
+      { id: 'CVE-2024-2236', sev: 'medium', cvss: '5.9', epss: '0.01', kev: false, poc: false, title: 'libgcrypt timing side channel' } ] },
+  { product: '7-Zip', vendor: 'Igor Pavlov', score: 31, devices: 402, kev: false, exploit: true, internet: false,
+    counts: [0, 2, 3, 0], reason: 'Widely installed, requires user interaction to exploit',
+    fix: 'Deploy 24.09 via Intune.',
+    assetBreakdown: '402 workstations · 0 internet-facing · 18 High value', assets: [{ name: 'ws-finance-114', why: 'High value' }, { name: 'ws-legal-021', why: 'High value' }, { name: 'ws-exec-003', why: 'High value' }, { name: 'ws-hr-007', why: 'High value' }, { name: 'ws-finance-102', why: 'High value' }],
+    cves: [
+      { id: 'CVE-2025-0411', sev: 'high', cvss: '7.0', epss: '0.31', kev: false, poc: true, title: 'Mark-of-the-Web bypass' },
+      { id: 'CVE-2024-11477', sev: 'high', cvss: '7.8', epss: '0.06', kev: false, poc: false, title: 'Zstandard decompression integer underflow' },
+      { id: 'CVE-2023-31102', sev: 'medium', cvss: '6.7', epss: '0.02', kev: false, poc: false, title: '7z parser integer underflow' } ] },
+  { product: 'Notepad++', vendor: 'Don Ho', score: 22, devices: 318, kev: false, exploit: false, internet: false,
+    counts: [0, 1, 2, 1], reason: 'Local privilege escalation only, no exposure',
+    fix: 'Deploy 8.7.1 via Intune.',
+    assetBreakdown: '318 workstations · 0 internet-facing · 9 High value', assets: [{ name: 'ws-eng-044', why: 'High value' }, { name: 'ws-eng-051', why: 'High value' }, { name: 'ws-exec-003', why: 'High value' }],
+    cves: [
+      { id: 'CVE-2025-49144', sev: 'high', cvss: '7.3', epss: '0.02', kev: false, poc: false, title: 'Installer binary planting' },
+      { id: 'CVE-2024-3186', sev: 'medium', cvss: '5.5', epss: '0.01', kev: false, poc: false, title: 'DLL hijacking' },
+      { id: 'CVE-2023-6401', sev: 'low', cvss: '3.3', epss: '0.00', kev: false, poc: false, title: 'Uncontrolled search path' } ] },
+  { product: 'Zoom Workplace', vendor: 'Zoom', score: 18, devices: 690, kev: false, exploit: false, internet: false,
+    counts: [0, 0, 4, 2], reason: 'Medium severity only, auto-update enabled',
+    fix: 'No action; auto-update will resolve within 14 days.',
+    assetBreakdown: '690 workstations · 0 internet-facing · 41 High value', assets: [{ name: 'ws-exec-003', why: 'High value' }, { name: 'ws-exec-004', why: 'High value' }, { name: 'ws-finance-114', why: 'High value' }],
+    cves: [
+      { id: 'CVE-2025-30663', sev: 'medium', cvss: '6.6', epss: '0.01', kev: false, poc: false, title: 'Time-of-check time-of-use race' },
+      { id: 'CVE-2025-30664', sev: 'medium', cvss: '6.6', epss: '0.01', kev: false, poc: false, title: 'Improper neutralization of special elements' },
+      { id: 'CVE-2025-30665', sev: 'low', cvss: '3.3', epss: '0.00', kev: false, poc: false, title: 'Null pointer dereference' } ] }
+];
+
+function scoreColor(s) { return s >= 80 ? '#b42318' : s >= 60 ? '#c2410c' : s >= 40 ? '#d9910f' : '#075bd8'; }
+function scoreLabel(s) { return s >= 80 ? 'Critical' : s >= 60 ? 'High' : s >= 40 ? 'Medium' : 'Low'; }
+
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: { 'Connect Secure': true, 'FortiClient EMS': true, 'Exchange Server 2019': true }, listOpen: {}, filter: 'all', sort: 'score' };
+  }
+  shape(p, i, openMap, key) {
+    const [crit, high, med, low] = p.counts;
+    const total = crit + high + med + low;
+    const w = (n) => (total ? Math.round((n / total) * 100) : 0) + '%';
+    const isOpen = !!openMap[p.product];
+    return {
+      rank: i + 1, product: p.product, vendor: p.vendor, score: p.score, devices: p.devices.toLocaleString(),
+      kev: p.kev, exploit: p.exploit, internet: p.internet, reason: p.reason, fix: p.fix,
+      assetBreakdown: p.assetBreakdown, assets: p.assets, more: Math.max(0, p.devices - p.assets.length), hasMore: p.devices > p.assets.length,
+      crit, high, med, low, total,
+      wCrit: w(crit), wHigh: w(high), wMed: w(med), wLow: w(low),
+      critInk: crit > 0 ? '#b42318' : '#526176',
+      scoreColor: scoreColor(p.score), scoreLabel: scoreLabel(p.score),
+      scoreBg: p.score >= 80 ? '#fee4e2' : p.score >= 60 ? '#ffe8d9' : p.score >= 40 ? '#fef0c7' : '#e0ecff',
+      open: isOpen, closed: !isOpen, caret: isOpen ? '90deg' : '0deg',
+      cves: p.cves.map((c) => ({ ...c, color: SEV[c.sev] })),
+      toggle: (e) => { if (e && e.preventDefault) e.preventDefault(); const m = { ...this.state[key] }; m[p.product] = !m[p.product]; this.setState({ [key]: m }); }
+    };
+  }
+  renderVals() {
+    const { filter, sort } = this.state;
+    const byScore = [...PRODUCTS].sort((a, b) => b.score - a.score);
+    const top = byScore.slice(0, 10).map((p, i) => this.shape(p, i, this.state.open, 'open'));
+    const ranked = byScore.map((p, i) => ({ p, rank: i + 1 }));
+    let list = ranked.filter(({ p }) => filter === 'all' ? true : filter === 'critical' ? p.counts[0] > 0 : filter === 'kev' ? p.kev : p.internet);
+    list = list.sort((a, b) => sort === 'score' ? b.p.score - a.p.score : sort === 'devices' ? b.p.devices - a.p.devices : b.p.counts[0] - a.p.counts[0]);
+    const rows = list.map(({ p, rank }) => this.shape(p, rank - 1, this.state.listOpen, 'listOpen'));
+    const chip = (id, label, current, stateKey) => ({
+      id, label,
+      border: current === id ? '#101d32' : '#dce3ec',
+      bg: current === id ? '#101d32' : '#fff',
+      fg: current === id ? '#fff' : '#101d32',
+      pick: () => this.setState({ [stateKey]: id })
+    });
+    const filters = [chip('all', 'All', filter, 'filter'), chip('critical', 'Has critical', filter, 'filter'), chip('kev', 'KEV-listed', filter, 'filter'), chip('internet', 'Internet-facing', filter, 'filter')];
+    const sorts = [chip('score', 'Score', sort, 'sort'), chip('devices', 'Devices', sort, 'sort'), chip('critical', 'Critical CVEs', sort, 'sort')];
+    const all = (v) => { const m = {}; PRODUCTS.forEach((p) => { m[p.product] = v; }); return m; };
+    return { top, rows, filters, sorts, shown: rows.length, totalProducts: PRODUCTS.length,
+      expandAll: () => this.setState({ open: all(true), listOpen: all(true) }),
+      collapseAll: () => this.setState({ open: {}, listOpen: {} }) };
+  }
+}
+</script>
+</body>
+</html>
