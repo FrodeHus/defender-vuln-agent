@@ -18,7 +18,10 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import sys
 from pathlib import Path
+
+import yaml
 
 from dva.config import load_sources
 from dva.errors import DvaError
@@ -166,7 +169,8 @@ def open_intel_store(directory: Path) -> Store:
     else ``<directory>/dva.sqlite``."""
     try:
         shared = load_sources().shared_cve_cache
-    except Exception:
+    except (DvaError, OSError, yaml.YAMLError, TypeError) as exc:
+        print(f"dva: sources.yaml unreadable ({exc}); using per-tenant intel store", file=sys.stderr)
         shared = False
     if shared:
         return Store(ROOT / ".cache" / "cve.sqlite")

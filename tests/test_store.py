@@ -134,6 +134,20 @@ def test_shared_cve_cache_false_keeps_intel_per_directory(tmp_path, monkeypatch)
     assert store.path == tmp_path / "cve" / "dva.sqlite"
 
 
+def test_malformed_sources_yaml_routes_to_per_tenant_store_and_warns(tmp_path, monkeypatch, capsys):
+    import dva.store as store_mod
+
+    def _boom():
+        raise TypeError("unexpected keyword argument 'bogus'")
+
+    monkeypatch.setattr(store_mod, "load_sources", _boom)
+    store = open_intel_store(tmp_path / "cve")
+    assert store.path == tmp_path / "cve" / "dva.sqlite"
+    err = capsys.readouterr().err
+    assert "dva: sources.yaml unreadable" in err
+    assert "using per-tenant intel store" in err
+
+
 def test_open_store_runs_always_per_tenant_cache_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
     store = open_store()
