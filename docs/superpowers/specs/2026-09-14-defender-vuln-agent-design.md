@@ -305,7 +305,9 @@ The agent may publish `report.html` as an artifact when asked.
 
 ## Agent definition and workflow
 
-`.claude/agents/vuln-assessor.md` defines a subagent named `vuln-assessor` with tools limited to
+`.claude/agents/vuln-assessor.md` defines a subagent named `vuln-assessor` running on Claude Sonnet
+(`model: sonnet` in the frontmatter) to keep cost down, since the work is command sequencing rather than
+deep reasoning. Its tools are limited to
 Bash, Read, Glob, Grep, and the CVE MCP server's tools. Its instructions:
 
 1. Run `python -m dva doctor`. Stop and report if it fails.
