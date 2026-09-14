@@ -6,6 +6,7 @@ def test_scoring_defaults():
     assert s.threat_weights == {"cvss": 0.35, "epss": 0.25, "kev": 0.25, "exploit": 0.15}
     assert s.enrich_top_per_product == 3
     assert s.enrich_max_cves == 200
+    assert s.enrich_threshold == 20
     assert s.report_threshold == 40
     assert s.bands == {"critical": 80, "high": 60, "medium": 40}
     assert "Tier0" in s.criticality_tags

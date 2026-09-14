@@ -15,6 +15,7 @@ class Scoring:
     criticality_tags: list[str]
     enrich_top_per_product: int
     enrich_max_cves: int
+    enrich_threshold: int
     report_threshold: int
     top_n: int
     cache_ttl_days: int

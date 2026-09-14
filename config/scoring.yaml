@@ -10,6 +10,7 @@ asset_cap: 2.5
 criticality_tags: [Tier0, Prod, DMZ]
 enrich_top_per_product: 3
 enrich_max_cves: 200
+enrich_threshold: 20
 report_threshold: 40
 top_n: 10
 cache_ttl_days: 7

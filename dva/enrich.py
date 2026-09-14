@@ -29,7 +29,7 @@ def select_candidates(products: dict[str, Product], assets: dict[str, Asset], ca
     out: list[str] = []
     seen: set[str] = set()
     for score, p in prelim:
-        if score < cfg.report_threshold:
+        if score < cfg.enrich_threshold:
             break
         for r in sorted(p.cves.values(), key=_rank_key)[: cfg.enrich_top_per_product]:
             if r.id in seen or cache.get(r.id) is not None:

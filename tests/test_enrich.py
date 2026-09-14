@@ -42,6 +42,20 @@ def test_select_top_per_product_and_caps(tmp_path):
     assert ids == ["CVE-1", "CVE-2"]
 
 
+def test_select_candidates_uses_enrich_threshold_not_report_threshold(tmp_path):
+    # Five NoExploit CVSS 9.8 CVEs on a plain (non-tagged, non-internet-facing) device: the
+    # preliminary (no-intel) score lands well below report_threshold (40) but above
+    # enrich_threshold (20), so the product must still be selected for enrichment.
+    cache = IntelCache(tmp_path, 7)
+    plain = Product(
+        key="a/b", vendor="a", name="b", asset_ids={"x"},
+        cves={f"CVE-{i}": ref(i, 9.8, "NoExploit") for i in range(5)},
+    )
+    assets = {"x": Asset(id="x", name="x")}
+    ids = select_candidates({"a/b": plain}, assets, cache, cfg, estate_size=10)
+    assert set(ids) == {"CVE-0", "CVE-1", "CVE-2"}
+
+
 def test_cache_get_corrupt_entry_is_a_miss(tmp_path):
     c = IntelCache(tmp_path, ttl_days=7)
     (tmp_path / "CVE-9.json").write_text("{not valid json")
