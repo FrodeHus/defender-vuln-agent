@@ -44,7 +44,15 @@ def run_named(client: Client, run: Run, names: list[str]) -> int:
     failures = 0
     for n in names:
         try:
-            run_query(client, run, n, load_query(n))
+            kql = load_query(n)
+        except DvaError as e:
+            source = f"hunting.{n}"
+            run.set_source(source, "failed", error=str(e))
+            run.log(f"{source} failed: {e}")
+            failures += 1; print(f"warning: {e}")
+            continue
+        try:
+            run_query(client, run, n, kql)
         except DvaError as e:
             failures += 1; print(f"warning: {e}")
     return failures
