@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "cve_id": "CVE-2026-21887",
+      "cvss_v3_score": 9.8,
+      "epss_score": 0.94,
+      "epss_percentile": 0.99,
+      "in_kev": true,
+      "exploits": [{"source": "exploit-db"}],
+      "description": "Command injection in Ivanti Connect Secure allows unauthenticated remote attackers to execute arbitrary code via crafted HTTP requests."
+    },
+    {
+      "cve_id": "CVE-2026-21335",
+      "cvss_v3_score": 8.8,
+      "epss_score": 0.61,
+      "epss_percentile": 0.9,
+      "in_kev": true,
+      "exploits": [],
+      "description": "Authentication bypass in Ivanti Connect Secure allows a remote attacker to gain unauthorized access to the admin console."
+    }
+  ]
+}

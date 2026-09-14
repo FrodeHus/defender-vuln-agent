@@ -1,0 +1,22 @@
+{
+  "schema": [
+    {"Name": "DeviceId", "Type": "String"},
+    {"Name": "DeviceName", "Type": "String"},
+    {"Name": "PublicIP", "Type": "String"},
+    {"Name": "ExposureLevel", "Type": "String"},
+    {"Name": "AssetValue", "Type": "String"},
+    {"Name": "MachineGroup", "Type": "String"},
+    {"Name": "AzureResourceId", "Type": "String"}
+  ],
+  "results": [
+    {
+      "DeviceId": "m1",
+      "DeviceName": "vpn-gw-01.corp.example",
+      "PublicIP": "203.0.113.10",
+      "ExposureLevel": "High",
+      "AssetValue": "High",
+      "MachineGroup": "Perimeter",
+      "AzureResourceId": null
+    }
+  ]
+}
