@@ -1,0 +1,7 @@
+{"value": [
+  {"id": "m1", "computerDnsName": "vpn-gw-01.corp.example", "osPlatform": "Linux", "version": "22.04", "healthStatus": "Active",
+   "exposureLevel": "High", "deviceValue": "High", "machineTags": ["Tier0"], "rbacGroupName": "Perimeter", "lastSeen": "2026-09-14T04:00:00Z",
+   "aadDeviceId": null, "vmMetadata": {"resourceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01"}},
+  {"id": "m2", "computerDnsName": "ws-finance-114.corp.example", "osPlatform": "Windows11", "version": "23H2", "healthStatus": "Active",
+   "exposureLevel": "Medium", "deviceValue": "Normal", "machineTags": [], "rbacGroupName": "Workstations", "lastSeen": "2026-09-14T03:00:00Z", "aadDeviceId": "aad-2"}
+ ], "@odata.nextLink": "https://api.securitycenter.microsoft.com/api/machines?$skiptoken=p2"}

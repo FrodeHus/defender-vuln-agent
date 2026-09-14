@@ -1,0 +1,4 @@
+{"value": [
+  {"id": "va-_-ivanti-_-connect_secure", "productName": "connect_secure", "vendor": "ivanti", "recommendationName": "Update Ivanti Connect Secure to version 22.7R2.5", "recommendedVersion": "22.7R2.5", "remediationType": "Update", "publicExploit": true, "exposedMachinesCount": 6, "totalMachineCount": 6, "weaknesses": 26},
+  {"id": "va-_-adobe-_-acrobat_reader_dc", "productName": "acrobat_reader_dc", "vendor": "adobe", "recommendationName": "Update Adobe Acrobat Reader DC", "recommendedVersion": "24.003.20112", "remediationType": "Update", "publicExploit": false, "exposedMachinesCount": 1140, "totalMachineCount": 1200, "weaknesses": 46}
+]}
