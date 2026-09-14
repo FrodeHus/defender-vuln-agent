@@ -26,6 +26,15 @@ def test_html_renders_trend_table_and_sparkline():
     assert "<svg" not in out.split("<script")[0]  # sparkline is built client-side, not server-rendered
 
 
+def test_html_has_score_trend_chart_container():
+    doc = json.loads(FX.read_text())
+    assert len(doc.get("score_trend") or []) >= 2
+    out = render(doc)
+    assert 'id="score-trend"' in out
+    assert "function scoreTrendChart(" in out
+    assert '<svg id="score-trend"' not in out.split("<script")[0]  # built client-side, not server-rendered
+
+
 def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)

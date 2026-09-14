@@ -27,7 +27,9 @@
     "tenant": "Contoso",
     "sla_breaches": 1,
     "overdue_cves_total": 1,
-    "eos_products": 1
+    "eos_products": 1,
+    "secure_score": 68.5,
+    "patched_7d_critical": 2
   },
   "products": [
     {
@@ -178,7 +180,15 @@
           "kind": "disk",
           "devices": 6
         }
-      ]
+      ],
+      "patched_7d": {
+        "critical": 2,
+        "high": 1,
+        "cves": [
+          "CVE-2026-19001",
+          "CVE-2026-19002"
+        ]
+      }
     },
     {
       "rank": 2,
@@ -279,7 +289,8 @@
         "overdue_by_days": 0
       },
       "eos": null,
-      "fixes": []
+      "fixes": [],
+      "patched_7d": null
     },
     {
       "rank": 3,
@@ -395,7 +406,8 @@
         "overdue_by_days": 0
       },
       "eos": null,
-      "fixes": []
+      "fixes": [],
+      "patched_7d": null
     },
     {
       "rank": 4,
@@ -942,7 +954,8 @@
           "kind": "disk",
           "devices": 312
         }
-      ]
+      ],
+      "patched_7d": null
     },
     {
       "rank": 5,
@@ -2239,7 +2252,8 @@
         "overdue_by_days": 0
       },
       "eos": null,
-      "fixes": []
+      "fixes": [],
+      "patched_7d": null
     },
     {
       "rank": 6,
@@ -3022,7 +3036,8 @@
         "overdue_by_days": 0
       },
       "eos": null,
-      "fixes": []
+      "fixes": [],
+      "patched_7d": null
     }
   ],
   "diff_from_previous": {
@@ -3133,6 +3148,20 @@
         "medium": 107,
         "low": 58
       }
+    }
+  ],
+  "score_trend": [
+    {
+      "run_id": "20260907T080000Z",
+      "generated_at": "2026-09-07T08:00:00+00:00",
+      "exposure_score": 54.0,
+      "secure_score": 62.0
+    },
+    {
+      "run_id": "20260914T080000Z",
+      "generated_at": "2026-09-14T08:00:00+00:00",
+      "exposure_score": 61.0,
+      "secure_score": 68.5
     }
   ]
 }

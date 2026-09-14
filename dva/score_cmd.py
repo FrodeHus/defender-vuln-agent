@@ -1,10 +1,11 @@
 from __future__ import annotations
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from dva.cache import IntelCache
 from dva.config import Scoring, load_scoring
 from dva import exceptions as exceptions_mod
 from dva.errors import DvaError
+from dva.model import product_key
 from dva.rollup import build, display_name, display_vendor
 from dva.run import Run, add_run_arg, resolve_run, cache_dir
 from dva.scoring import product_score, reason_for
@@ -97,6 +98,96 @@ def previous_runs(run: Run, n: int) -> list[Run]:
             continue
         result.append(r)
     return result
+
+
+def _parse_iso(s: str | None) -> datetime | None:
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _all_previous_runs(run: Run) -> list[Run]:
+    """Every previous run (ids < run.id) in the same runs dir with a readable findings.json, newest
+    first, unlike `previous_runs` which is capped by count. Corrupt manifests/findings are skipped."""
+    runs_dir = run.dir.parent
+    if not runs_dir.exists():
+        return []
+    candidates = sorted(p.name for p in runs_dir.iterdir() if p.is_dir() and (p / "manifest.json").exists())
+    candidates = [rid for rid in candidates if rid < run.id]
+    result: list[Run] = []
+    for rid in reversed(candidates):
+        d = runs_dir / rid
+        if not (d / "findings.json").exists():
+            continue
+        try:
+            r = Run(d)
+            r.read_json("findings.json")
+        except DvaError as exc:
+            run.log(f"ignoring previous run {rid} for score trend: {exc}")
+            continue
+        result.append(r)
+    return result
+
+
+def score_trend(run: Run, current_row: dict, store=None, days: int = 365, now: datetime | None = None) -> list[dict]:
+    """[{run_id, generated_at, exposure_score, secure_score}] over the last `days` days, oldest first,
+    including the current run. Uses the store's recorded runs when it has any history, else scans
+    previous runs' findings.json files by summary.generated_at."""
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days)
+
+    def in_window(generated_at):
+        dt = _parse_iso(generated_at)
+        return dt is not None and dt >= cutoff
+
+    if store is not None:
+        prev = [r for r in store.recent_runs(100000) if r["run_id"] != run.id]
+        if prev:
+            rows = [{"run_id": r["run_id"], "generated_at": r.get("generated_at"),
+                     "exposure_score": r.get("exposure_score"), "secure_score": r.get("secure_score")}
+                    for r in prev if in_window(r.get("generated_at"))]
+            rows.append(current_row)
+            return rows
+    rows = []
+    for r in reversed(_all_previous_runs(run)):
+        try:
+            doc_p = r.read_json("findings.json")
+        except DvaError as exc:
+            run.log(f"ignoring previous run {r.id} for score trend: {exc}")
+            continue
+        s = doc_p.get("summary", {})
+        if not in_window(s.get("generated_at")):
+            continue
+        rows.append({"run_id": r.id, "generated_at": s.get("generated_at"),
+                     "exposure_score": s.get("exposure_score"), "secure_score": s.get("secure_score")})
+    rows.append(current_row)
+    return rows
+
+
+def _patched_7d(run: Run) -> dict[str, dict]:
+    """Per-product recently-patched CVE counts from vuln-changes.jsonl: {key: {critical, high, cves}}."""
+    if not run.path("vuln-changes.jsonl").exists():
+        return {}
+    out: dict[str, dict] = {}
+    for row in run.read_jsonl("vuln-changes.jsonl"):
+        if row.get("status") != "Fixed":
+            continue
+        key = product_key(row.get("vendor"), row.get("product"))
+        d = out.setdefault(key, {"critical": 0, "high": 0, "cves": []})
+        sev = (row.get("severity") or "").lower()
+        if sev == "critical":
+            d["critical"] += 1
+            if row.get("cve_id") and len(d["cves"]) < 5:
+                d["cves"].append(row["cve_id"])
+        elif sev == "high":
+            d["high"] += 1
+    return out
 
 
 def _cve_counts_by_severity(rows: list[dict]) -> dict[str, int]:
@@ -235,6 +326,10 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
             "partial_intel": any(r.id not in intel for r, _ in sp.driving),
         })
+    patched_by_key = _patched_7d(run)
+    for row in rows:
+        row["patched_7d"] = patched_by_key.get(row["key"])
+    patched_7d_critical = sum(v["critical"] for v in patched_by_key.values())
     expired_product_keys = {i.product for i in expired_exceptions if i.product}
     expired_cve_ids = {i.cve for i in expired_exceptions if i.cve}
     for row in rows:
@@ -270,12 +365,14 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     inet_risk = {a.id for p in products.values() for a in (assets.get(x) for x in p.asset_ids) if a and a.internet_facing and any(r.severity == "Critical" for r in p.cves.values())}
     generated_at = datetime.now(timezone.utc).isoformat()
     exposure_score = round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None
+    secure_score = round(exposure["secure_score"], 2) if isinstance(exposure.get("secure_score"), (int, float)) else None
     sla_breaches = sum(1 for v in sla_by_key.values() if v["overdue_cves"] > 0)
     current_trend_row = {
         "run_id": run.id, "generated_at": generated_at, "exposure_score": exposure_score,
         "products_action": action_count, "kev_cves": len(kev_ids), "sla_breaches": sla_breaches,
         "cves_by_severity": _cve_counts_by_severity(rows),
     }
+    current_score_row = {"run_id": run.id, "generated_at": generated_at, "exposure_score": exposure_score, "secure_score": secure_score}
     new_cves, fixed_cves = _new_and_fixed_cves(rows, products, prev_doc)
     return {
         "run": run.manifest,
@@ -285,6 +382,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                     "overdue_cves_total": sum(v["overdue_cves"] for v in sla_by_key.values()),
                     "eos_products": sum(1 for p in listed_products.values() if p.eos is not None),
                     "exposure_score": exposure_score,
+                    "secure_score": secure_score,
+                    "patched_7d_critical": patched_7d_critical,
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
                     "generated_at": generated_at, "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
         "products": rows,
@@ -295,6 +394,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
         "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
         "posture": _posture(run),
         "trend": (store and _trend_from_store(store, run, cfg, current_trend_row)) or _trend(run, prevs, current_trend_row),
+        "score_trend": score_trend(run, current_score_row, store=store, now=now),
     }
 
 

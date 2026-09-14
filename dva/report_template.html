@@ -141,13 +141,37 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
     var actionSpark = sparkline(t.map(function(r){ return r.products_action || 0; }), 'var(--crit)');
     var sparks = '<div style="display:flex;gap:24px;margin-top:12px;flex-wrap:wrap"><div><div class="label">Exposure score</div>' + exposureSpark + '</div><div><div class="label">Products needing action</div>' + actionSpark + '</div></div>';
     return '<div class="accepted"><h2>Trend</h2>' + table + sparks + '</div>'; }
+  function scoreTrendChart(){
+    var st = (DOC.score_trend || []).filter(function(r){ return r && r.generated_at; });
+    if (st.length < 1) return '';
+    var w = 640, h = 220, padL = 40, padR = 12, padT = 12, padB = 28;
+    var n = st.length;
+    function xAt(i){ return n > 1 ? padL + i * (w - padL - padR) / (n - 1) : (padL + w - padR) / 2; }
+    function yAt(v){ return padT + (100 - v) / 100 * (h - padT - padB); }
+    function seriesLine(key, color){
+      var pts = [];
+      st.forEach(function(r, i){ var v = r[key]; if (typeof v !== 'number') return; pts.push(xAt(i).toFixed(1) + ',' + yAt(v).toFixed(1)); });
+      if (!pts.length) return '';
+      if (pts.length === 1) { var xy = pts[0].split(','); return '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="3" fill="' + color + '"/>'; }
+      return '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2"/>'; }
+    var gridlines = [0, 25, 50, 75, 100].map(function(v){
+      var gy = yAt(v).toFixed(1);
+      return '<line x1="' + padL + '" x2="' + (w - padR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--line)" stroke-width="1"/>' +
+             '<text x="' + (padL - 6) + '" y="' + (Number(gy) + 4) + '" font-size="10" fill="var(--muted)" text-anchor="end">' + v + '</text>'; }).join('');
+    var xlabels = st.map(function(r, i){
+      if (n > 1 && i !== 0 && i !== n - 1) return '';
+      return '<text x="' + xAt(i).toFixed(1) + '" y="' + (h - padB + 16) + '" font-size="10" fill="var(--muted)" text-anchor="middle">' + esc(String(r.generated_at || '').slice(0, 10)) + '</text>'; }).join('');
+    var svg = '<svg id="score-trend" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" role="img" aria-label="12-month exposure and secure score trend">' +
+      gridlines + xlabels + seriesLine('exposure_score', 'var(--blue)') + seriesLine('secure_score', 'var(--crit)') + '</svg>';
+    var legend = '<div class="legend" style="margin-top:8px"><span><i class="dot" style="background:var(--blue)"></i>Exposure score</span><span><i class="dot" style="background:var(--crit)"></i>Secure score</span></div>';
+    return '<div class="accepted"><h2>Score trend (12 months)</h2>' + svg + legend + '</div>'; }
   function appendix(){ document.getElementById('appendix').innerHTML = '<div><h2>How scores are computed</h2><p>Each product\'s score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Weights live in scoring.yaml.</p></div><div><h2>Grouping</h2><p>Findings are grouped by software product so one row maps to one patch action. Only the three CVEs contributing most to a product\'s score and its most critical assets are shown; full lists are in findings.json.</p></div><div><h2>Data freshness</h2><p>Generated ' + esc(S.generated_at) + '. CVE intelligence is cached for at most 7 days. Sources and their status are listed in the header.</p></div>' + acceptedRisks() + posture(); }
   document.addEventListener('click', function(e){ var t = e.target.closest('[data-filter],[data-sort],[data-open],.rowhead'); if (!t) return;
     if (t.dataset.filter) { state.filter = t.dataset.filter; toolbar(); lists(); }
     else if (t.dataset.sort) { state.sort = t.dataset.sort; toolbar(); lists(); }
     else if (t.dataset.open !== undefined) { var v = t.dataset.open === '1'; state.open = {}; if (v) ROWS.forEach(function(r){ state.open['top:' + r.key] = true; state.open['all:' + r.key] = true; }); lists(); }
     else { var k = t.parentElement.dataset.key; state.open[k] = !state.open[k]; lists(); } });
-  head(); document.getElementById('trend').innerHTML = trend(); toolbar(); lists(); appendix();
+  head(); document.getElementById('trend').innerHTML = trend() + scoreTrendChart(); toolbar(); lists(); appendix();
 })();
 </script>
 </body></html>

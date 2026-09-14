@@ -16,3 +16,9 @@ def test_markdown_structure():
     assert out.startswith("# Vulnerability assessment")
     assert "## Top 10 products to patch" in out and "### 1. Connect Secure" in out
     assert "CVE-2026-21887" in out and "+ 1 more in findings.json" in out
+
+
+def test_markdown_shows_patched_7d_and_score_trend_lines():
+    out = render(json.loads(FX.read_text()))
+    assert "Patched in the last 7 days: 2 critical, 1 high." in out
+    assert "Score trend (12 months): exposure score 54.0/61.0/61.0 (min/max/now); secure score 62.0/68.5/68.5 (min/max/now)." in out

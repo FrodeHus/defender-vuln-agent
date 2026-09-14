@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from dva.auth import TokenProvider, MDE_SCOPE
 from dva.errors import DvaError
@@ -107,9 +108,34 @@ def collect_score(client: Client, run: Run) -> None:
     with _Guard(run, "mde.score"):
         score = _round2(client.get_json("/exposureScore").get("score"))
         groups = {g.get("rbacGroupName"): _round2(g.get("score")) for g in client.get_json("/exposureScore/ByMachineGroups").get("value", [])}
-        run.write_json("exposure.json", {"score": score, "by_group": groups})
+        secure_score = _round2(client.get_json("/configurationScore").get("score"))
+        run.write_json("exposure.json", {"score": score, "by_group": groups, "secure_score": secure_score})
         run.set_source("mde.score", "ok", count=1)
-        run.summary(f"MDE exposure score: {score}.")
+        run.summary(f"MDE exposure score: {score}. Secure score: {secure_score}.")
+
+
+def _norm_change(v: dict) -> dict:
+    return {
+        "device_id": v.get("deviceId"), "vendor": v.get("softwareVendor"), "product": v.get("softwareName"),
+        "version": v.get("softwareVersion"), "cve_id": v.get("cveId"), "severity": v.get("vulnerabilitySeverityLevel"),
+        "status": v.get("status"), "event_time": v.get("eventTimestamp"),
+    }
+
+
+def collect_changes(client: Client, run: Run, since_days: int = 7) -> int:
+    if since_days > 14:
+        raise DvaError(f"since_days={since_days} exceeds the MDE delta API's 14-day limit")
+    with _Guard(run, "mde.changes"):
+        since = (datetime.now(timezone.utc) - timedelta(days=since_days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows = (
+            _norm_change(v)
+            for v in client.paged("/machines/SoftwareVulnerabilityChangesByMachine", {"sinceTime": since, "pageSize": 50000})
+            if v.get("cveId")
+        )
+        n = run.write_jsonl("vuln-changes.jsonl", rows)
+        run.set_source("mde.changes", "ok", count=n)
+        run.summary(f"MDE vulnerability changes: {n} rows written to vuln-changes.jsonl.")
+        return n
 
 
 class _FixtureSession:
@@ -142,9 +168,14 @@ def _run_one(fn):
     return _handler
 
 
+def _run_changes(args) -> int:
+    collect_changes(_client_for(args), resolve_run(args), since_days=args.since_days)
+    return 0
+
+
 def _run_all(args) -> int:
     run, c = resolve_run(args), _client_for(args)
-    collectors = (collect_machines, collect_vulns, collect_recommendations, collect_score)
+    collectors = (collect_machines, collect_vulns, collect_recommendations, collect_score, collect_changes)
     failures = 0
     for fn in collectors:
         try:
@@ -168,6 +199,12 @@ def register(sub) -> None:
         add_run_arg(q)
         q.add_argument("--fixture", help="path to a canned API response JSON file, used instead of calling the API")
         q.set_defaults(func=_run_one(fn))
+
+    ch = s.add_parser("changes")
+    add_run_arg(ch)
+    ch.add_argument("--fixture", help="path to a canned API response JSON file, used instead of calling the API")
+    ch.add_argument("--since-days", type=int, default=7, help="how many days back to look for changes (max 14)")
+    ch.set_defaults(func=_run_changes)
 
     a = s.add_parser("all")
     add_run_arg(a)

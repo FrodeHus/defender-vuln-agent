@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from tests.test_rollup import seed
 from dva.run import Run
-from dva.score_cmd import compute
+from dva.score_cmd import compute, score_trend
 from dva.config import load_scoring
 from dva.cache import IntelCache
 from dva.scoring import CveIntel
@@ -140,3 +140,52 @@ def test_posture_defaults_to_empty_lists_when_no_hunt_files(tmp_path):
     run = seed(tmp_path / "runs")
     doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
     assert doc["posture"] == {"certificates_expiring": [], "config_findings": [], "config_by_impact": {"high": 0, "medium": 0, "low": 0}}
+
+
+def test_patched_7d_grouped_by_product_from_vuln_changes(tmp_path):
+    run = seed(tmp_path / "runs")
+    run.write_jsonl("vuln-changes.jsonl", [
+        {"device_id": "m1", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.5", "cve_id": "CVE-2026-21887", "severity": "Critical", "status": "Fixed", "event_time": "2026-09-13T00:00:00Z"},
+        {"device_id": "m2", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.5", "cve_id": "CVE-2026-20124", "severity": "Critical", "status": "Fixed", "event_time": "2026-09-13T00:00:00Z"},
+        {"device_id": "m1", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.5", "cve_id": "CVE-2025-46512", "severity": "High", "status": "Fixed", "event_time": "2026-09-13T00:00:00Z"},
+        {"device_id": "m2", "vendor": "adobe", "product": "acrobat_reader_dc", "version": "24.003", "cve_id": "CVE-2026-99999", "severity": "Medium", "status": "New", "event_time": "2026-09-13T00:00:00Z"},
+    ])
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    ics = next(r for r in doc["products"] if r["key"] == "ivanti/connect-secure")
+    assert ics["patched_7d"] == {"critical": 2, "high": 1, "cves": ["CVE-2026-21887", "CVE-2026-20124"]}
+    adobe = next(r for r in doc["products"] if r["key"] == "adobe/acrobat-reader-dc")
+    assert adobe["patched_7d"] is None  # only a "New" row, not Fixed
+    assert doc["summary"]["patched_7d_critical"] == 2
+
+
+def test_score_trend_from_two_runs_file_based(tmp_path):
+    runs_dir = tmp_path / "runs"
+    run = seed(runs_dir)
+    prev_dir = runs_dir / "20200101T000000Z"
+    prev_dir.mkdir()
+    prev_dir.joinpath("manifest.json").write_text('{"run_id": "20200101T000000Z", "sources": {}}')
+    prev_dir.joinpath("findings.json").write_text(
+        '{"summary": {"generated_at": "2026-01-01T00:00:00+00:00", "exposure_score": 40.0, "secure_score": 55.0}, "products": []}'
+    )
+    run.write_json("exposure.json", {"score": 54.0, "by_group": {}, "secure_score": 70.0})
+    now = datetime(2026, 9, 14, tzinfo=timezone.utc)
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7), now=now)
+    st = doc["score_trend"]
+    assert len(st) == 2
+    assert st[0] == {"run_id": "20200101T000000Z", "generated_at": "2026-01-01T00:00:00+00:00", "exposure_score": 40.0, "secure_score": 55.0}
+    assert st[1]["run_id"] == run.id and st[1]["exposure_score"] == 54.0 and st[1]["secure_score"] == 70.0
+
+
+def test_score_trend_excludes_rows_older_than_365_days(tmp_path):
+    runs_dir = tmp_path / "runs"
+    run = seed(runs_dir)
+    old_dir = runs_dir / "20200101T000000Z"
+    old_dir.mkdir()
+    old_dir.joinpath("manifest.json").write_text('{"run_id": "20200101T000000Z", "sources": {}}')
+    old_dir.joinpath("findings.json").write_text(
+        '{"summary": {"generated_at": "2020-01-01T00:00:00+00:00", "exposure_score": 10.0, "secure_score": 10.0}, "products": []}'
+    )
+    now = datetime(2026, 9, 14, tzinfo=timezone.utc)
+    current_row = {"run_id": run.id, "generated_at": now.isoformat(), "exposure_score": 54.0, "secure_score": 70.0}
+    st = score_trend(run, current_row, store=None, now=now)
+    assert len(st) == 1 and st[0]["run_id"] == run.id

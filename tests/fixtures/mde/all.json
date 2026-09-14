@@ -170,5 +170,31 @@
         "score": 61.0
       }
     ]
+  },
+  {
+    "score": 72.34
+  },
+  {
+    "value": [
+      {
+        "deviceId": "m1",
+        "softwareVendor": "ivanti",
+        "softwareName": "connect_secure",
+        "softwareVersion": "22.7R2.5",
+        "cveId": "CVE-2026-21887",
+        "vulnerabilitySeverityLevel": "Critical",
+        "status": "Fixed",
+        "eventTimestamp": "2026-09-13T00:00:00Z"
+      },
+      {
+        "deviceId": "m2",
+        "softwareVendor": "adobe",
+        "softwareName": "acrobat_reader_dc",
+        "softwareVersion": "24.002.20000",
+        "cveId": null,
+        "status": "New",
+        "eventTimestamp": "2026-09-12T00:00:00Z"
+      }
+    ]
   }
 ]

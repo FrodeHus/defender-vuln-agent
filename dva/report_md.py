@@ -26,6 +26,20 @@ def _fmt_severity_counts(d: dict) -> str:
     return ", ".join(f"{d.get(s, 0)} {s}" for s in ("critical", "high", "medium", "low", "unknown") if d.get(s, 0))
 
 
+def _score_trend_line(doc: dict) -> str | None:
+    st = doc.get("score_trend") or []
+    exp = [r["exposure_score"] for r in st if r.get("exposure_score") is not None]
+    sec = [r["secure_score"] for r in st if r.get("secure_score") is not None]
+    if not exp and not sec:
+        return None
+    parts = []
+    if exp:
+        parts.append(f"exposure score {min(exp)}/{max(exp)}/{exp[-1]} (min/max/now)")
+    if sec:
+        parts.append(f"secure score {min(sec)}/{max(sec)}/{sec[-1]} (min/max/now)")
+    return "Score trend (12 months): " + "; ".join(parts) + "."
+
+
 def _trend_section(doc: dict) -> list[str]:
     trend = doc.get("trend") or []
     if len(trend) < 2:
@@ -48,6 +62,9 @@ def _trend_section(doc: dict) -> list[str]:
         bits.append(f"Fixed: {_fmt_severity_counts(fc)}")
     if bits:
         out += ["", " · ".join(bits) + " since the previous run."]
+    score_line = _score_trend_line(doc)
+    if score_line:
+        out += ["", score_line]
     return out
 
 
@@ -78,6 +95,9 @@ def render(doc: dict) -> str:
         if fixes:
             top_fix = fixes[0]
             out += ["", f"Upgrading to {top_fix['update']} fixes {top_fix['cves']} of {total_cves} CVEs."]
+        patched = r.get("patched_7d")
+        if patched and (patched.get("critical") or patched.get("high")):
+            out += ["", f"Patched in the last 7 days: {patched.get('critical', 0)} critical, {patched.get('high', 0)} high."]
         out += ["",
                 f"Driving vulnerabilities ({total_cves} open CVEs in total" + (", partial intel" if r.get("partial_intel") else "") + "):"]
         for c in r["driving_cves"]:

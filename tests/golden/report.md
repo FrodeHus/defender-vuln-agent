@@ -17,6 +17,8 @@ Since run 20260907T080000Z: entered the top 10: Zoom Workplace; left the top 10:
 
 New: 1 low · Fixed: 1 medium since the previous run.
 
+Score trend (12 months): exposure score 54.0/61.0/61.0 (min/max/now); secure score 62.0/68.5/68.5 (min/max/now).
+
 ## Top 10 products to patch
 
 | # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |
@@ -37,6 +39,8 @@ Risk: The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in C
 Remediation: Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.
 
 Upgrading to 22.7R2.5 fixes 3 of 26 CVEs.
+
+Patched in the last 7 days: 2 critical, 1 high.
 
 Driving vulnerabilities (26 open CVEs in total):
 - CVE-2026-21887 · CVSS 9.8 · EPSS 0.94 · KEV · Exploit · Unauthenticated remote code execution in web component
