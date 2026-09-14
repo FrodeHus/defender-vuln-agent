@@ -24,3 +24,29 @@ def test_summary_prints_and_records(tmp_path, capsys):
     r.summary("machines: 3 collected")
     assert "machines: 3" in capsys.readouterr().out
     assert "machines: 3" in (r.dir / "summary.txt").read_text()
+
+def test_rapid_creation_retries(tmp_path):
+    runs = [Run.create(tmp_path) for _ in range(20)]
+    ids = [r.id for r in runs]
+    assert len(ids) == len(set(ids)), "all ids should be unique"
+    assert all(r.dir.exists() for r in runs), "all directories should exist"
+
+def test_open_corrupt_manifest(tmp_path):
+    from dva.errors import DvaError
+    import pytest
+    run_dir = tmp_path / "test_run"
+    run_dir.mkdir()
+    (run_dir / "manifest.json").write_text("{invalid json")
+    with pytest.raises(DvaError, match="corrupt manifest"):
+        Run.open(run_dir)
+
+def test_latest_skips_corrupt_manifest(tmp_path):
+    # Create a valid run
+    valid_run = Run.create(tmp_path)
+    # Create a corrupt manifest in another directory
+    corrupt_dir = tmp_path / "20260101T000000Z"
+    corrupt_dir.mkdir()
+    (corrupt_dir / "manifest.json").write_text("{invalid json")
+    # latest should return the valid run, not fail
+    latest = Run.latest(tmp_path)
+    assert latest.id == valid_run.id
