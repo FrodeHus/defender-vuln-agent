@@ -10,11 +10,11 @@ After `dva run new` (or with `--run` pointed at an existing run), to pull the in
 ## Commands
 
 ```
-python -m dva mde machines [--run RUN] [--fixture FILE]
-python -m dva mde vulns [--run RUN] [--fixture FILE]
-python -m dva mde recommendations [--run RUN] [--fixture FILE]
-python -m dva mde score [--run RUN] [--fixture FILE]
-python -m dva mde all [--run RUN] [--fixture FILE]
+python3 -m dva mde machines [--run RUN] [--fixture FILE]
+python3 -m dva mde vulns [--run RUN] [--fixture FILE]
+python3 -m dva mde recommendations [--run RUN] [--fixture FILE]
+python3 -m dva mde score [--run RUN] [--fixture FILE]
+python3 -m dva mde all [--run RUN] [--fixture FILE]
 ```
 
 `mde all` runs the four collectors in sequence against one run directory; prefer it over calling each collector separately. `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--fixture` replaces the live API call with a canned JSON response file, for offline runs and tests.

@@ -32,5 +32,5 @@ Manual steps remaining:
 1. Grant admin consent: az ad app permission admin-consent --id $APP_ID   (needs a Global or Privileged Role Administrator)
 2. For Defender for Cloud (phase 2): assign Reader on each subscription:
    az role assignment create --assignee $APP_ID --role Reader --scope /subscriptions/<sub-id>
-3. Verify: python -m dva doctor
+3. Verify: python3 -m dva doctor
 EOT

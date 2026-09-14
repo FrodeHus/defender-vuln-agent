@@ -42,7 +42,7 @@ drive its score, its CVE counts by severity, and its most critical affected asse
 .mcp.json                          # registers cve-mcp-server (stdio)
 dva/                               # shared Python package
   __init__.py
-  __main__.py                      # `python -m dva <command>`
+  __main__.py                      # `python3 -m dva <command>`
   auth.py                          # MSAL client-credentials, per-resource token cache
   http.py                          # session with retry/backoff, Retry-After, OData paging
   run.py                           # run directory creation, manifest, summaries
@@ -100,7 +100,7 @@ scope per resource: `https://api.securitycenter.microsoft.com/.default`,
 memory for the run and on disk in `.cache/tokens.json` (mode 600) so repeated commands do not
 re-authenticate.
 
-**Doctor.** `python -m dva doctor` makes one cheap call per permission and prints a table:
+**Doctor.** `python3 -m dva doctor` makes one cheap call per permission and prints a table:
 
 ```
 MDE  Machine.Read.All               ok   GET /machines?$top=1
@@ -310,16 +310,16 @@ The agent may publish `report.html` as an artifact when asked.
 deep reasoning. Its tools are limited to
 Bash, Read, Glob, Grep, and the CVE MCP server's tools. Its instructions:
 
-1. Run `python -m dva doctor`. Stop and report if it fails.
-2. Create a run: `python -m dva run new` prints the run directory.
+1. Run `python3 -m dva doctor`. Stop and report if it fails.
+2. Create a run: `python3 -m dva run new` prints the run directory.
 3. Collect: `dva mde machines`, `dva mde vulns`, `dva mde recommendations`, `dva mde score`, then
    `dva hunt internet-facing`, `dva hunt exploited-cves`, `dva hunt device-tags`. In phase 2 also
    `dva cloud vulns` when `sources.yaml` enables it. Read only the printed summaries.
 4. Enrich: loop over `dva enrich --list` chunks (top CVEs per product by Defender CVSS, capped),
    call `bulk_cve_lookup` per chunk, then `triage_cve` only for ids the bulk result marks KEV or
    EPSS ≥ 0.5, store with `dva enrich --store`. Skip gracefully if the server is down.
-5. Score: `python -m dva score`.
-6. Report: `python -m dva report --all`.
+5. Score: `python3 -m dva score`.
+6. Report: `python3 -m dva report --all`.
 7. Read `report.md` (only this file) and give the user a five-line summary with the top three
    products and any source marked partial or failed.
 

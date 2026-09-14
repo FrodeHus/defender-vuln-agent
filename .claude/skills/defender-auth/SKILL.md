@@ -10,7 +10,7 @@ Before the first `dva` run in a new environment, when `dva doctor` reports a fai
 ## Commands
 
 ```
-python -m dva doctor
+python3 -m dva doctor
 ```
 Checks the configured credential and every required permission, printing one line per check in the format `<API> <permission> ok|FAIL <detail>`, e.g.:
 - Success: `MDE   Machine.Read.All                  ok   GET /machines`

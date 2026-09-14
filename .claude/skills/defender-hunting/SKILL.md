@@ -10,8 +10,8 @@ After `dva mde all`, to pull context the export APIs don't cover (internet-facin
 ## Commands
 
 ```
-python -m dva hunt [names ...] [--run RUN] [--timespan SPAN] [--fixture FILE]
-python -m dva hunt --kql "<query>" --name <name> [--run RUN] [--timespan SPAN]
+python3 -m dva hunt [names ...] [--run RUN] [--timespan SPAN] [--fixture FILE]
+python3 -m dva hunt --kql "<query>" --name <name> [--run RUN] [--timespan SPAN]
 ```
 
 Named queries (files in `dva/queries/`, pass the stem as `names`):

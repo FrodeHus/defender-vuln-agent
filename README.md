@@ -45,7 +45,7 @@ A command-line tool and Claude Code agent for assessing Microsoft Defender for E
    ```
 
    Alternatively put the same `KEY=VALUE` lines in a `.env` file in the repository root (it is
-   gitignored). `python -m dva` reads `.env` from the current directory or the repository root at
+   gitignored). `python3 -m dva` reads `.env` from the current directory or the repository root at
    startup; variables already exported in the shell take precedence over the file.
 
    Other environment variables the tool honours:
@@ -62,7 +62,7 @@ A command-line tool and Claude Code agent for assessing Microsoft Defender for E
 5. Verify credentials and permissions:
 
    ```bash
-   python -m dva doctor
+   python3 -m dva doctor
    ```
 
    This calls each required API with a minimal read-only request and prints a pass/fail table. See `setup/permissions.md` for what each permission is used for and how to fix a failure.
@@ -81,14 +81,14 @@ It runs `dva doctor`, collects from MDE and Advanced Hunting, enriches the CVEs 
 To run the same pipeline manually:
 
 ```bash
-export DVA_RUN=$(python -m dva run new)
-python -m dva mde all
-python -m dva hunt internet-facing exploited-cves device-tags
-python -m dva enrich --list                      # prints {"chunk": N, "cve_ids": [...]} lines
+export DVA_RUN=$(python3 -m dva run new)
+python3 -m dva mde all
+python3 -m dva hunt internet-facing exploited-cves device-tags
+python3 -m dva enrich --list                      # prints {"chunk": N, "cve_ids": [...]} lines
 # for each chunk, call bulk_cve_lookup with those cve_ids, save the result, then:
-python -m dva enrich --store "$DVA_RUN/cve-chunk-1.json"
-python -m dva score
-python -m dva report --all
+python3 -m dva enrich --store "$DVA_RUN/cve-chunk-1.json"
+python3 -m dva score
+python3 -m dva report --all
 ```
 
 Reports land in `$DVA_RUN/report.md`, `report.html` and `report.json`.
@@ -99,13 +99,13 @@ The full pipeline can be exercised with no credentials and no network access, us
 
 ```bash
 export DVA_RUNS_DIR=/tmp/dva-demo/runs DVA_CACHE_DIR=/tmp/dva-demo/cache
-export DVA_RUN=$(python -m dva run new)
-python -m dva mde all --fixture tests/fixtures/mde/all.json
-python -m dva hunt internet-facing --fixture tests/fixtures/hunting/internet-facing.json
-python -m dva enrich --list
-python -m dva enrich --store tests/fixtures/cve/bulk.json
-python -m dva score
-python -m dva report --all
+export DVA_RUN=$(python3 -m dva run new)
+python3 -m dva mde all --fixture tests/fixtures/mde/all.json
+python3 -m dva hunt internet-facing --fixture tests/fixtures/hunting/internet-facing.json
+python3 -m dva enrich --list
+python3 -m dva enrich --store tests/fixtures/cve/bulk.json
+python3 -m dva score
+python3 -m dva report --all
 ```
 
 `$DVA_RUN` then contains a complete run: `report.md`/`report.html`/`report.json` describing an Ivanti Connect Secure product driven by the KEV-listed `CVE-2026-21887` on the internet-facing, Tier0, high-value device `vpn-gw-01.corp.example`.

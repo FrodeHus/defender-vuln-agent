@@ -10,7 +10,7 @@ After `dva run new` and `dva mde all` (or with `--run` pointed at an existing ru
 ## Commands
 
 ```
-python -m dva cloud vulns [--run RUN] [--subscriptions SUB [SUB ...]] [--fixture FILE]
+python3 -m dva cloud vulns [--run RUN] [--subscriptions SUB [SUB ...]] [--fixture FILE]
 ```
 
 `--subscriptions` defaults to `config/sources.yaml`'s `subscriptions` list. `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--fixture` replaces the live Resource Graph call with a canned JSON response file, for offline runs and tests.

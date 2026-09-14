@@ -10,10 +10,10 @@ After `dva mde all` and `dva hunt` have populated a run directory, to select whi
 ## Commands
 
 ```
-python -m dva enrich --list [--run RUN]
-python -m dva enrich --store FILE [--run RUN]
-python -m dva score [--run RUN]
-python -m dva report [--md] [--html] [--json] [--all] [--run RUN]
+python3 -m dva enrich --list [--run RUN]
+python3 -m dva enrich --store FILE [--run RUN]
+python3 -m dva score [--run RUN]
+python3 -m dva report [--md] [--html] [--json] [--all] [--run RUN]
 ```
 
 `enrich --list` prints one JSON line per chunk: `{"chunk": n, "cve_ids": [...]}` (cached CVEs already excluded). For each chunk, call the cve-mcp tool `bulk_cve_lookup(cve_ids)` with that exact list (max 20 ids per call — `enrich --list` already chunks to this size), save the raw tool result to a file, then run `dva enrich --store FILE` to merge it in. For any CVE the bulk result flags as KEV or EPSS ≥ 0.5, call `triage_cve(cve_id, depth)` with `depth="standard"` (use `"deep"` only if asked for more detail), save the result, and store it with `enrich --store` the same way. `dva score` writes `findings.json`; `dva report --all` (equivalent to `--md --html --json`) renders it.

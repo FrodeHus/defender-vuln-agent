@@ -4,7 +4,7 @@
 
 **Goal:** A Claude Code agent plus a `dva` Python package that pulls Defender inventory and vulnerability data to files, enriches only the top CVEs per software product through the cve-mcp-server, scores products, and renders Markdown, HTML and JSON reports.
 
-**Architecture:** Every `python -m dva <command>` reads or writes files under `runs/<run id>/` and prints a short summary; the agent orchestrates commands and calls the CVE MCP tools for the small candidate list that `dva enrich --list` prints. Collectors (`mde.py`, `hunting.py`) share one HTTP client with retry and OData paging and one MSAL token provider. `scoring.py` rolls findings up to products and computes scores from `config/scoring.yaml`; three renderers read only `findings.json`.
+**Architecture:** Every `python3 -m dva <command>` reads or writes files under `runs/<run id>/` and prints a short summary; the agent orchestrates commands and calls the CVE MCP tools for the small candidate list that `dva enrich --list` prints. Collectors (`mde.py`, `hunting.py`) share one HTTP client with retry and OData paging and one MSAL token provider. `scoring.py` rolls findings up to products and computes scores from `config/scoring.yaml`; three renderers read only `findings.json`.
 
 **Tech Stack:** Python 3.11+, `msal`, `requests`, `pyyaml`, `pytest`; no other runtime dependencies. Claude Code agent + skills; `cve-mcp-server` over stdio.
 
@@ -175,7 +175,7 @@ def run(args) -> int:
     raise DvaError("doctor not implemented yet")
 ```
 
-`README.md`: two paragraphs, what the tool does and `pip install -e ".[dev]"`, `pytest`, `python -m dva --help`.
+`README.md`: two paragraphs, what the tool does and `pip install -e ".[dev]"`, `pytest`, `python3 -m dva --help`.
 
 - [ ] **Step 4: Install and run tests**
 
@@ -774,7 +774,7 @@ def _latest(args) -> int:
     print(r.dir); return 0
 ```
 
-- [ ] **Step 4: Run tests** → 3 passed. Also `python -m dva run new` prints a directory.
+- [ ] **Step 4: Run tests** → 3 passed. Also `python3 -m dva run new` prints a directory.
 - [ ] **Step 5: Commit** → `git add dva/run.py tests/test_run.py && git commit -m "feat: run directories with manifest, logs and summaries"`
 
 ---
@@ -2402,7 +2402,7 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
 </body></html>
 ```
 
-- [ ] **Step 5: Run tests** → `pytest tests/test_report_html.py -v` → 2 passed. Then render the fixture to a file and open it in a browser to check it against the mockup at 1300 px and 820 px wide: `python -c "import json;from dva.report_html import render;open('/tmp/r.html','w').write(render(json.load(open('tests/fixtures/sample-run/findings.json'))))"`. Fix any visible layout difference from `docs/design/report/Main.dc.html` before committing.
+- [ ] **Step 5: Run tests** → `pytest tests/test_report_html.py -v` → 2 passed. Then render the fixture to a file and open it in a browser to check it against the mockup at 1300 px and 820 px wide: `python3 -c "import json;from dva.report_html import render;open('/tmp/r.html','w').write(render(json.load(open('tests/fixtures/sample-run/findings.json'))))"`. Fix any visible layout difference from `docs/design/report/Main.dc.html` before committing.
 - [ ] **Step 6: Commit** → `git add dva/report_template.html dva/report_html.py tests/test_report_html.py && git commit -m "feat: self-contained HTML report in the Elevate report style"`
 
 ---
@@ -2472,7 +2472,7 @@ Manual steps remaining:
 1. Grant admin consent: az ad app permission admin-consent --id $APP_ID   (needs a Global or Privileged Role Administrator)
 2. For Defender for Cloud (phase 2): assign Reader on each subscription:
    az role assignment create --assignee $APP_ID --role Reader --scope /subscriptions/<sub-id>
-3. Verify: python -m dva doctor
+3. Verify: python3 -m dva doctor
 EOT
 ```
 
@@ -2543,22 +2543,22 @@ model: sonnet
 tools: Bash, Read, Glob, Grep, mcp__cve-mcp__bulk_cve_lookup, mcp__cve-mcp__triage_cve, mcp__cve-mcp__lookup_cve, mcp__cve-mcp__check_kev_status, mcp__cve-mcp__get_epss_score
 ---
 
-You are the vulnerability assessor for this repository. You run `python -m dva` commands in order, read only their printed summaries, call the CVE MCP tools for the exact ids `dva enrich --list` prints, and finish with a short summary. You never change anything in Defender or Azure; the app registration has no write permissions.
+You are the vulnerability assessor for this repository. You run `python3 -m dva` commands in order, read only their printed summaries, call the CVE MCP tools for the exact ids `dva enrich --list` prints, and finish with a short summary. You never change anything in Defender or Azure; the app registration has no write permissions.
 
 ## Workflow
 
-1. `python -m dva doctor`. If it exits non-zero, stop and report which permissions failed, pointing at setup/permissions.md.
-2. `python -m dva run new` and export its output as `DVA_RUN` for the remaining commands (`export DVA_RUN=$(python -m dva run new)`).
-3. Collect: `python -m dva mde all`, then `python -m dva hunt internet-facing exploited-cves device-tags`. Warnings about a single failed source are fine; continue.
-4. Enrich: run `python -m dva enrich --list`. For each printed line `{"chunk": n, "cve_ids": [...]}` call `bulk_cve_lookup` with `cve_ids` set to that list, save the tool result unchanged to `$DVA_RUN/cve-chunk-<n>.json` with a heredoc, and run `python -m dva enrich --store $DVA_RUN/cve-chunk-<n>.json`. Then for every CVE the bulk result marks as in KEV or with EPSS ≥ 0.5, call `triage_cve` with `cve_id` and `depth` = `standard`, save to `$DVA_RUN/cve-triage-<id>.json`, and store it the same way. If the CVE server is unreachable, say so and continue; scoring works without it.
-5. `python -m dva score`.
-6. `python -m dva report --all`.
+1. `python3 -m dva doctor`. If it exits non-zero, stop and report which permissions failed, pointing at setup/permissions.md.
+2. `python3 -m dva run new` and export its output as `DVA_RUN` for the remaining commands (`export DVA_RUN=$(python3 -m dva run new)`).
+3. Collect: `python3 -m dva mde all`, then `python3 -m dva hunt internet-facing exploited-cves device-tags`. Warnings about a single failed source are fine; continue.
+4. Enrich: run `python3 -m dva enrich --list`. For each printed line `{"chunk": n, "cve_ids": [...]}` call `bulk_cve_lookup` with `cve_ids` set to that list, save the tool result unchanged to `$DVA_RUN/cve-chunk-<n>.json` with a heredoc, and run `python3 -m dva enrich --store $DVA_RUN/cve-chunk-<n>.json`. Then for every CVE the bulk result marks as in KEV or with EPSS ≥ 0.5, call `triage_cve` with `cve_id` and `depth` = `standard`, save to `$DVA_RUN/cve-triage-<id>.json`, and store it the same way. If the CVE server is unreachable, say so and continue; scoring works without it.
+5. `python3 -m dva score`.
+6. `python3 -m dva report --all`.
 7. Read `$DVA_RUN/report.md` (this is the only run file you read) and reply with: the three top products with score and one-line reason, the count of products needing action, any source marked partial or failed, and the path of the run directory.
 
 ## Rules
 
 - Never read raw run files (`vulns.jsonl`, `machines.json`, `hunt-*.json`, `enrichment.json`, `findings.json`). Summaries and `report.md` are enough. Never `cat` them.
-- Ad hoc KQL only through `python -m dva hunt --kql "<query>" --name <name>`; read-only tables only; keep results under 10,000 rows with `summarize` or `take`.
+- Ad hoc KQL only through `python3 -m dva hunt --kql "<query>" --name <name>`; read-only tables only; keep results under 10,000 rows with `summarize` or `take`.
 - Do not paste CVE server results into your reply; store them to files and let `dva` merge them.
 - If asked to change scoring, edit `config/scoring.yaml` and re-run steps 5 and 6 only.
 ```
@@ -2621,7 +2621,7 @@ def test_offline_pipeline(tmp_path):
 
 - [ ] **Step 2: Run to verify fail** → FAIL (fixtures missing).
 - [ ] **Step 3: Write the fixtures** as described, then run → `pytest tests/test_e2e.py -v` → passed. Run the full suite: `pytest -q` → all passed.
-- [ ] **Step 4: Update README.md** with sections: What it does; Setup (venv, `pip install -e ".[dev]"`, install cve-mcp-server into the venv, `setup/create-app.sh`, env vars, `python -m dva doctor`); Running the agent (`claude` then ask for an assessment, or the manual command sequence); Offline demo (the e2e command list with `--fixture`); Tuning (`config/scoring.yaml` keys); Outputs (run directory layout); First-run checklist (capture a real `bulk_cve_lookup` result into `tests/fixtures/cve/bulk.json`).
+- [ ] **Step 4: Update README.md** with sections: What it does; Setup (venv, `pip install -e ".[dev]"`, install cve-mcp-server into the venv, `setup/create-app.sh`, env vars, `python3 -m dva doctor`); Running the agent (`claude` then ask for an assessment, or the manual command sequence); Offline demo (the e2e command list with `--fixture`); Tuning (`config/scoring.yaml` keys); Outputs (run directory layout); First-run checklist (capture a real `bulk_cve_lookup` result into `tests/fixtures/cve/bulk.json`).
 - [ ] **Step 5: Commit** → `git add tests README.md && git commit -m "test: offline end-to-end pipeline and README"`
 
 ---
@@ -2630,7 +2630,7 @@ def test_offline_pipeline(tmp_path):
 
 **Files:**
 - Create: `dva/cloud.py`, `tests/test_cloud.py`, `tests/fixtures/cloud/subassessments.json`
-- Modify: `dva/rollup.py` (add cloud findings and image assets), `dva/__main__.py` (`COMMAND_MODULES` add `dva.cloud`), `config/sources.yaml` (`cloud: true`, subscriptions), `.claude/skills/defender-cloud/SKILL.md`, agent workflow step 3 (`python -m dva cloud vulns` when enabled)
+- Modify: `dva/rollup.py` (add cloud findings and image assets), `dva/__main__.py` (`COMMAND_MODULES` add `dva.cloud`), `config/sources.yaml` (`cloud: true`, subscriptions), `.claude/skills/defender-cloud/SKILL.md`, agent workflow step 3 (`python3 -m dva cloud vulns` when enabled)
 
 **Interfaces:**
 - Consumes: `Client` with `ARM_SCOPE`, `Run`, `load_sources`.

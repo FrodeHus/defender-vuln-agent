@@ -29,7 +29,7 @@ The app registration credential must be configured via one of these sets of envi
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
-| Machine.Read.All | Device inventory, tags, exposure level, device value | Device queries fail; `python -m dva doctor` reports list operations unavailable | Success: `MDE   Machine.Read.All                  ok   GET /machines` or Failure: `MDE   Machine.Read.All                  FAIL GET https://api.securitycenter.microsoft.com/api/machines failed with HTTP 403: Insufficient privileges to complete the operation.` |
+| Machine.Read.All | Device inventory, tags, exposure level, device value | Device queries fail; `python3 -m dva doctor` reports list operations unavailable | Success: `MDE   Machine.Read.All                  ok   GET /machines` or Failure: `MDE   Machine.Read.All                  FAIL GET https://api.securitycenter.microsoft.com/api/machines failed with HTTP 403: Insufficient privileges to complete the operation.` |
 | Vulnerability.Read.All | Software vulnerabilities per machine, CVE metadata | Vulnerability discovery fails; software inventory incomplete | Success: `MDE   Vulnerability.Read.All            ok   GET /vulnerabilities` or Failure: `MDE   Vulnerability.Read.All            FAIL GET https://api.securitycenter.microsoft.com/api/vulnerabilities failed with HTTP 403: Insufficient privileges to complete the operation.` |
 | Software.Read.All | Software inventory and version distribution | Software enumeration unavailable; risk assessment incomplete | Success: `MDE   Software.Read.All                 ok   GET /software` or Failure: `MDE   Software.Read.All                 FAIL GET https://api.securitycenter.microsoft.com/api/software failed with HTTP 403: Insufficient privileges to complete the operation.` |
 | SecurityRecommendation.Read.All | Remediation text per product | Remediation recommendations missing from output | Success: `MDE   SecurityRecommendation.Read.All   ok   GET /recommendations` or Failure: `MDE   SecurityRecommendation.Read.All   FAIL GET https://api.securitycenter.microsoft.com/api/recommendations failed with HTTP 403: Insufficient privileges to complete the operation.` |
@@ -64,7 +64,7 @@ This requires a Global Administrator or Privileged Role Administrator in the ten
 Verify all permissions are correctly configured with:
 
 ```bash
-python -m dva doctor
+python3 -m dva doctor
 ```
 
 Each check prints one line in the format: `<API> <permission> ok|FAIL <detail>`
