@@ -39,7 +39,7 @@ The app registration credential must be configured via one of these sets of envi
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
-| ThreatHunting.Read.All | Advanced Hunting queries (phase 2) | Advanced Hunting queries fail; threat intel integration unavailable | Success: `Graph ThreatHunting.Read.All            ok   POST /security/runHuntingQuery` or Failure: `Graph ThreatHunting.Read.All            FAIL POST https://graph.microsoft.com/v1.0/security/runHuntingQuery failed with HTTP 403: Authorization_RequestDenied` |
+| ThreatHunting.Read.All | Advanced Hunting queries | Advanced Hunting queries fail; threat intel integration unavailable | Success: `Graph ThreatHunting.Read.All            ok   POST /security/runHuntingQuery` or Failure: `Graph ThreatHunting.Read.All            FAIL POST https://graph.microsoft.com/v1.0/security/runHuntingQuery failed with HTTP 403: Authorization_RequestDenied` |
 
 ### Azure RBAC
 
