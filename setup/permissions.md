@@ -23,27 +23,29 @@ The app registration credential must be configured via one of these sets of envi
 
 ## API Permissions
 
+**Note on HTTP status codes**: An HTTP 401 response means the token was rejected (wrong client secret, wrong tenant ID, or token expired); an HTTP 403 means the application has the permission but admin consent was not granted or the caller lacks the required role assignment. Both will appear in doctor output as failures with the HTTP status code and server detail message.
+
 ### WindowsDefenderATP API (`fc780465-2017-40d4-a0c5-307022471b92`)
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
-| Machine.Read.All | Device inventory, tags, exposure level, device value | Device queries fail; `python -m dva doctor` reports list operations unavailable | `WindowsDefenderATP Machine.Read.All FAIL unable to list machines` |
-| Vulnerability.Read.All | Software vulnerabilities per machine, CVE metadata | Vulnerability discovery fails; software inventory incomplete | `WindowsDefenderATP Vulnerability.Read.All FAIL unable to query vulnerabilities` |
-| Software.Read.All | Software inventory and version distribution | Software enumeration unavailable; risk assessment incomplete | `WindowsDefenderATP Software.Read.All FAIL unable to enumerate software` |
-| SecurityRecommendation.Read.All | Remediation text per product | Remediation recommendations missing from output | `WindowsDefenderATP SecurityRecommendation.Read.All FAIL unable to fetch recommendations` |
-| Score.Read.All | Organization exposure score and trends | Exposure score unavailable; trending analysis incomplete | `WindowsDefenderATP Score.Read.All FAIL unable to fetch exposure score` |
+| Machine.Read.All | Device inventory, tags, exposure level, device value | Device queries fail; `python -m dva doctor` reports list operations unavailable | `MDE    Machine.Read.All              ok   GET /machines` (success) or `MDE    Machine.Read.All              FAIL GET https://api.securitycenter.microsoft.com/api/machines failed with HTTP 403: Insufficient privileges to complete the operation.` (permission/consent missing) |
+| Vulnerability.Read.All | Software vulnerabilities per machine, CVE metadata | Vulnerability discovery fails; software inventory incomplete | `MDE    Vulnerability.Read.All       ok   GET /vulnerabilities` (success) or `MDE    Vulnerability.Read.All       FAIL GET https://api.securitycenter.microsoft.com/api/vulnerabilities failed with HTTP 403: ...` (permission/consent missing) |
+| Software.Read.All | Software inventory and version distribution | Software enumeration unavailable; risk assessment incomplete | `MDE    Software.Read.All             ok   GET /software` (success) or `MDE    Software.Read.All             FAIL GET https://api.securitycenter.microsoft.com/api/software failed with HTTP 403: ...` (permission/consent missing) |
+| SecurityRecommendation.Read.All | Remediation text per product | Remediation recommendations missing from output | `MDE    SecurityRecommendation.Read.All ok   GET /recommendations` (success) or `MDE    SecurityRecommendation.Read.All FAIL GET https://api.securitycenter.microsoft.com/api/recommendations failed with HTTP 403: ...` (permission/consent missing) |
+| Score.Read.All | Organization exposure score and trends | Exposure score unavailable; trending analysis incomplete | `MDE    Score.Read.All               ok   GET /exposureScore` (success) or `MDE    Score.Read.All               FAIL GET https://api.securitycenter.microsoft.com/api/exposureScore failed with HTTP 403: ...` (permission/consent missing) |
 
 ### Microsoft Graph (`00000003-0000-0000-c000-000000000000`)
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
-| ThreatHunting.Read.All | Advanced Hunting queries (phase 2) | Advanced Hunting queries fail; threat intel integration unavailable | `MicrosoftGraph ThreatHunting.Read.All FAIL unable to run hunting queries` |
+| ThreatHunting.Read.All | Advanced Hunting queries (phase 2) | Advanced Hunting queries fail; threat intel integration unavailable | `Graph  ThreatHunting.Read.All       ok   POST /security/runHuntingQuery` (success) or `Graph  ThreatHunting.Read.All       FAIL POST https://graph.microsoft.com/v1.0/security/runHuntingQuery failed with HTTP 403: ...` (permission/consent missing) |
 
 ### Azure RBAC
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
-| Reader on each subscription (config/sources.yaml) | Resource Graph reads for Defender for Cloud (phase 2) | Resource Graph queries fail; cloud assessments unavailable | `AzureRBAC Reader on <subscription> FAIL insufficient role on <subscription>` |
+| Reader on each subscription (config/sources.yaml) | Resource Graph reads for Defender for Cloud (phase 2) | Resource Graph queries fail; cloud assessments unavailable | `ARM    Reader (12345678-1234-1234-1234-123456789012) ok   POST /providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01` (success) or `ARM    Reader (12345678-1234-1234-1234-123456789012) FAIL POST https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01 failed with HTTP 403: ...` (RBAC role missing) |
 
 ## Granting Permissions
 
