@@ -28,6 +28,6 @@ python -m dva report [--md] [--html] [--json] [--all] [--run RUN]
 
 ## Gotchas
 
-- Never paste raw CVE server results into a reply; write them to a file and let `dva enrich --store` merge them.
+- Never paste raw CVE server results into a reply; write them to a file and let `dva enrich --store` merge them. Use a quoted heredoc delimiter (`cat <<'JSON' > FILE` ... `JSON`) so the shell writes the JSON byte for byte — an unquoted delimiter expands `$`, backticks and backslash escapes and corrupts it.
 - `enrich --list` excludes CVEs already cached within `cache_ttl_days`; an empty chunk list means nothing new needs enrichment.
 - Never `cat` `enrichment.json` or `findings.json`; read `report.md` instead.

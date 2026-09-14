@@ -9,6 +9,7 @@ def test_agent_definition():
     for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --list", "bulk_cve_lookup", "triage_cve", "dva enrich --store", "dva score", "dva report --all"]:
         assert step in text
     assert "never read raw" in text.lower() or "never cat" in text.lower()
+    assert "<<'JSON'" in text
 
 def test_skills_and_mcp():
     for s in ["defender-auth", "defender-inventory", "defender-hunting", "vuln-prioritize-report"]:
