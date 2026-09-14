@@ -30,6 +30,8 @@ def test_rapid_creation_retries(tmp_path):
     ids = [r.id for r in runs]
     assert len(ids) == len(set(ids)), "all ids should be unique"
     assert all(r.dir.exists() for r in runs), "all directories should exist"
+    latest = Run.latest(tmp_path)
+    assert latest.id == runs[-1].id, "latest should be the last created run"
 
 def test_open_corrupt_manifest(tmp_path):
     from dva.errors import DvaError
@@ -50,3 +52,10 @@ def test_latest_skips_corrupt_manifest(tmp_path):
     # latest should return the valid run, not fail
     latest = Run.latest(tmp_path)
     assert latest.id == valid_run.id
+
+def test_runs_dir_option(tmp_path, capsys):
+    from dva.__main__ import main
+    result = main(["run", "new", "--runs-dir", str(tmp_path)])
+    output = capsys.readouterr().out.strip()
+    assert result == 0
+    assert output.startswith(str(tmp_path)), f"output {output} should be under {tmp_path}"

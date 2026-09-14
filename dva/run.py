@@ -28,7 +28,7 @@ class Run:
             if attempt == 0:
                 rid = base_rid
             else:
-                rid = base_rid[:-1] + f"-{attempt}Z"
+                rid = base_rid + f"-{attempt:03d}"
             d = runs_dir / rid
             try:
                 d.mkdir(parents=True, exist_ok=False)
