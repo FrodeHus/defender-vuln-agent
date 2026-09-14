@@ -36,9 +36,22 @@ def _read(path: Path) -> dict:
         return yaml.safe_load(fh) or {}
 
 
+def _tenant_override(filename: str) -> Path | None:
+    from dva.tenant import override_path
+    return override_path(filename)
+
+
 def load_scoring(path: Path | None = None) -> Scoring:
-    return Scoring(**_read(path or CONFIG_DIR / "scoring.yaml"))
+    """Repo defaults, fully replaced by tenants/<name>/scoring.yaml when the active tenant has one."""
+    return Scoring(**_read(path or _tenant_override("scoring.yaml") or CONFIG_DIR / "scoring.yaml"))
 
 
 def load_sources(path: Path | None = None) -> Sources:
-    return Sources(**_read(path or CONFIG_DIR / "sources.yaml"))
+    """Repo defaults, with tenants/<name>/sources.yaml keys merged over them when present."""
+    if path is not None:
+        return Sources(**_read(path))
+    data = _read(CONFIG_DIR / "sources.yaml")
+    override = _tenant_override("sources.yaml")
+    if override:
+        data.update(_read(override))
+    return Sources(**data)

@@ -16,6 +16,10 @@ Checks the configured credential and every required permission, printing one lin
 - Success: `MDE   Machine.Read.All                  ok   GET /machines`
 - Failure: `MDE   Machine.Read.All                  FAIL GET https://api.securitycenter.microsoft.com/api/machines failed with HTTP 403: Insufficient privileges to complete the operation.`
 
+## Tenants
+
+`python3 -m dva tenant list` prints configured tenants (directories under `tenants/`, each with its own `.env`, `runs/` and `.cache/`). Select one with `--tenant NAME` on any command or `export DVA_TENANT=NAME`; `python3 -m dva tenant show` prints the active one. `python3 -m dva tenant init NAME` creates a new tenant skeleton with a `.env` template to fill in. A tenant's `.env` fully replaces shell and repo credentials while active, so runs never mix tenants. With no `tenants/` directory the tool is single-tenant and reads the repo `.env`.
+
 ## Environment variables
 
 Credential (pick one set):
