@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "defender-vuln-agent"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["msal>=1.28", "requests>=2.31", "pyyaml>=6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["dva*"]
+
+[tool.setuptools.package-data]
+dva = ["queries/*.kql", "report_template.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
