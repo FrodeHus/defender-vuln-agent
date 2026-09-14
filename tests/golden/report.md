@@ -38,6 +38,10 @@ Risk: The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in C
 
 Remediation: Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.
 
+Vendor advisories:
+- [RHSA-2026:1234](https://access.redhat.com/errata/RHSA-2026:1234) — Red Hat, ivanti-connect-secure security update (2026-09-05)
+- advisory — MSRC
+
 Upgrading to 22.7R2.5 fixes 3 of 26 CVEs.
 
 Patched in the last 7 days: 2 critical, 1 high.

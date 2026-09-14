@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from dva.report_html import render
 
@@ -9,11 +10,23 @@ def test_html_is_self_contained_and_embeds_data():
     doc = json.loads(FX.read_text())
     out = render(doc)
     assert out.startswith("<!doctype html>")
-    assert "http://" not in out.replace("http://www.w3.org", "") and "https://" not in out
+    # the embedded findings JSON may legitimately carry http(s) URLs (e.g. vendor advisory links);
+    # only the surrounding static template must load no external assets.
+    without_data = re.sub(r'<script id="data".*?</script>', "", out, flags=re.S)
+    assert "http://" not in without_data.replace("http://www.w3.org", "") and "https://" not in without_data
     assert "__FINDINGS_JSON__" not in out and '"Connect Secure"' in out
     assert "<\\/" in out or "</script>" not in json.dumps(doc)  # embedded JSON never closes the script tag
     for marker in ["Top 10 products to patch", "All prioritized products", "How scores are computed", "Expand all", "Internet-facing"]:
         assert marker in out
+
+
+def test_html_renders_advisories_block():
+    doc = json.loads(FX.read_text())
+    assert doc["products"][0].get("advisories")
+    out = render(doc)
+    assert "function advisories(" in out
+    assert "Vendor advisories" in out
+    assert "RHSA-2026:1234" in out and "https://access.redhat.com/errata/RHSA-2026:1234" in out
 
 
 def test_html_renders_trend_table_and_sparkline():

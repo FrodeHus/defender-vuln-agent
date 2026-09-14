@@ -44,6 +44,7 @@ details.paths{margin-top:14px}details.paths summary{cursor:pointer;color:var(--m
 .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
 .cve{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:10px 0;border-top:1px solid var(--line);min-width:0}.cve .id{font-weight:600;white-space:nowrap}.cve .nums{display:flex;gap:12px;font-size:13px;color:var(--muted);white-space:nowrap;align-items:baseline}.cve .t{flex:1 1 220px;min-width:0;font-size:14px;color:var(--muted)}
 .asset{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:6px 0;border-top:1px solid var(--line)}.asset .n{font-weight:600;white-space:nowrap}.asset .w{font-size:13px;color:var(--muted)}
+.advisory{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:6px 0;border-top:1px solid var(--line)}.advisory .w{font-size:13px;color:var(--muted)}
 .more,.breakdown{font-size:13px;color:var(--muted)}
 .appendix{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px 32px}.appendix h2{font-size:20px;color:var(--ink)}.appendix p{margin:6px 0 0;text-wrap:pretty}
 footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
@@ -75,14 +76,21 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
   function strip(c){ var t = c.critical + c.high + c.medium + c.low || 1; function w(n){ return Math.round(100 * n / t) + '%'; }
     return '<div class="strip"><div style="width:' + w(c.critical) + ';background:var(--crit)"></div><div style="width:' + w(c.high) + ';background:var(--high)"></div><div style="width:' + w(c.medium) + ';background:var(--med)"></div><div style="width:' + w(c.low) + ';background:var(--low)"></div></div>'; }
   function counts(c){ return '<div class="counts"><span><b style="color:' + (c.critical ? 'var(--crit)' : 'var(--muted)') + '">' + c.critical + '</b> <small>critical</small></span><span><b style="color:var(--high)">' + c.high + '</b> <small>high</small></span><span><b style="color:#b8860b">' + c.medium + '</b> <small>medium</small></span><span><b style="color:var(--blue)">' + c.low + '</b> <small>low</small></span></div>'; }
+  function advisories(list){ return (list || []).map(function(a){
+      var meta = [a.source, a.label].filter(Boolean).join(', ') + (a.date ? ' (' + a.date + ')' : '');
+      var idText = esc(a.id || 'advisory');
+      var linkOk = typeof a.url === 'string' && /^https?:\/\//i.test(a.url);
+      var idPart = linkOk ? '<a href="' + esc(a.url) + '">' + idText + '</a>' : idText;
+      return '<div class="advisory"><span>' + idPart + '</span><span class="w">' + esc(meta) + '</span></div>'; }).join(''); }
   function body(r){ var total = r.counts.critical + r.counts.high + r.counts.medium + r.counts.low;
     var cves = r.driving_cves.map(function(c){ return '<div class="cve"><span class="id">' + esc(c.id) + '</span><span class="nums"><span>CVSS <b>' + esc(c.cvss) + '</b></span>' + (c.epss != null ? '<span>EPSS <b>' + esc(c.epss) + '</b></span>' : '') + (c.kev ? pill('kev','KEV') : '') + (c.poc ? pill('','Exploit') : '') + '</span><span class="t">' + esc(c.title || '') + '</span></div>'; }).join('');
     var a = r.assets, more = a.count - a.top.length;
     var assets = a.top.map(function(x){ return '<div class="asset"><span class="n">' + esc(x.name) + '</span><span class="w">' + esc(x.why) + '</span></div>'; }).join('');
     var paths = (r.paths || []).length ? '<details class="paths"><summary>Installation paths (' + r.paths.length + ')</summary>' + r.paths.map(function(x){ return '<div class="path"><code>' + esc(x.path) + '</code><span class="w">' + x.devices + (x.devices === 1 ? ' device' : ' devices') + (x.kind === 'registry' ? ' · registry' : '') + '</span></div>'; }).join('') + '</details>' : '';
     var risk = r.risk_summary ? '<div class="risk"><div class="label">Why this matters</div><p>' + esc(r.risk_summary) + '</p></div>' : '';
+    var advHtml = (r.advisories && r.advisories.length) ? '<div class="label" style="margin-top:14px">Vendor advisories</div>' + advisories(r.advisories) : '';
     return risk + '<div class="body"><div><div class="label">Top 3 driving vulnerabilities · ' + total + ' open CVEs in total' + (r.partial_intel ? ' · partial intel' : '') + '</div>' + cves + '</div>' +
-      '<div><div class="label">Remediation</div><div>' + esc(r.remediation) + '</div><div class="label" style="margin-top:14px">Affected assets · ' + a.count + '</div><div class="breakdown">' + esc(a.breakdown) + '</div>' + assets + (more > 0 ? '<div class="more">+ ' + more + ' more in findings.json</div>' : '') + paths + '</div></div>'; }
+      '<div><div class="label">Remediation</div><div>' + esc(r.remediation) + '</div>' + advHtml + '<div class="label" style="margin-top:14px">Affected assets · ' + a.count + '</div><div class="breakdown">' + esc(a.breakdown) + '</div>' + assets + (more > 0 ? '<div class="more">+ ' + more + ' more in findings.json</div>' : '') + paths + '</div></div>'; }
   function card(r, compact){ var key = (compact ? 'all:' : 'top:') + r.key, open = !!state.open[key];
     return '<div class="card' + (compact ? ' compact' : '') + (open ? ' open' : '') + '" data-key="' + esc(key) + '"><div class="rowhead">' +
       '<div class="rank' + (compact ? ' small' : '') + '">' + r.rank + '</div><div class="title"><div class="row"><span class="name">' + esc(r.product) + '</span><span class="vendor">' + esc(r.vendor) + '</span>' + flags(r) + '</div>' + (compact ? '' : '<div class="why">' + esc(r.reason) + '</div>') + '</div>' +

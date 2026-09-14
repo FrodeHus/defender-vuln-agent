@@ -23,6 +23,26 @@ def test_findings_document(tmp_path):
     assert doc["summary"]["exposure_score"] == 54.0 and doc["diff_from_previous"]["previous_run_id"] is None
 
 
+def test_advisories_carried_from_intel_for_top_driving_cve(tmp_path):
+    run = seed(tmp_path / "runs")
+    cache = IntelCache(tmp_path / "cache", 7)
+    advisories = [{"source": "Red Hat", "severity": "Important", "label": "update", "id": "RHSA-2026:1234",
+                   "date": "2026-09-05", "url": "https://access.redhat.com/errata/RHSA-2026:1234"}]
+    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, kev=True, exploit_public=True, advisories=advisories))
+    run.write_json("exposure.json", {"score": 54.0, "by_group": {}})
+    doc = compute(run, load_scoring(), cache)
+    top = doc["products"][0]
+    assert top["advisories"] == advisories
+
+
+def test_advisories_empty_when_top_driving_cve_has_no_intel(tmp_path):
+    run = seed(tmp_path / "runs")
+    cache = IntelCache(tmp_path / "cache", 7)
+    run.write_json("exposure.json", {"score": 54.0, "by_group": {}})
+    doc = compute(run, load_scoring(), cache)
+    assert doc["products"][0]["advisories"] == []
+
+
 def test_diff_against_previous(tmp_path):
     run = seed(tmp_path / "runs")
     (tmp_path / "runs" / "20200101T000000Z").mkdir()

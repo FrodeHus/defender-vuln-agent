@@ -310,6 +310,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     for i, sp in enumerate(listed):
         p = sp.product
         pa = [assets.get(a) for a in p.asset_ids if a in assets]
+        top = sp.driving[0][0] if sp.driving else None
         rows.append({
             "rank": i + 1, "key": p.key, "vendor": display_vendor(p), "product": display_name(p), "score": sp.score, "label": sp.label,
             "counts": sp.counts, "flags": sp.flags, "reason": reason_for(sp),
@@ -321,6 +322,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
                               "title": intel[r.id].title if r.id in intel else None} for r, _ in sp.driving],
             "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
+            "advisories": intel[top.id].advisories[:5] if top is not None and top.id in intel else [],
             "risk_summary": _risk(sp, intel, pa, cfg, display_name(p)),
             "paths": paths_by_key.get(p.key, []),
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),

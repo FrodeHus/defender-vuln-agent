@@ -188,7 +188,25 @@
           "CVE-2026-19001",
           "CVE-2026-19002"
         ]
-      }
+      },
+      "advisories": [
+        {
+          "source": "Red Hat",
+          "severity": "Important",
+          "label": "ivanti-connect-secure security update",
+          "id": "RHSA-2026:1234",
+          "date": "2026-09-05",
+          "url": "https://access.redhat.com/errata/RHSA-2026:1234"
+        },
+        {
+          "source": "MSRC",
+          "severity": "Critical",
+          "label": null,
+          "id": null,
+          "date": null,
+          "url": null
+        }
+      ]
     },
     {
       "rank": 2,

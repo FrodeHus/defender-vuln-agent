@@ -22,3 +22,10 @@ def test_markdown_shows_patched_7d_and_score_trend_lines():
     out = render(json.loads(FX.read_text()))
     assert "Patched in the last 7 days: 2 critical, 1 high." in out
     assert "Score trend (12 months): exposure score 54.0/61.0/61.0 (min/max/now); secure score 62.0/68.5/68.5 (min/max/now)." in out
+
+
+def test_markdown_shows_vendor_advisories_with_link():
+    out = render(json.loads(FX.read_text()))
+    assert "Vendor advisories:" in out
+    assert "- [RHSA-2026:1234](https://access.redhat.com/errata/RHSA-2026:1234) — Red Hat, ivanti-connect-secure security update (2026-09-05)" in out
+    assert "- advisory — MSRC" in out

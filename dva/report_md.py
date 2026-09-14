@@ -22,6 +22,22 @@ def _row(r: dict) -> str:
     return f"| {r['rank']} | {r['product']} | {r['vendor']} | {r['score']} {r['label']} | {r['assets']['count']} | {c['critical']} | {c['high']} | {c['medium']} | {c['low']} | {_flags(r)} |"
 
 
+def _advisories(advisories: list[dict]) -> list[str]:
+    out = []
+    for adv in advisories:
+        id_ = adv.get("id") or "advisory"
+        bits = adv.get("source") or "-"
+        if adv.get("label"):
+            bits += f", {adv['label']}"
+        if adv.get("date"):
+            bits += f" ({adv['date']})"
+        if adv.get("url"):
+            out.append(f"- [{id_}]({adv['url']}) — {bits}")
+        else:
+            out.append(f"- {id_} — {bits}")
+    return out
+
+
 def _fmt_severity_counts(d: dict) -> str:
     return ", ".join(f"{d.get(s, 0)} {s}" for s in ("critical", "high", "medium", "low", "unknown") if d.get(s, 0))
 
@@ -91,6 +107,9 @@ def render(doc: dict) -> str:
     for r in top:
         total_cves = sum(r["counts"].values())
         out += ["", f"### {r['rank']}. {r['product']} ({r['vendor']}) — {r['score']} {r['label']}", "", f"Why: {r['reason']}", "", f"Risk: {r.get('risk_summary', '')}", "", f"Remediation: {r['remediation']}"]
+        advisories = r.get("advisories") or []
+        if advisories:
+            out += ["", "Vendor advisories:"] + _advisories(advisories)
         fixes = r.get("fixes") or []
         if fixes:
             top_fix = fixes[0]
