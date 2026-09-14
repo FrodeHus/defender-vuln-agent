@@ -108,3 +108,28 @@ def test_parse_store_normalizes_bulk_shape():
     out = parse_store(payload)
     i = out["CVE-2026-1"]
     assert i.cvss == 9.8 and i.kev and i.exploit_public and i.exploit_sources == ["exploit-db"] and i.title.startswith("Remote code")
+
+
+def test_parse_store_coerces_untyped_numeric_fields():
+    payload = {
+        "results": [
+            {
+                "cve_id": "CVE-2026-2",
+                "cvss_v3_score": "9.8",
+                "epss_score": "0.91",
+                "epss_percentile": "not-a-number",
+            }
+        ]
+    }
+    out = parse_store(payload)
+    i = out["CVE-2026-2"]
+    assert i.cvss == 9.8 and isinstance(i.cvss, float)
+    assert i.epss == 0.91 and isinstance(i.epss, float)
+    assert i.epss_percentile is None
+
+    from dva.model import Asset, Product
+    from dva.scoring import product_score
+
+    p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"}, cves={"CVE-2026-2": ref(0, 9.8)})
+    assets = {"x": Asset(id="x", name="x")}
+    product_score(p, assets, {"CVE-2026-2": i}, cfg, estate_size=10)

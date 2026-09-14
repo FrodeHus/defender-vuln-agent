@@ -54,14 +54,23 @@ def _first(d: dict, *paths):
     return None
 
 
+def _as_float(v) -> float | None:
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def _one(cve_id: str, d: dict) -> CveIntel:
     exploits = _first(d, "exploits") or []
     sources = _first(d, "exploit_sources") or [e.get("source") or e.get("name") for e in exploits if isinstance(e, dict)]
     desc = _first(d, "title") or (_first(d, "description") or "")[:120] or None
     return CveIntel(
-        cvss=_first(d, "cvss_v3_score", "cvss_score", "cvss.base_score", "cvss"),
-        epss=_first(d, "epss_score", "epss.score"),
-        epss_percentile=_first(d, "epss_percentile", "epss.percentile"),
+        cvss=_as_float(_first(d, "cvss_v3_score", "cvss_score", "cvss.base_score", "cvss")),
+        epss=_as_float(_first(d, "epss_score", "epss.score")),
+        epss_percentile=_as_float(_first(d, "epss_percentile", "epss.percentile")),
         kev=bool(_first(d, "in_kev", "kev.in_kev", "cisa_kev", "kev")),
         kev_added=_first(d, "kev.date_added", "date_added"),
         ransomware=bool(_first(d, "kev.known_ransomware_use", "known_ransomware_use")),
