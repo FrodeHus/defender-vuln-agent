@@ -206,7 +206,7 @@ By impact: 1 high, 1 medium, 0 low
 
 ## Method
 
-Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.
+Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, known ransomware use, public exploit availability and exploit maturity), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags, privileged-user sign-ins, cloud attack-path membership and applied mitigations) and the number of affected devices. A product with at least one CVE past its SLA deadline gets its score multiplied up (the SLA overdue multiplier in scoring.yaml). Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.
 
 ## Sources
 

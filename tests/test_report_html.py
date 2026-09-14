@@ -62,6 +62,14 @@ def test_html_renders_without_exception_when_trend_has_null_exposure_score():
     assert out.startswith("<!doctype html>")
 
 
+def test_html_appendix_mentions_ransomware_maturity_sla_and_asset_signals():
+    doc = json.loads(FX.read_text())
+    out = render(doc)
+    for marker in ["known ransomware use", "exploit maturity", "SLA overdue multiplier",
+                   "privileged-user sign-ins", "cloud attack-path membership", "applied mitigations"]:
+        assert marker in out
+
+
 def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)

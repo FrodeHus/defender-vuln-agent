@@ -24,6 +24,13 @@ def test_markdown_shows_patched_7d_and_score_trend_lines():
     assert "Score trend (12 months): exposure score 54.0/61.0/61.0 (min/max/now); secure score 62.0/68.5/68.5 (min/max/now)." in out
 
 
+def test_markdown_method_mentions_ransomware_maturity_sla_and_asset_signals():
+    out = render(json.loads(FX.read_text()))
+    for marker in ["known ransomware use", "exploit maturity", "SLA overdue multiplier",
+                   "privileged-user sign-ins", "cloud attack-path membership", "applied mitigations"]:
+        assert marker in out
+
+
 def test_markdown_shows_vendor_advisories_with_link():
     out = render(json.loads(FX.read_text()))
     assert "Vendor advisories:" in out
