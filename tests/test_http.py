@@ -72,3 +72,14 @@ def test_http_date_retry_after():
     c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s, sleep=slept.append)
     assert c.get_json("/x") == {"ok": True}
     assert slept[0] == 0.0 or slept[0] < 0.1
+
+
+def test_network_exception_then_http_error_shows_real_error():
+    s = FakeSession({"GET https://h/api/x": [requests.ConnectionError("connection failed"), FakeResponse(403, {"error": {"message": "denied"}})]})
+    c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s, sleep=lambda s: None)
+    with pytest.raises(DvaError) as exc_info:
+        c.get_json("/x")
+    msg = str(exc_info.value)
+    assert "403" in msg
+    assert "denied" in msg
+    assert "failed after" not in msg

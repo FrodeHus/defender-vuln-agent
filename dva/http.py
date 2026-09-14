@@ -49,6 +49,7 @@ class Client:
                     self.sleep(min(60.0, 2.0 ** attempt))
                     continue
                 break
+            last_exc = None
             if resp.status_code < 300:
                 try:
                     return resp.json() if resp.text else {}
