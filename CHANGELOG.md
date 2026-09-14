@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `dva enrich --fetch` does the whole enrichment step itself: it starts the CVE server over stdio through a small stdlib-only MCP client (`dva/mcp_client.py`), calls `triage_cve`, `lookup_cve` and `get_vendor_advisory` for the selected CVEs, saves and merges the results. The agent no longer relays CVE text through its context (previously up to ~250 tool calls and as many heredocs per run) and needs no MCP tools; `--list`/`--store` remain for manual use. `DVA_CVE_MCP` / `--server CMD` override the server command.
 - The CVE server is no longer cloned next to the repo: `.mcp.json` runs `scripts/cve-mcp.sh`, which starts a pinned upstream `cve-mcp-server` commit through `uvx` (MCP SDK pinned below 2) and passes `NVD_API_KEY` from this repo's `.env`. Works unchanged for marketplace installs via `${CLAUDE_PLUGIN_ROOT}`. `CVE_MCP_PYTHON` and `scripts/install.sh --cve-server-dir` are gone.
 - A lone configured tenant is selected automatically when `--tenant`/`DVA_TENANT` is absent; with several tenants the CLI now errors instead of silently using the repo `.env`. `dva doctor` prints which `.env` it checked.
 - `uv sync --locked` is the primary install path (`uv.lock` committed, `dependency-groups.dev`); the installer and CI use uv, with a pip fallback.

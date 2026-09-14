@@ -2,7 +2,7 @@
 
 ## What this is
 
-A read-only vulnerability assessment tool for Microsoft Defender estates. `dva` (Python CLI) collects device/software inventory and Advanced Hunting results, enriches the CVEs that matter through a local `cve-mcp` MCP server, scores **software products**, and writes Markdown/HTML/JSON reports. A Claude Code agent (`agents/vuln-assessor.md`) sequences the CLI and calls the CVE server. This repository is also a Claude Code plugin — see `.claude-plugin/plugin.json`.
+A read-only vulnerability assessment tool for Microsoft Defender estates. `dva` (Python CLI) collects device/software inventory and Advanced Hunting results, enriches the CVEs that matter through a local `cve-mcp` MCP server, scores **software products**, and writes Markdown/HTML/JSON reports. A Claude Code agent (`agents/vuln-assessor.md`) sequences the CLI; `dva enrich --fetch` drives the CVE server itself over stdio (`dva/mcp_client.py`, stdlib only) so no CVE text passes through the agent. This repository is also a Claude Code plugin — see `.claude-plugin/plugin.json`.
 
 ## Build and test
 
@@ -35,7 +35,7 @@ From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks
 
 - **Read-only.** No writes to Defender, Graph or Azure beyond `GET` and the Advanced Hunting/Resource Graph query POSTs. The app registration has no write permissions.
 - **Tenant isolation.** Everything a tenant produces or needs lives under `tenants/<name>/`; never add shared state keyed by tenant, never read one tenant's `.env` or data while reporting on another.
-- **Raw run files stay unread by the agent.** It reads only command summaries and `report.md`, never `vulns.jsonl`, `machines.json`, `hunt-*.json`, `enrichment.json`, `findings.json`.
+- **Raw run files stay unread by the agent.** It reads only command summaries and `report.md`, never `vulns.jsonl`, `machines.json`, `hunt-*.json`, `cve-*.txt`, `enrichment.json`, `findings.json`.
 
 ## Conventions
 
@@ -49,4 +49,5 @@ From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks
 - Always `python3`, never `python`.
 - The CVE server's `NVD_API_KEY` lives in this repo's `.env` (exported by `scripts/cve-mcp.sh`). The upstream commit is pinned by `CVE_MCP_REF` in that script; bump it only after re-capturing `tests/fixtures/cve`.
 - Select a tenant with `DVA_TENANT=<name>` (or `--tenant`); required whenever `dva tenant list` prints more than one name.
-- `dva enrich --store` and `dva exception add|remove` are the only supported ways to write `enrichment` intel and `exceptions.yaml`; never hand-edit either.
+- `dva enrich --fetch|--store` and `dva exception add|remove` are the only supported ways to write `enrichment` intel and `exceptions.yaml`; never hand-edit either.
+- `DVA_CVE_MCP` (or `enrich --server CMD`) points `enrich --fetch` at another CVE server command; tests use `tests/fake_mcp_server.py` this way.

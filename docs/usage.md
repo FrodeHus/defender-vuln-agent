@@ -12,7 +12,7 @@ Use the vuln-assessor agent to run a vulnerability assessment for contoso
 What should fabrikam patch first this week?
 ```
 
-The agent lists tenants, matches the name (a unique prefix is enough; it stops and asks if the name is missing or ambiguous), verifies permissions with `dva doctor`, creates a run, collects inventory and vulnerabilities, runs the hunting queries, sends the selected CVEs to the CVE server one `triage_cve` call at a time, stores the results, scores, renders the reports, and replies with the top products, the count needing action and any source that was partial or failed. It only ever reads `report.md`; raw data never enters the conversation.
+The agent lists tenants, matches the name (a unique prefix is enough; it stops and asks if the name is missing or ambiguous), verifies permissions with `dva doctor`, creates a run, collects inventory and vulnerabilities, runs the hunting queries, runs `dva enrich --fetch` (which sends the selected CVEs to the CVE server one `triage_cve` call at a time and stores the results), scores, renders the reports, and replies with the top products, the count needing action and any source that was partial or failed. It only ever reads `report.md`; raw data never enters the conversation.
 
 Follow-ups that work well:
 
@@ -35,13 +35,7 @@ python3 -m dva mde all                                      # machines, vulns, r
 python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings
 python3 -m dva cloud vulns                                  # only if sources.yaml has cloud: true
 python3 -m dva cloud attack-paths                            # only if sources.yaml has cloud: true
-python3 -m dva enrich --list                                # prints the CVE ids to look up, 20 per line
-```
-
-Enrichment needs the CVE server. From Claude Code the agent does this step; by hand, call `triage_cve(cve_id, depth="standard")` for each listed id (for example with the MCP Inspector, `npx @modelcontextprotocol/inspector .venv/bin/python3 -m cve_mcp.server`), save each text result as `$DVA_RUN/cve-triage-<id>.txt`. `enrich --list` also prints a `{"describe": [...]}` line: call `lookup_cve(cve_id)` for those and save to `$DVA_RUN/cve-lookup-<id>.txt` (feeds the per-product risk summary), and `get_vendor_advisory(cve_id)` and save to `$DVA_RUN/cve-advisory-<id>.txt` (feeds the vendor advisory links per product). Then:
-
-```bash
-python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt          # prints "stored N, missing M"
+python3 -m dva enrich --fetch                               # calls the CVE server per selected CVE; prints "fetched N results, M failed" and "stored N, missing M"
 python3 -m dva score                                        # writes findings.json
 python3 -m dva report --all                                 # report.md, report.html, report.json, tickets.json
 python3 -m dva exception suggest                             # suggested accepted-risk exceptions, writes exception-suggestions.json
@@ -99,15 +93,16 @@ export DVA_RUNS_DIR=/tmp/dva-demo/runs DVA_CACHE_DIR=/tmp/dva-demo/cache
 export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all --fixture tests/fixtures/mde/all.json
 python3 -m dva hunt internet-facing --fixture tests/fixtures/hunting/internet-facing.json
-python3 -m dva enrich --list
-python3 -m dva enrich --store tests/fixtures/cve/triage-e2e.txt
+python3 -m dva enrich --store tests/fixtures/cve/triage-e2e.txt   # offline stand-in for enrich --fetch
 python3 -m dva exception add --product adobe/acrobat-reader-dc --reason "vendor patches on their own cadence" --until 2099-01-01 --owner demo
 python3 -m dva score
 python3 -m dva report --all
 python3 -m dva exception suggest
 ```
 
-This is exactly what `tests/test_e2e.py` runs. The resulting report shows an Ivanti Connect Secure product driven by a KEV-listed CVE on an internet-facing Tier0 gateway, with Acrobat Reader DC excluded from scoring as an accepted risk.
+This is exactly what `tests/test_e2e.py` runs.
+
+`enrich --fetch` starts the CVE server itself over stdio: `scripts/cve-mcp.sh` by default (under `DVA_HOME` when set), or the command line in `DVA_CVE_MCP` / `--server CMD`. It calls `triage_cve(cve_id, depth="standard")` for every selected CVE and `lookup_cve` plus `get_vendor_advisory` for the CVE driving each listed product, saves each text result under the run directory and merges them, so nothing needs to go through Claude. To do the calls by hand instead (for example with the MCP Inspector), `enrich --list` prints the ids, 20 per `{"chunk": n, "cve_ids": [...]}` line plus a `{"describe": [...]}` line; save each result as `$DVA_RUN/cve-triage-<id>.txt`, `cve-lookup-<id>.txt` or `cve-advisory-<id>.txt` and merge with `enrich --store "$DVA_RUN"/cve-*.txt`. The resulting report shows an Ivanti Connect Secure product driven by a KEV-listed CVE on an internet-facing Tier0 gateway, with Acrobat Reader DC excluded from scoring as an accepted risk.
 
 ## Run directory layout
 
@@ -122,9 +117,9 @@ This is exactly what `tests/test_e2e.py` runs. The resulting report shows an Iva
 | `hunt-<name>.json` | `hunt` | Raw Advanced Hunting result |
 | `cloud-vulns.jsonl` | `cloud vulns` | Defender for Cloud findings per resource and CVE |
 | `cloud-attackpaths.json` | `cloud attack-paths` | Attack paths from Resource Graph, only when `cloud: true` |
-| `enrich-candidates.json` | `enrich --list` | CVE ids selected for enrichment |
-| `cve-triage-*.txt`, `cve-lookup-*.txt`, `cve-advisory-*.txt` | the agent | Saved CVE server results (triage, descriptions, vendor advisories) |
-| `enrichment.json` | `enrich --store` | Parsed CVE intel for this run |
+| `enrich-candidates.json`, `enrich-describe.json` | `enrich --fetch`/`--list` | CVE ids selected for enrichment and for descriptions |
+| `cve-triage-*.txt`, `cve-lookup-*.txt`, `cve-advisory-*.txt` | `enrich --fetch` | Saved CVE server results (triage, descriptions, vendor advisories) |
+| `enrichment.json` | `enrich --fetch`/`--store` | Parsed CVE intel for this run |
 | `findings.json` | `score` | Scored products, accepted risks, trend, posture and the diff from the previous run |
 | `tickets.json` | `report --tickets`/`--all` | One ticket per listed product not under exception |
 | `exception-suggestions.json` | `exception suggest` | Suggested accepted-risk exceptions with reasons |

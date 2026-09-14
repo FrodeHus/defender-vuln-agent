@@ -1,11 +1,14 @@
 from __future__ import annotations
+import os
 import re
 import json
+import shlex
 from dataclasses import asdict
 from pathlib import Path
 from dva.cache import IntelCache
 from dva.config import Scoring, load_scoring
 from dva.errors import DvaError
+from dva.mcp_client import McpStdioClient
 from dva.model import Asset, Product, EXPLOIT_RANK
 from dva.rollup import build
 from dva.run import Run, add_run_arg, resolve_run, cache_dir
@@ -363,34 +366,38 @@ def write_enrichment(run: Run, cache: IntelCache, ids: list[str]) -> dict:
     return doc
 
 
+def default_server_command() -> list[str]:
+    """The CVE server to talk to: $DVA_CVE_MCP (a shell-style command line), else this checkout's scripts/cve-mcp.sh
+    (under $DVA_HOME when the plugin was installed elsewhere)."""
+    override = os.environ.get("DVA_CVE_MCP")
+    if override:
+        return shlex.split(override)
+    home = Path(os.environ.get("DVA_HOME") or Path(__file__).resolve().parent.parent)
+    return [str(home / "scripts" / "cve-mcp.sh")]
+
+
 def register(sub) -> None:
-    p = sub.add_parser("enrich", help="Select CVEs for enrichment and store CVE server results")
+    p = sub.add_parser("enrich", help="Select CVEs for enrichment and fetch or store CVE server results")
     add_run_arg(p)
     g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--list", action="store_true")
+    g.add_argument("--list", action="store_true", help="print the CVE ids to look up (for calling the server by hand)")
+    g.add_argument("--fetch", action="store_true", help="select the CVE ids, call the CVE server for each and store the results")
     g.add_argument("--store", nargs="+", metavar="FILE", help="one or more saved cve-mcp tool outputs (text or JSON)")
+    p.add_argument("--server", metavar="CMD", help="CVE server command line for --fetch (default: $DVA_CVE_MCP or scripts/cve-mcp.sh)")
     p.set_defaults(func=_run)
 
 
-def _run(args) -> int:
-    run, cfg = resolve_run(args), load_scoring()
-    cache = IntelCache(cache_dir() / "cve", cfg.cache_ttl_days)
-    products, assets = build(run)
-    estate = len(run.read_json("machines.json")) if run.path("machines.json").exists() else len(assets)
-    if args.list:
-        ids = select_candidates(products, assets, cache, cfg, estate)
-        run.write_json("enrich-candidates.json", ids)
-        for n in range(0, len(ids), CHUNK):
-            print(json.dumps({"chunk": n // CHUNK + 1, "cve_ids": ids[n:n + CHUNK]}))
-        describe = select_describe(products, assets, cache, cfg, estate)
-        run.write_json("enrich-describe.json", describe)
-        if describe:
-            print(json.dumps({"describe": describe}))
-        run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded); {len(describe)} CVEs need a description for the risk summaries.")
-        return 0
+def _select(run: Run, cache: IntelCache, cfg: Scoring, products, assets, estate: int) -> tuple[list[str], list[str]]:
+    ids = select_candidates(products, assets, cache, cfg, estate)
+    run.write_json("enrich-candidates.json", ids)
+    describe = select_describe(products, assets, cache, cfg, estate)
+    run.write_json("enrich-describe.json", describe)
+    return ids, describe
+
+
+def _store(run: Run, cache: IntelCache, files: list[Path]) -> None:
     parsed: dict[str, CveIntel] = {}
-    for raw in args.store:
-        path = Path(raw)
+    for path in files:
         if not path.exists():
             raise DvaError(f"store file not found: {path}")
         for cid, intel in parse_file(path).items():
@@ -401,4 +408,56 @@ def _run(args) -> int:
     doc = write_enrichment(run, cache, wanted)
     print(f"stored {len(parsed)}, missing {len(doc['missing'])}")
     run.summary(f"Enrichment stored: {len(parsed)} CVEs; enrichment.json now has {len(doc['cves'])} CVEs, {len(doc['missing'])} still missing.")
+
+
+def fetch(run: Run, ids: list[str], describe: list[str], server: list[str]) -> tuple[list[Path], int]:
+    """Call the CVE server for every selected id, saving each text result under the run directory exactly as the
+    agent used to (cve-triage-<id>.txt, cve-lookup-<id>.txt, cve-advisory-<id>.txt). A failed call is a warning."""
+    calls = [("triage_cve", cid, {"cve_id": cid, "depth": "standard"}, "triage") for cid in ids]
+    for cid in describe:
+        calls.append(("lookup_cve", cid, {"cve_id": cid}, "lookup"))
+        calls.append(("get_vendor_advisory", cid, {"cve_id": cid}, "advisory"))
+    files: list[Path] = []
+    failed = 0
+    if not calls:
+        return files, failed
+    with McpStdioClient(server) as client:
+        for tool, cid, args, kind in calls:
+            try:
+                text = client.call_tool(tool, args)
+            except DvaError as e:
+                failed += 1; print(f"warning: {tool} {cid}: {e}")
+                continue
+            path = run.path(f"cve-{kind}-{cid}.txt")
+            path.write_text(text, encoding="utf-8")
+            files.append(path)
+    return files, failed
+
+
+def _run(args) -> int:
+    run, cfg = resolve_run(args), load_scoring()
+    cache = IntelCache(cache_dir() / "cve", cfg.cache_ttl_days)
+    products, assets = build(run)
+    estate = len(run.read_json("machines.json")) if run.path("machines.json").exists() else len(assets)
+    if args.list:
+        ids, describe = _select(run, cache, cfg, products, assets, estate)
+        for n in range(0, len(ids), CHUNK):
+            print(json.dumps({"chunk": n // CHUNK + 1, "cve_ids": ids[n:n + CHUNK]}))
+        if describe:
+            print(json.dumps({"describe": describe}))
+        run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded); {len(describe)} CVEs need a description for the risk summaries.")
+        return 0
+    if args.fetch:
+        ids, describe = _select(run, cache, cfg, products, assets, estate)
+        server = shlex.split(args.server) if args.server else default_server_command()
+        files, failed = fetch(run, ids, describe, server)
+        print(f"fetched {len(files)} results, {failed} failed")
+        run.summary(f"Enrichment fetched: {len(ids)} CVEs triaged and {len(describe)} described through the CVE server; {failed} call(s) failed.")
+        if files:
+            _store(run, cache, files)
+        else:
+            doc = write_enrichment(run, cache, ids)
+            print(f"stored 0, missing {len(doc['missing'])}")
+        return 0
+    _store(run, cache, [Path(raw) for raw in args.store])
     return 0

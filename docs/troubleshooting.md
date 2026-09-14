@@ -21,6 +21,9 @@ Run `claude mcp list` in the repo. If `cve-mcp` is missing, start `claude` from 
 **CVE server logs `NVD_API_KEY not set`**
 Put `NVD_API_KEY=...` in this repo's `.env` (or export it before starting `claude`). For a marketplace install the plugin directory has no `.env`, so export it.
 
+**`enrich --fetch` prints `CVE server could not be started` or `exited before answering initialize`**
+The server command failed to boot. Run `scripts/cve-mcp.sh --warm` by hand to see the real error (usually a missing `uvx` or no network for the first download). `DVA_CVE_MCP` or `--server CMD` overrides the command. Per-CVE `warning:` lines mean one lookup failed; those CVEs stay in `enrichment.json`'s `missing` list and scoring falls back to Defender's own signals for them.
+
 **`enrich --store` prints `stored 0` or `no CVE data recognized`**
 The saved file is not in a format the parser knows. It expects the text output of `triage_cve` (or `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists`). If the server changed its format, compare with `tests/fixtures/cve/triage-standard.txt` and open an issue with a sample.
 

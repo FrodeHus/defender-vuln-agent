@@ -1,17 +1,18 @@
 ---
 name: vuln-prioritize-report
-description: Enrich collected CVEs through the cve-mcp server, score products, and render Markdown/HTML/JSON reports.
+description: Enrich collected CVEs through the cve-mcp server with dva enrich --fetch, score products, and render Markdown/HTML/JSON reports.
 ---
 
 ## When to use
 
-After `dva mde all` and `dva hunt` have populated a run directory, to select which CVEs need external enrichment, merge that enrichment back in, compute product scores, and produce the final reports.
+After `dva mde all` and `dva hunt` have populated a run directory, to fetch external enrichment for the CVEs that matter, compute product scores, and produce the final reports.
 
 ## Commands
 
 ```
+python3 -m dva enrich --fetch [--server CMD] [--run RUN]
 python3 -m dva enrich --list [--run RUN]
-python3 -m dva enrich --store FILE [--run RUN]
+python3 -m dva enrich --store FILE... [--run RUN]
 python3 -m dva score [--run RUN]
 python3 -m dva report [--md] [--html] [--json] [--tickets] [--all] [--run RUN]
 python3 -m dva exception list
@@ -20,7 +21,7 @@ python3 -m dva exception remove --product KEY | --cve ID
 python3 -m dva exception suggest [--run RUN]
 ```
 
-`enrich --list` prints one JSON line per chunk: `{"chunk": n, "cve_ids": [...]}` (cached CVEs already excluded). The cve-mcp server returns formatted text and has no batch lookup, so for every listed id call `triage_cve(cve_id, depth="standard")` (one call per CVE; it fans out NVD, EPSS, CISA KEV and PoC checks), save each result to `$DVA_RUN/cve-triage-<id>.txt`, and for each id in the `{"describe": [...]}` line call both `lookup_cve(cve_id)` (save to `$DVA_RUN/cve-lookup-<id>.txt`, powers the per-product risk summary) and `get_vendor_advisory(cve_id)` (save to `$DVA_RUN/cve-advisory-<id>.txt`, powers the vendor advisory links per product); then merge everything at once with `dva enrich --store "$DVA_RUN"/cve-*.txt` (`--store` accepts many files). `dva enrich --store` also understands `compare_cves`, `get_epss_score` (comma-separated ids as ONE string), `lookup_cve`, `check_kev` and `check_poc_exists` output if you ever use those instead. `dva score` writes `findings.json`; `dva report --all` (equivalent to `--md --html --json --tickets`) renders it.
+`enrich --fetch` is the whole enrichment step: it selects the CVEs to look up (cached ones excluded), starts the CVE server over stdio (`scripts/cve-mcp.sh`, or `$DVA_CVE_MCP` / `--server CMD`), calls `triage_cve(cve_id, depth="standard")` once per selected CVE plus `lookup_cve` and `get_vendor_advisory` for the one CVE that drives each listed product, saves every text result as `$DVA_RUN/cve-triage-<id>.txt`, `cve-lookup-<id>.txt` and `cve-advisory-<id>.txt`, and merges them into the cache and `enrichment.json`. It prints `fetched N results, M failed` and `stored N, missing M`; a failed CVE is a `warning:` line and is skipped. No CVE text passes through the conversation, so never call CVE tools yourself. `--list` (prints the ids, 20 per `{"chunk": n, "cve_ids": [...]}` line plus a `{"describe": [...]}` line) and `--store FILE...` (parses saved tool outputs: `triage_cve`, `lookup_cve`, `get_vendor_advisory`, `compare_cves`, `get_epss_score`, `check_kev`, `check_poc_exists`) remain for doing the calls by hand. `dva score` writes `findings.json`; `dva report --all` (equivalent to `--md --html --json --tickets`) renders it.
 
 ## Exceptions (accepted risk)
 
@@ -30,7 +31,7 @@ After `dva report --all`, run `dva exception suggest`: it prints one JSON line p
 
 ## Outputs
 
-`enrichment.json` (merged CVE data), `findings.json` (scored products, accepted risks, trend, posture), and under `--all`: `report.md`, `report.html`, `report.json`, `tickets.json` in the run directory. `dva report --tickets` (included in `--all`) writes `tickets.json`, one ticket per listed product not under exception, with a priority, labels and a Markdown description — no API calls are made, it's a file for you to hand to a ticketing system.
+`cve-*.txt` (raw CVE server results, never read by the agent), `enrichment.json` (merged CVE data), `findings.json` (scored products, accepted risks, trend, posture), and under `--all`: `report.md`, `report.html`, `report.json`, `tickets.json` in the run directory. `dva report --tickets` (included in `--all`) writes `tickets.json`, one ticket per listed product not under exception, with a priority, labels and a Markdown description — no API calls are made, it's a file for you to hand to a ticketing system.
 
 ## Trend and recently patched
 
@@ -42,7 +43,8 @@ After `dva report --all`, run `dva exception suggest`: it prints one JSON line p
 
 ## Gotchas
 
-- Never paste raw CVE server results into a reply; write them to a file and let `dva enrich --store` merge them. Use a quoted heredoc delimiter (`cat <<'TXT' > FILE` ... `TXT`) so the shell writes the text byte for byte — an unquoted delimiter expands `$`, backticks and backslash escapes and corrupts it.
-- `enrich --list` excludes CVEs already cached within `cache_ttl_days`; an empty chunk list means nothing new needs enrichment.
+- Never paste raw CVE server results into a reply and never read the `cve-*.txt` files; `dva enrich --fetch` does the calls and the merge.
+- `enrich --fetch` (and `--list`) exclude CVEs already cached within `cache_ttl_days`; `fetched 0 results` means nothing new needed enrichment.
+- `enrich --fetch` exits 1 with `CVE server could not be started` when `uvx` is missing or the server fails to boot; scoring still works without intel.
 - Never `cat` `enrichment.json` or `findings.json`; read `report.md` instead.
 - Exceptions are never shared across tenants and are never edited by hand — always go through `dva exception`.

@@ -4,7 +4,7 @@
 
 ```
 Defender for Endpoint API ─┐
-Advanced Hunting (Graph) ──┼─► run directory files ─► roll-up by product ─► select top CVEs ─► CVE server (triage_cve)
+Advanced Hunting (Graph) ──┼─► run directory files ─► roll-up by product ─► select top CVEs ─► CVE server (enrich --fetch, MCP over stdio)
 Defender for Cloud (ARG) ──┘                                │                                        │
                                                             └────────────── score ◄── enrichment.json ┘
                                                                               │
@@ -27,7 +27,8 @@ Every stage is a `python3 -m dva` command that reads and writes files under one 
 | `dva/rollup.py` | Devices and vulnerabilities into products and assets; end-of-support and fix-version rollups; de-duplication of cloud findings against MDE |
 | `dva/evidence.py` | Generalizes disk/registry installation paths, grouped per product, for the report and exception suggestions |
 | `dva/scoring.py` | Threat score per CVE, asset multiplier, product score, labels, reason text |
-| `dva/enrich.py` | Candidate selection, parsing of CVE server output (including vendor advisories), cache merge |
+| `dva/enrich.py` | Candidate selection, `--fetch` orchestration, parsing of CVE server output (including vendor advisories), cache merge |
+| `dva/mcp_client.py` | Stdlib-only MCP client over stdio (initialize, tools/call) used by `enrich --fetch` to drive the CVE server |
 | `dva/cache.py` | TTL cache of CVE intel; reads and writes the SQLite store exclusively |
 | `dva/store.py` | `dva.sqlite` store: CVE intel and per-run history (mode 600, WAL) |
 | `dva/exceptions.py` | Accepted-risk exceptions: load/save, apply to products before scoring, suggestions |
@@ -72,7 +73,7 @@ Accepted-risk exceptions (`dva exception`) are applied before any of this: an ac
 
 ## Enrichment selection
 
-Products are ordered by their preliminary score (no intel). For each product above `enrich_threshold`, the top `enrich_top_per_product` CVEs by Defender CVSS, exploitability and recency are selected, skipping ids already fresh in the cache, until `enrich_max_cves` is reached. The agent calls `triage_cve` once per id; the parser reads the server's text output. On a mid-size estate this is a few dozen calls per run.
+Products are ordered by their preliminary score (no intel). For each product above `enrich_threshold`, the top `enrich_top_per_product` CVEs by Defender CVSS, exploitability and recency are selected, skipping ids already fresh in the cache, until `enrich_max_cves` is reached. `dva enrich --fetch` starts the CVE server as a subprocess and calls `triage_cve` once per id (plus `lookup_cve` and `get_vendor_advisory` for each listed product's driving CVE); the parser reads the server's text output. On a mid-size estate this is a few dozen calls per run, none of which pass through the agent's context.
 
 ## Failure model
 

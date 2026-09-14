@@ -61,9 +61,7 @@ export DVA_TENANT=contoso
 export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all
 python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings
-python3 -m dva enrich --list                                  # CVE ids to look up
-# call the CVE server's triage_cve for each id, saving to $DVA_RUN/cve-triage-<id>.txt, then:
-python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt
+python3 -m dva enrich --fetch                                 # calls the CVE server per selected CVE and stores the results
 python3 -m dva score
 python3 -m dva report --all                                   # includes tickets.json
 python3 -m dva exception suggest                               # suggested accepted-risk exceptions
@@ -75,7 +73,7 @@ python3 -m dva exception suggest                               # suggested accep
 
 ## Acknowledgements
 
-CVE intelligence comes from [cve-mcp-server](https://github.com/mukul975/cve-mcp-server) by Mahipal Jangra (Apache License 2.0), an MCP server that fans out to NVD, EPSS, CISA KEV, Exploit-DB, GitHub, vendor advisories and more. This project does not bundle it; `scripts/cve-mcp.sh` runs a pinned upstream commit through `uvx` and the agent talks to it over MCP. Its `triage_cve`, `lookup_cve` and `get_vendor_advisory` tools are what make the enrichment step possible.
+CVE intelligence comes from [cve-mcp-server](https://github.com/mukul975/cve-mcp-server) by Mahipal Jangra (Apache License 2.0), an MCP server that fans out to NVD, EPSS, CISA KEV, Exploit-DB, GitHub, vendor advisories and more. This project does not bundle it; `scripts/cve-mcp.sh` runs a pinned upstream commit through `uvx` and `dva enrich --fetch` talks to it over MCP (stdio) with a small stdlib client, so no CVE text passes through the agent's context. Its `triage_cve`, `lookup_cve` and `get_vendor_advisory` tools are what make the enrichment step possible.
 
 ## License
 
