@@ -20,13 +20,14 @@ A command-line tool and Claude Code agent for assessing Microsoft Defender for E
    pip install -e ".[dev]"
    ```
 
-2. Install the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) into the **same** venv, so its MCP server process shares the environment the agent runs in:
+2. Install the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) into the **same** venv. `.mcp.json` starts it with `.venv/bin/python3 -m cve_mcp.server`, so the package must be importable from this venv:
 
    ```bash
    git clone https://github.com/mukul975/cve-mcp-server ../cve-mcp-server
    pip install -e ../cve-mcp-server
-   export NVD_API_KEY=<your-nvd-api-key>
    ```
+
+   The server reads its API keys from a `.env` file in the directory it starts in, which is this repository, so add `NVD_API_KEY=<your-nvd-api-key>` (and optionally `GITHUB_TOKEN`) to the same `.env` you use for the `DVA_*` variables in step 4. Verify with `claude mcp list` from the repository: `cve-mcp` must show as connected. To use a different interpreter, export `CVE_MCP_PYTHON=/path/to/python3` before starting Claude Code.
 
 3. Create the Entra app registration used for authentication (requires the Azure CLI and Global Administrator or Application Administrator + Privileged Role Administrator consent rights):
 

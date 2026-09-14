@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "cve-mcp": {
-      "command": "${CVE_MCP_PYTHON:-python3}",
-      "args": ["-m", "cve_mcp.server"],
-      "env": { "NVD_API_KEY": "${NVD_API_KEY}", "GITHUB_TOKEN": "${GITHUB_TOKEN}" }
+      "command": "${CVE_MCP_PYTHON:-.venv/bin/python3}",
+      "args": ["-m", "cve_mcp.server"]
     }
   }
 }
