@@ -10,6 +10,13 @@ GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 ROW_CAP = 10000
 QUERY_DIR = Path(__file__).parent / "queries"
 _FORBIDDEN = re.compile(r"(\.set\b|\.create\b|\.drop\b|\.alter\b|\.ingest\b|externaldata)", re.I)
+_HAS_LIMIT = re.compile(r"\|\s*(take|limit)\s+\d+\s*$", re.I)
+
+
+def _cap_query(kql: str) -> str:
+    if _HAS_LIMIT.search(kql.rstrip()):
+        return kql
+    return f"{kql.rstrip()}\n| take {ROW_CAP}"
 
 
 def load_query(name: str) -> str:
@@ -26,6 +33,7 @@ def check_kql_is_readonly(kql: str) -> None:
 
 def run_query(client: Client, run: Run, name: str, kql: str, timespan: str = "P7D") -> dict:
     check_kql_is_readonly(kql)
+    kql = _cap_query(kql)
     source = f"hunting.{name}"
     try:
         resp = client.post_json("/security/runHuntingQuery", {"Query": kql, "Timespan": timespan})

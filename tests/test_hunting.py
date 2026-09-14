@@ -20,7 +20,7 @@ def test_run_query_writes_results_and_body(tmp_path):
     assert out["results"] == [{"DeviceId": "m1"}] and out["capped"] is False
     assert run.read_json("hunt-internet-facing.json")["results"][0]["DeviceId"] == "m1"
     body = c.session.calls[0][2]["json"]
-    assert body["Query"].startswith("DeviceInfo") and body["Timespan"] == "P7D"
+    assert body["Query"].startswith("DeviceInfo") and body["Query"].endswith("| take 10000") and body["Timespan"] == "P7D"
     assert run.manifest["sources"]["hunting.internet-facing"]["status"] == "ok"
 
 def test_row_cap_marks_partial(tmp_path):
@@ -29,6 +29,15 @@ def test_row_cap_marks_partial(tmp_path):
     out = run_query(c, run, "big", "DeviceInfo")
     assert out["capped"] is True
     assert run.manifest["sources"]["hunting.big"]["status"] == "partial"
+
+def test_query_ending_in_existing_take_is_not_rewrapped(tmp_path):
+    run = Run.create(tmp_path)
+    c = client(FakeResponse(200, {"schema": [], "results": [{"i": 1}]}))
+    out = run_query(c, run, "small", "DeviceInfo | take 5")
+    body = c.session.calls[0][2]["json"]
+    assert body["Query"] == "DeviceInfo | take 5"
+    assert out["capped"] is False
+
 
 def test_readonly_guard():
     with pytest.raises(DvaError):
