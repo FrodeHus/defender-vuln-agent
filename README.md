@@ -70,6 +70,10 @@ python3 -m dva exception suggest                               # suggested accep
 
 Python 3.11+, a Defender for Endpoint tenant, an Entra app registration with read permissions (the setup script creates it), and Claude Code for the agent. See [docs/install.md](docs/install.md).
 
+## Acknowledgements
+
+CVE intelligence comes from [cve-mcp-server](https://github.com/mukul975/cve-mcp-server) by Mahipal Jangra (Apache License 2.0), an MCP server that fans out to NVD, EPSS, CISA KEV, Exploit-DB, GitHub, vendor advisories and more. This project does not bundle it; the installer clones it next to this repository and the agent talks to it over MCP. Its `triage_cve`, `lookup_cve` and `get_vendor_advisory` tools are what make the enrichment step possible.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
