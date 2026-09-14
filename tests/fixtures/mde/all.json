@@ -1,0 +1,174 @@
+[
+  {
+    "value": [
+      {
+        "id": "m1",
+        "computerDnsName": "vpn-gw-01.corp.example",
+        "osPlatform": "Linux",
+        "version": "22.04",
+        "healthStatus": "Active",
+        "exposureLevel": "High",
+        "deviceValue": "High",
+        "machineTags": [
+          "Tier0"
+        ],
+        "rbacGroupName": "Perimeter",
+        "lastSeen": "2026-09-14T04:00:00Z",
+        "aadDeviceId": null,
+        "vmMetadata": {
+          "resourceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01"
+        }
+      },
+      {
+        "id": "m2",
+        "computerDnsName": "ws-finance-114.corp.example",
+        "osPlatform": "Windows11",
+        "version": "23H2",
+        "healthStatus": "Active",
+        "exposureLevel": "Medium",
+        "deviceValue": "Normal",
+        "machineTags": [],
+        "rbacGroupName": "Workstations",
+        "lastSeen": "2026-09-14T03:00:00Z",
+        "aadDeviceId": "aad-2"
+      },
+      {
+        "id": "m3",
+        "computerDnsName": "dc-01.corp.example",
+        "osPlatform": "WindowsServer2019",
+        "version": "1809",
+        "healthStatus": "Active",
+        "exposureLevel": "High",
+        "deviceValue": "High",
+        "machineTags": [
+          "Tier0",
+          "Prod"
+        ],
+        "rbacGroupName": "Servers",
+        "lastSeen": "2026-09-14T02:00:00Z"
+      }
+    ]
+  },
+  {
+    "value": [
+      {
+        "deviceId": "m1",
+        "deviceName": "vpn-gw-01.corp.example",
+        "rbacGroupName": "Perimeter",
+        "softwareVendor": "ivanti",
+        "softwareName": "connect_secure",
+        "softwareVersion": "22.7R2.1",
+        "cveId": "CVE-2026-21887",
+        "vulnerabilitySeverityLevel": "Critical",
+        "cvssScore": 9.8,
+        "exploitabilityLevel": "ExploitIsInKit",
+        "firstSeenTimestamp": "2026-09-08 01:00:00",
+        "lastSeenTimestamp": "2026-09-14 01:00:00",
+        "recommendationReference": "va-_-ivanti-_-connect_secure",
+        "recommendedSecurityUpdate": "22.7R2.5"
+      },
+      {
+        "deviceId": "m1",
+        "deviceName": "vpn-gw-01.corp.example",
+        "rbacGroupName": "Perimeter",
+        "softwareVendor": "ivanti",
+        "softwareName": "connect_secure",
+        "softwareVersion": "22.7R2.1",
+        "cveId": "CVE-2025-46512",
+        "vulnerabilitySeverityLevel": "High",
+        "cvssScore": 8.2,
+        "exploitabilityLevel": "ExploitIsPublic",
+        "firstSeenTimestamp": "2026-06-01 01:00:00",
+        "lastSeenTimestamp": "2026-09-14 01:00:00",
+        "recommendationReference": "va-_-ivanti-_-connect_secure",
+        "recommendedSecurityUpdate": "22.7R2.5"
+      },
+      {
+        "deviceId": "m2",
+        "deviceName": "ws-finance-114.corp.example",
+        "rbacGroupName": "Workstations",
+        "softwareVendor": "adobe",
+        "softwareName": "acrobat_reader_dc",
+        "softwareVersion": "24.002.20000",
+        "cveId": "CVE-2026-24433",
+        "vulnerabilitySeverityLevel": "Critical",
+        "cvssScore": 8.6,
+        "exploitabilityLevel": "NoExploit",
+        "firstSeenTimestamp": "2026-09-01 01:00:00",
+        "lastSeenTimestamp": "2026-09-14 01:00:00",
+        "recommendationReference": "va-_-adobe-_-acrobat_reader_dc",
+        "recommendedSecurityUpdate": "24.003.20112"
+      },
+      {
+        "deviceId": "m3",
+        "deviceName": "dc-01.corp.example",
+        "rbacGroupName": "Servers",
+        "softwareVendor": "microsoft",
+        "softwareName": "windows_server_2019",
+        "softwareVersion": "10.0.17763.6000",
+        "cveId": "CVE-2026-21335",
+        "vulnerabilitySeverityLevel": "Critical",
+        "cvssScore": 8.8,
+        "exploitabilityLevel": "ExploitIsVerified",
+        "firstSeenTimestamp": "2026-09-10 01:00:00",
+        "lastSeenTimestamp": "2026-09-14 01:00:00",
+        "recommendationReference": "va-_-microsoft-_-windows_server_2019",
+        "recommendedSecurityUpdate": "September 2026 Security Updates"
+      },
+      {
+        "deviceId": "m3",
+        "deviceName": "dc-01.corp.example",
+        "rbacGroupName": "Servers",
+        "softwareVendor": "microsoft",
+        "softwareName": "edge",
+        "softwareVersion": "128.0",
+        "cveId": null,
+        "vulnerabilitySeverityLevel": null,
+        "cvssScore": null,
+        "exploitabilityLevel": "NoExploit",
+        "firstSeenTimestamp": "2026-09-10 01:00:00",
+        "lastSeenTimestamp": "2026-09-14 01:00:00",
+        "recommendationReference": "va-_-microsoft-_-edge"
+      }
+    ]
+  },
+  {
+    "value": [
+      {
+        "id": "va-_-ivanti-_-connect_secure",
+        "productName": "connect_secure",
+        "vendor": "ivanti",
+        "recommendationName": "Update Ivanti Connect Secure to version 22.7R2.5",
+        "recommendedVersion": "22.7R2.5",
+        "remediationType": "Update",
+        "publicExploit": true,
+        "exposedMachinesCount": 6,
+        "totalMachineCount": 6,
+        "weaknesses": 26
+      },
+      {
+        "id": "va-_-adobe-_-acrobat_reader_dc",
+        "productName": "acrobat_reader_dc",
+        "vendor": "adobe",
+        "recommendationName": "Update Adobe Acrobat Reader DC",
+        "recommendedVersion": "24.003.20112",
+        "remediationType": "Update",
+        "publicExploit": false,
+        "exposedMachinesCount": 1140,
+        "totalMachineCount": 1200,
+        "weaknesses": 46
+      }
+    ]
+  },
+  {
+    "score": 54.2
+  },
+  {
+    "value": [
+      {
+        "rbacGroupName": "Servers",
+        "score": 61.0
+      }
+    ]
+  }
+]

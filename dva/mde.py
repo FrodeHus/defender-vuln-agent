@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import os
 from pathlib import Path
 from dva.auth import TokenProvider, MDE_SCOPE
 from dva.errors import DvaError
@@ -58,7 +59,7 @@ def _norm_rec(r: dict) -> dict:
 
 def collect_machines(client: Client, run: Run) -> int:
     with _Guard(run, "mde.machines"):
-        machines = [_norm_machine(m) for m in client.paged("/machines")]
+        machines = [_norm_machine(m) for m in client.paged("/machines", {"$top": 10000})]
         run.write_json("machines.json", machines)
         run.set_source("mde.machines", "ok", count=len(machines))
         run.summary(f"MDE machines: {len(machines)} devices collected.")
@@ -67,12 +68,20 @@ def collect_machines(client: Client, run: Run) -> int:
 
 def collect_vulns(client: Client, run: Run, page_size: int = 50000) -> int:
     with _Guard(run, "mde.vulns"):
-        rows = (
-            _norm_vuln(v)
-            for v in client.paged("/machines/SoftwareVulnerabilitiesByMachine", {"pageSize": page_size})
-            if v.get("cveId")
-        )
-        n = run.write_jsonl("vulns.jsonl", rows)
+        tmp_name = "vulns.jsonl.tmp"
+        try:
+            rows = (
+                _norm_vuln(v)
+                for v in client.paged("/machines/SoftwareVulnerabilitiesByMachine", {"pageSize": page_size})
+                if v.get("cveId")
+            )
+            n = run.write_jsonl(tmp_name, rows)
+            os.replace(run.path(tmp_name), run.path("vulns.jsonl"))
+        except BaseException:
+            tmp_path = run.path(tmp_name)
+            if tmp_path.exists():
+                tmp_path.unlink()
+            raise
         run.set_source("mde.vulns", "ok", count=n)
         run.summary(f"MDE vulnerabilities: {n} device/software/CVE rows written to vulns.jsonl.")
         return n
@@ -97,12 +106,7 @@ def collect_score(client: Client, run: Run) -> None:
 
 
 class _FixtureSession:
-    """Serves canned page(s) from a JSON file for --fixture runs.
-
-    The file may contain a single object (one page, reused for every request)
-    or a list of objects (consumed as successive pages, in order; the last
-    page repeats if more requests come in than there are pages).
-    """
+    """A JSON list is consumed as successive responses in request order (last one repeats); a single object is reused for every request."""
 
     def __init__(self, path: str):
         data = json.loads(Path(path).read_text())
