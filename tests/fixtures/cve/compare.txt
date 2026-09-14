@@ -1,0 +1,8 @@
+CVE Comparison — Patch Priority Ranking
+============================================================
+Rank  CVE ID               Score    Label      KEV   EPSS%    Urgency
+--------------------------------------------------------------------------------
+1     CVE-2023-0286        35.6     MEDIUM     No    59.5     PATCH WITHIN 72 HOURS
+2     CVE-2024-6345        18.3     LOW        No    1.9      PATCH THIS MONTH
+
+2 CVEs analyzed. Top priority: CVE-2023-0286 (score: 35.63). 0 in KEV catalog.

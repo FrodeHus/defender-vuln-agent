@@ -133,3 +133,48 @@ def test_parse_store_coerces_untyped_numeric_fields():
     p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"}, cves={"CVE-2026-2": ref(0, 9.8)})
     assets = {"x": Asset(id="x", name="x")}
     product_score(p, assets, {"CVE-2026-2": i}, cfg, estate_size=10)
+
+
+# --- cve-mcp text formats (fixtures captured from the real server) ---
+from pathlib import Path as _P
+from dva.enrich import parse_text, parse_file
+_FX = _P(__file__).parent / "fixtures" / "cve"
+
+
+def test_parse_triage_standard_text():
+    intel = parse_file(_FX / "triage-standard.txt")["CVE-2024-6345"]
+    assert intel.cvss == 8.8 and abs(intel.epss - 0.0194) < 1e-9 and abs(intel.epss_percentile - 0.79) < 1e-9
+    assert intel.kev is False and intel.exploit_public is False
+
+
+def test_parse_triage_with_kev_and_poc():
+    text = (_FX / "triage-standard.txt").read_text().replace("KEV:    NO", "KEV:    YES").replace(
+        "PoC:    NONE (No public PoC found) — 0 public source(s)", "PoC:    HIGH (Exploit-DB) — 2 public source(s)")
+    intel = parse_text(text)["CVE-2024-6345"]
+    assert intel.kev is True and intel.exploit_public is True and intel.exploit_sources == ["poc"]
+
+
+def test_parse_compare_epss_lookup_kev_poc_and_merge():
+    text = "\n".join((_FX / n).read_text() for n in ["compare.txt", "epss.txt", "lookup.txt", "kev.txt", "poc.txt"])
+    out = parse_text(text)
+    a = out["CVE-2023-0286"]
+    assert a.cvss == 7.4 and abs(a.epss - 0.595) < 1e-9 and abs(a.epss_percentile - 0.991) < 1e-9
+    assert a.kev is False and a.exploit_public is False and a.cwe == "CWE-843" and a.title.startswith("There is a type confusion")
+    assert "CVE-2024-6345" in out
+
+
+def test_parse_file_rejects_unrecognized_text(tmp_path):
+    p = tmp_path / "x.txt"; p.write_text("nothing useful here\n")
+    with pytest.raises(DvaError, match="no CVE data recognized"):
+        parse_file(p)
+
+
+def test_store_accepts_multiple_text_files(tmp_path, monkeypatch, capsys):
+    from dva.__main__ import main
+    from dva.run import Run
+    run = Run.create(tmp_path / "runs")
+    run.write_json("machines.json", [{"id": "m1", "name": "h", "tags": [], "exposure_level": None, "device_value": None, "group": None, "is_internet_facing": None, "azure_resource_id": None}])
+    run.write_jsonl("vulns.jsonl", [{"device_id": "m1", "device_name": "h", "vendor": "v", "product": "p", "version": "1", "cve_id": "CVE-2024-6345", "severity": "High", "cvss": 8.8, "exploitability": "NoExploit", "first_seen": None, "recommendation_ref": None}])
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    rc = main(["enrich", "--store", str(_FX / "triage-standard.txt"), str(_FX / "epss.txt"), "--run", str(run.dir)])
+    assert rc == 0 and "stored 2" in capsys.readouterr().out

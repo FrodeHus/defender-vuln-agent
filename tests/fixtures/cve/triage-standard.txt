@@ -1,0 +1,21 @@
+=== CVE Triage: CVE-2024-6345 ===
+Depth: standard   Scoring version: 1.0
+
+RISK SCORE: 18.28/100  (LOW)
+Urgency:    PATCH THIS MONTH
+Action:     CVE-2024-6345 has a high CVSS score of 8.8; include in the next monthly patch cycle.
+
+SIGNALS:
+  CVSS:   8.8 HIGH
+  Vector: CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H
+  Source: NVD
+  EPSS:   1.94% (percentile 79.0th, as of 2026-09-14)
+  KEV:    NO
+  PoC:    NONE (No public PoC found) — 0 public source(s)
+
+SCORE BREAKDOWN:
+  CVSS 8.8  → 17.6/20 pts
+  EPSS 1.9% → 0.7/35 pts
+  KEV  No   → 0/30 pts
+  PoC  NONE  → 0/15 pts
+  Age: 791 days since published

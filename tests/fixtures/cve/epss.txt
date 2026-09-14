@@ -1,0 +1,4 @@
+EPSS Scores:
+
+  CVE-2023-0286  59.50%  [███████████         ]  Percentile: 99.1th  (as of 2026-09-14)
+  CVE-2024-6345   1.94%  [                    ]  Percentile: 79.0th  (as of 2026-09-14)

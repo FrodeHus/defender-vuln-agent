@@ -1,0 +1,20 @@
+=== CVE Triage: CVE-2023-0286 ===
+Depth: quick   Scoring version: 1.0
+
+RISK SCORE: 35.63/100  (MEDIUM)
+Urgency:    PATCH WITHIN 72 HOURS
+Action:     CVE-2023-0286 has a high exploitation probability (EPSS 59.5%); prioritize patching within 72 hours.
+
+SIGNALS:
+  CVSS:   7.4 HIGH
+  Vector: CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H
+  Source: NVD
+  EPSS:   59.50% (percentile 99.1th, as of 2026-09-14)
+  KEV:    NO
+
+SCORE BREAKDOWN:
+  CVSS 7.4  → 14.8/20 pts
+  EPSS 59.5% → 20.8/35 pts
+  KEV  No   → 0/30 pts
+  PoC  NONE  → 0/15 pts
+  Age: 1313 days since published

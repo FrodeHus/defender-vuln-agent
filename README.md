@@ -27,7 +27,7 @@ A command-line tool and Claude Code agent for assessing Microsoft Defender for E
    pip install -e ../cve-mcp-server
    ```
 
-   The server reads its API keys from a `.env` file in the directory it starts in, which is this repository, so add `NVD_API_KEY=<your-nvd-api-key>` (and optionally `GITHUB_TOKEN`) to the same `.env` you use for the `DVA_*` variables in step 4. Verify with `claude mcp list` from the repository: `cve-mcp` must show as connected. To use a different interpreter, export `CVE_MCP_PYTHON=/path/to/python3` before starting Claude Code.
+   The server reads its API keys from a `.env` file in the directory it starts in, which is this repository, **Note:** the server package loads the `.env` next to its own source first (`../cve-mcp-server/.env`), and an empty `NVD_API_KEY=` line there blocks any other value, so put `NVD_API_KEY=<your-nvd-api-key>` (and optionally `GITHUB_TOKEN`) in `../cve-mcp-server/.env`. Verify with `claude mcp list` from the repository: `cve-mcp` must show as connected. To use a different interpreter, export `CVE_MCP_PYTHON=/path/to/python3` before starting Claude Code.
 
 3. Create the Entra app registration used for authentication (requires the Azure CLI and Global Administrator or Application Administrator + Privileged Role Administrator consent rights):
 
@@ -86,8 +86,9 @@ export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all
 python3 -m dva hunt internet-facing exploited-cves device-tags
 python3 -m dva enrich --list                      # prints {"chunk": N, "cve_ids": [...]} lines
-# for each chunk, call bulk_cve_lookup with those cve_ids, save the result, then:
-python3 -m dva enrich --store "$DVA_RUN/cve-chunk-1.json"
+# for each listed id, call the cve-mcp tool triage_cve(cve_id, depth="standard") and save its text
+# output to $DVA_RUN/cve-triage-<id>.txt, then merge them all:
+python3 -m dva enrich --store "$DVA_RUN"/cve-triage-*.txt
 python3 -m dva score
 python3 -m dva report --all
 ```
@@ -151,4 +152,4 @@ Each run lives in its own directory under `DVA_RUNS_DIR` (default `runs/<timesta
 
 ## First-run checklist
 
-- [ ] On the first real (non-fixture) run, capture the actual `bulk_cve_lookup` result for a chunk into `tests/fixtures/cve/bulk.json` in place of the placeholder data, and compare its keys against `dva/enrich.py:_one()`/`parse_store`. Adjust the key paths there if the live server's shape differs from what's assumed (e.g. different field names for CVSS, EPSS, KEV or exploit info).
+- [x] The parser was verified against real `cve-mcp` output (`tests/fixtures/cve/*.txt` are captured from the server: `triage_cve`, `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists`). If a server upgrade changes the text format, re-capture and adjust `dva/enrich.py:parse_text`.

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -104,6 +105,115 @@ def parse_store(payload: dict | list) -> dict[str, CveIntel]:
     return out
 
 
+_CVE = r"(CVE-\d{4}-\d{4,})"
+_RE_TRIAGE = re.compile(r"=== CVE Triage: " + _CVE + r" ===")
+_RE_LOOKUP = re.compile(r"^=== " + _CVE + r" ===\s*$", re.M)
+_RE_COMPARE_ROW = re.compile(r"^\s*\d+\s+" + _CVE + r"\s+([\d.]+)\s+(\w+)\s+(Yes|No)\s+([\d.]+)", re.M | re.I)
+_RE_EPSS_LINE = re.compile(_CVE + r"\s+([\d.]+)%.*?Percentile:\s*([\d.]+)th", re.I)
+_RE_KEV_SENTENCE = re.compile(_CVE + r" is (NOT )?in the CISA KEV", re.I)
+_RE_POC_HEADER = re.compile(r"PoC Intelligence:\s*" + _CVE)
+
+
+def _f(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _merge_intel(cur: CveIntel | None, new: CveIntel) -> CveIntel:
+    if cur is None:
+        return new
+    for f in ("cvss", "epss", "epss_percentile", "kev_added", "title", "cwe"):
+        if getattr(cur, f) is None and getattr(new, f) is not None:
+            setattr(cur, f, getattr(new, f))
+    cur.kev = cur.kev or new.kev
+    cur.ransomware = cur.ransomware or new.ransomware
+    cur.exploit_public = cur.exploit_public or new.exploit_public
+    for src in new.exploit_sources:
+        if src not in cur.exploit_sources:
+            cur.exploit_sources.append(src)
+    return cur
+
+
+def _parse_triage_block(cid: str, block: str) -> CveIntel:
+    intel = CveIntel()
+    m = re.search(r"^\s*CVSS:\s+([\d.]+)", block, re.M)
+    intel.cvss = _f(m.group(1)) if m else None
+    m = re.search(r"^\s*EPSS:\s+([\d.]+)%\s*\(percentile\s+([\d.]+)th", block, re.M)
+    if m:
+        intel.epss = _f(m.group(1)) / 100.0 if _f(m.group(1)) is not None else None
+        intel.epss_percentile = _f(m.group(2)) / 100.0 if _f(m.group(2)) is not None else None
+    m = re.search(r"^\s*KEV:\s+(YES|NO)", block, re.M | re.I)
+    intel.kev = bool(m and m.group(1).upper() == "YES")
+    m = re.search(r"^\s*PoC:\s+(\w+)(?:.*?—\s*(\d+)\s+public source)?", block, re.M)
+    if m:
+        intel.exploit_public = m.group(1).upper() != "NONE" or (m.group(2) is not None and int(m.group(2)) > 0)
+        if intel.exploit_public:
+            intel.exploit_sources.append("poc")
+    return intel
+
+
+def parse_text(text: str) -> dict[str, CveIntel]:
+    """Parse the cve-mcp server's formatted text output (triage_cve, compare_cves, get_epss_score,
+    lookup_cve, check_kev, check_poc_exists). Several tool outputs may be concatenated in one file."""
+    out: dict[str, CveIntel] = {}
+
+    def add(cid, intel):
+        cid = cid.upper()
+        out[cid] = _merge_intel(out.get(cid), intel)
+
+    # triage_cve blocks
+    parts = _RE_TRIAGE.split(text)
+    for i in range(1, len(parts), 2):
+        add(parts[i], _parse_triage_block(parts[i], parts[i + 1]))
+    # lookup_cve blocks ("=== CVE-x ===" not preceded by "CVE Triage:")
+    for m in _RE_LOOKUP.finditer(text):
+        cid, block = m.group(1), text[m.end(): m.end() + 4000]
+        intel = CveIntel()
+        k = re.search(r"^CISA KEV:\s+(YES|NO)", block, re.M | re.I)
+        intel.kev = bool(k and k.group(1).upper() == "YES")
+        sc = re.search(r"^Score:\s+([\d.]+)", block, re.M)
+        intel.cvss = _f(sc.group(1)) if sc else None
+        cw = re.search(r"^Weaknesses:\s*(CWE-\d+)", block, re.M)
+        intel.cwe = cw.group(1) if cw else None
+        d = re.search(r"^Description:\s*\n(.+)", block, re.M)
+        intel.title = d.group(1).strip()[:120] if d else None
+        add(cid, intel)
+    # compare_cves table rows
+    for m in _RE_COMPARE_ROW.finditer(text):
+        intel = CveIntel(kev=m.group(4).lower() == "yes", epss=(_f(m.group(5)) or 0.0) / 100.0)
+        add(m.group(1), intel)
+    # get_epss_score lines
+    for m in _RE_EPSS_LINE.finditer(text):
+        add(m.group(1), CveIntel(epss=(_f(m.group(2)) or 0.0) / 100.0, epss_percentile=(_f(m.group(3)) or 0.0) / 100.0))
+    # check_kev sentences
+    for m in _RE_KEV_SENTENCE.finditer(text):
+        add(m.group(1), CveIntel(kev=m.group(2) is None))
+    # check_poc_exists
+    for m in _RE_POC_HEADER.finditer(text):
+        block = text[m.end(): m.end() + 2000]
+        c = re.search(r"Confidence:\s*(\w+)", block)
+        has = bool(c and c.group(1).upper() != "NONE")
+        add(m.group(1), CveIntel(exploit_public=has, exploit_sources=["poc"] if has else []))
+    return out
+
+
+def parse_file(path: Path) -> dict[str, CveIntel]:
+    """Parse a stored CVE-server result: JSON (legacy/tool-agnostic) or the server's formatted text."""
+    raw = path.read_text(encoding="utf-8")
+    stripped = raw.lstrip()
+    if stripped.startswith("{") or stripped.startswith("["):
+        try:
+            return parse_store(json.loads(raw))
+        except json.JSONDecodeError as exc:
+            raise DvaError(f"store file is not valid JSON: {path}: {exc}")
+    parsed = parse_text(raw)
+    if not parsed:
+        raise DvaError(f"no CVE data recognized in {path}; expected cve-mcp tool output (triage_cve, compare_cves, get_epss_score, lookup_cve, check_kev, check_poc_exists) or JSON")
+    return parsed
+
+
 def write_enrichment(run: Run, cache: IntelCache, ids: list[str]) -> dict:
     fresh = cache.all_fresh(ids)
     doc = {"cves": {k: asdict(v) for k, v in fresh.items()}, "missing": sorted(set(ids) - set(fresh))}
@@ -116,7 +226,7 @@ def register(sub) -> None:
     add_run_arg(p)
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--list", action="store_true")
-    g.add_argument("--store")
+    g.add_argument("--store", nargs="+", metavar="FILE", help="one or more saved cve-mcp tool outputs (text or JSON)")
     p.set_defaults(func=_run)
 
 
@@ -132,14 +242,13 @@ def _run(args) -> int:
             print(json.dumps({"chunk": n // CHUNK + 1, "cve_ids": ids[n:n + CHUNK]}))
         run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded).")
         return 0
-    path = Path(args.store)
-    if not path.exists():
-        raise DvaError(f"store file not found: {path}")
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise DvaError(f"store file is not valid JSON: {path}: {exc}")
-    parsed = parse_store(payload)
+    parsed: dict[str, CveIntel] = {}
+    for raw in args.store:
+        path = Path(raw)
+        if not path.exists():
+            raise DvaError(f"store file not found: {path}")
+        for cid, intel in parse_file(path).items():
+            parsed[cid] = _merge_intel(parsed.get(cid), intel)
     for cid, intel in parsed.items():
         cache.put(cid, intel)
     wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else list(parsed)

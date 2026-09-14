@@ -179,7 +179,10 @@ the preliminary score drops below `report_threshold` (default 40), whichever com
 is de-duplicated across products, minus anything already cached, and printed as JSON lines in chunks
 of 20 (the CVE server's bulk limit).
 
-**Calls.** The agent calls `bulk_cve_lookup` with each chunk, then `triage_cve` (depth `standard`)
+**Calls.** (Revised after the first real run: the server has no batch lookup and returns formatted
+text, not JSON.) The agent calls `triage_cve` (depth `standard`) once per selected CVE, saves each
+text result, and stores them with one `dva enrich --store` call; `parse_text` understands triage,
+compare_cves, get_epss_score, lookup_cve, check_kev and check_poc_exists output. Originally: `bulk_cve_lookup` with each chunk, then `triage_cve` (depth `standard`)
 only for CVEs that the bulk result marks as KEV-listed or with EPSS ≥ 0.5, and writes results with
 `dva enrich --store <file>`. A full run on a 5,000 device estate is therefore bounded at roughly
 10 bulk calls plus a few dozen triage calls, and the agent's context sees only the JSON lines for
@@ -316,8 +319,8 @@ Bash, Read, Glob, Grep, and the CVE MCP server's tools. Its instructions:
    `dva hunt internet-facing`, `dva hunt exploited-cves`, `dva hunt device-tags`. In phase 2 also
    `dva cloud vulns` when `sources.yaml` enables it. Read only the printed summaries.
 4. Enrich: loop over `dva enrich --list` chunks (top CVEs per product by Defender CVSS, capped),
-   call `bulk_cve_lookup` per chunk, then `triage_cve` only for ids the bulk result marks KEV or
-   EPSS ≥ 0.5, store with `dva enrich --store`. Skip gracefully if the server is down.
+   call `triage_cve(cve_id, depth="standard")` per id, save the text, store all with one
+   `dva enrich --store` call. Skip gracefully if the server is down.
 5. Score: `python3 -m dva score`.
 6. Report: `python3 -m dva report --all`.
 7. Read `report.md` (only this file) and give the user a five-line summary with the top three

@@ -18,7 +18,7 @@ def test_offline_pipeline(tmp_path):
     listing = dva("enrich", "--list", env=env)
     chunks = [json.loads(l) for l in listing.splitlines() if l.startswith("{")]
     assert chunks and "CVE-2026-21887" in chunks[0]["cve_ids"]
-    dva("enrich", "--store", str(FX / "cve" / "bulk.json"), env=env)
+    dva("enrich", "--store", str(FX / "cve" / "triage-e2e.txt"), env=env)
     out = dva("score", env=env)
     assert "Connect Secure" in out
     dva("report", "--all", env=env)

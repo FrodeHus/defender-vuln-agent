@@ -1,0 +1,36 @@
+=== CVE Triage: CVE-2026-21887 ===
+Depth: standard   Scoring version: 1.0
+
+RISK SCORE: 91.20/100  (CRITICAL)
+Urgency:    PATCH IMMEDIATELY
+Action:     CVE-2026-21887 is in the CISA KEV catalog; patch immediately.
+
+SIGNALS:
+  CVSS:   9.8 CRITICAL
+  Vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  Source: NVD
+  EPSS:   94.00% (percentile 99.9th, as of 2026-09-14)
+  KEV:    YES
+  PoC:    HIGH (Exploit-DB, GitHub) — 3 public source(s)
+
+SCORE BREAKDOWN:
+  CVSS 9.8  → 19.6/20 pts
+  EPSS 94.0% → 32.9/35 pts
+  KEV  Yes  → 30/30 pts
+  PoC  HIGH  → 15/15 pts
+  Age: 6 days since published
+
+=== CVE Triage: CVE-2026-21335 ===
+Depth: standard   Scoring version: 1.0
+
+RISK SCORE: 78.00/100  (HIGH)
+Urgency:    PATCH WITHIN 72 HOURS
+Action:     CVE-2026-21335 is in the CISA KEV catalog; patch within 72 hours.
+
+SIGNALS:
+  CVSS:   8.8 HIGH
+  Vector: CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+  Source: NVD
+  EPSS:   61.00% (percentile 90.0th, as of 2026-09-14)
+  KEV:    YES
+  PoC:    NONE (No public PoC found) — 0 public source(s)

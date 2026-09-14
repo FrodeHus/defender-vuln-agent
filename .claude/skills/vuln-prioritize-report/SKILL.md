@@ -16,7 +16,7 @@ python3 -m dva score [--run RUN]
 python3 -m dva report [--md] [--html] [--json] [--all] [--run RUN]
 ```
 
-`enrich --list` prints one JSON line per chunk: `{"chunk": n, "cve_ids": [...]}` (cached CVEs already excluded). For each chunk, call the cve-mcp tool `bulk_cve_lookup(cve_ids)` with that exact list (max 20 ids per call — `enrich --list` already chunks to this size), save the raw tool result to a file, then run `dva enrich --store FILE` to merge it in. For any CVE the bulk result flags as KEV or EPSS ≥ 0.5, call `triage_cve(cve_id, depth)` with `depth="standard"` (use `"deep"` only if asked for more detail), save the result, and store it with `enrich --store` the same way. `dva score` writes `findings.json`; `dva report --all` (equivalent to `--md --html --json`) renders it.
+`enrich --list` prints one JSON line per chunk: `{"chunk": n, "cve_ids": [...]}` (cached CVEs already excluded). The cve-mcp server returns formatted text and has no batch lookup, so for every listed id call `triage_cve(cve_id, depth="standard")` (one call per CVE; it fans out NVD, EPSS, CISA KEV and PoC checks), save each result to `$DVA_RUN/cve-triage-<id>.txt`, then merge them all at once with `dva enrich --store "$DVA_RUN"/cve-triage-*.txt` (`--store` accepts many files). `dva enrich --store` also understands `compare_cves`, `get_epss_score` (comma-separated ids as ONE string), `lookup_cve`, `check_kev` and `check_poc_exists` output if you ever use those instead. `dva score` writes `findings.json`; `dva report --all` (equivalent to `--md --html --json`) renders it.
 
 ## Outputs
 
@@ -28,6 +28,6 @@ python3 -m dva report [--md] [--html] [--json] [--all] [--run RUN]
 
 ## Gotchas
 
-- Never paste raw CVE server results into a reply; write them to a file and let `dva enrich --store` merge them. Use a quoted heredoc delimiter (`cat <<'JSON' > FILE` ... `JSON`) so the shell writes the JSON byte for byte — an unquoted delimiter expands `$`, backticks and backslash escapes and corrupts it.
+- Never paste raw CVE server results into a reply; write them to a file and let `dva enrich --store` merge them. Use a quoted heredoc delimiter (`cat <<'TXT' > FILE` ... `TXT`) so the shell writes the text byte for byte — an unquoted delimiter expands `$`, backticks and backslash escapes and corrupts it.
 - `enrich --list` excludes CVEs already cached within `cache_ttl_days`; an empty chunk list means nothing new needs enrichment.
 - Never `cat` `enrichment.json` or `findings.json`; read `report.md` instead.
