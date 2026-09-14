@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import pytest
 from dva.errors import DvaError
 from dva import tenant
@@ -64,7 +65,7 @@ def test_activate_requires_env_file(tenants):
 
 def test_config_overrides_per_tenant(tenants, monkeypatch):
     from dva.config import load_scoring, load_sources
-    (tenants / "contoso" / "scoring.yaml").write_text(open("config/scoring.yaml").read().replace("report_threshold: 40", "report_threshold: 55"))
+    (tenants / "contoso" / "scoring.yaml").write_text(Path("config/scoring.yaml").read_text().replace("report_threshold: 40", "report_threshold: 55"))
     (tenants / "contoso" / "sources.yaml").write_text("cloud: true\nsubscriptions: [sub-1]\n")
     tenant.activate("contoso")
     assert load_scoring().report_threshold == 55

@@ -21,6 +21,6 @@ jobs:
       - name: Install
         run: python -m pip install -e ".[dev]"
       - name: Test (unit + offline end-to-end, no credentials needed)
-        run: python -m pytest -q
+        run: python -m pytest -q -W error
       - name: Setup script dry run
         run: bash setup/create-app.sh --dry-run --name ci-check > /dev/null

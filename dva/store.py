@@ -159,7 +159,22 @@ class Store:
         return [{"run_id": r[0], "score": r[1], "label": r[2]} for r in reversed(rows)]
 
     def close(self) -> None:
-        self._conn.close()
+        conn = getattr(self, "_conn", None)
+        if conn is not None:
+            self._conn = None
+            conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 def open_store() -> Store:

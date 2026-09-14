@@ -66,3 +66,9 @@ class IntelCache:
 
     def close(self) -> None:
         self.store.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
