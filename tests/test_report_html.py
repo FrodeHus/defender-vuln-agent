@@ -70,6 +70,14 @@ def test_html_appendix_mentions_ransomware_maturity_sla_and_asset_signals():
         assert marker in out
 
 
+def test_html_renders_patched_7d_in_card_body():
+    doc = json.loads(FX.read_text())
+    assert doc["products"][0].get("patched_7d")
+    out = render(doc)
+    assert "Patched in the last 7 days" in out
+    assert "p7.cves.map" in out  # built client-side from patched_7d.cves, not server-rendered
+
+
 def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)
