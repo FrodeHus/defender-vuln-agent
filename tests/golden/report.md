@@ -8,6 +8,15 @@ Run 20260914T080000Z · generated 2026-09-14T08:00:00+00:00 · previous run 2026
 
 Since run 20260907T080000Z: entered the top 10: Zoom Workplace; left the top 10: oracle/java-runtime-8; newly KEV-listed products: Acrobat Reader DC. Exposure score moved from 54.0 to 61.0.
 
+## Trend
+
+| Run | Generated | Exposure score | Products needing action | KEV CVEs | SLA breaches | Critical | High | Medium | Low |
+|---|---|---|---|---|---|---|---|---|---|
+| 20260907T080000Z | 2026-09-07T08:00:00+00:00 | 54.0 | 5 | 5 | 0 | 15 | 40 | 90 | 50 |
+| 20260914T080000Z | 2026-09-14T08:00:00+00:00 | 61.0 | 6 | 6 | 1 | 17 | 48 | 107 | 58 |
+
+New: 1 low · Fixed: 1 medium since the previous run.
+
 ## Top 10 products to patch
 
 | # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |

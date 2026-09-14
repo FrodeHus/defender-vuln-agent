@@ -22,6 +22,35 @@ def _row(r: dict) -> str:
     return f"| {r['rank']} | {r['product']} | {r['vendor']} | {r['score']} {r['label']} | {r['assets']['count']} | {c['critical']} | {c['high']} | {c['medium']} | {c['low']} | {_flags(r)} |"
 
 
+def _fmt_severity_counts(d: dict) -> str:
+    return ", ".join(f"{d.get(s, 0)} {s}" for s in ("critical", "high", "medium", "low", "unknown") if d.get(s, 0))
+
+
+def _trend_section(doc: dict) -> list[str]:
+    trend = doc.get("trend") or []
+    if len(trend) < 2:
+        return []
+    out = ["", "## Trend", "",
+           "| Run | Generated | Exposure score | Products needing action | KEV CVEs | SLA breaches | Critical | High | Medium | Low |",
+           "|---|---|---|---|---|---|---|---|---|---|"]
+    for t in trend:
+        c = t.get("cves_by_severity") or {}
+        exposure = t.get("exposure_score")
+        out.append(f"| {t.get('run_id')} | {t.get('generated_at')} | {exposure if exposure is not None else '-'} | "
+                    f"{t.get('products_action')} | {t.get('kev_cves')} | {t.get('sla_breaches')} | "
+                    f"{c.get('critical', 0)} | {c.get('high', 0)} | {c.get('medium', 0)} | {c.get('low', 0)} |")
+    d = doc.get("diff_from_previous") or {}
+    nc, fc = d.get("new_cves") or {}, d.get("fixed_cves") or {}
+    bits = []
+    if any(nc.values()):
+        bits.append(f"New: {_fmt_severity_counts(nc)}")
+    if any(fc.values()):
+        bits.append(f"Fixed: {_fmt_severity_counts(fc)}")
+    if bits:
+        out += ["", " · ".join(bits) + " since the previous run."]
+    return out
+
+
 def render(doc: dict) -> str:
     s, d, rows = doc["summary"], doc["diff_from_previous"], doc["products"]
     top, rest = rows[:10], rows[10:]
@@ -39,6 +68,7 @@ def render(doc: dict) -> str:
         out += ["", f"Since run {d['previous_run_id']}: entered the top 10: {entered}; left the top 10: {', '.join(d['left_top10']) or 'none'}; "
                     f"newly KEV-listed products: {', '.join(by_key.get(k, k) for k in d['new_kev']) or 'none'}."
                     + (f" Exposure score moved from {s['previous_exposure_score']} to {s['exposure_score']}." if s.get("previous_exposure_score") is not None and s.get("exposure_score") is not None else "")]
+    out += _trend_section(doc)
     out += ["", "## Top 10 products to patch", "", "| # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |", "|---|---|---|---|---|---|---|---|---|---|"]
     out += [_row(r) for r in top]
     for r in top:

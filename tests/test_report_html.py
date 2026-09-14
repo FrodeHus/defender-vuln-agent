@@ -16,6 +16,16 @@ def test_html_is_self_contained_and_embeds_data():
         assert marker in out
 
 
+def test_html_renders_trend_table_and_sparkline():
+    doc = json.loads(FX.read_text())
+    assert len(doc.get("trend") or []) >= 2
+    out = render(doc)
+    assert "id=\"trend\"" in out
+    assert "function trend(" in out and "function sparkline(" in out
+    assert "no external assets" not in out  # sanity: not just a comment stub
+    assert "<svg" not in out.split("<script")[0]  # sparkline is built client-side, not server-rendered
+
+
 def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)

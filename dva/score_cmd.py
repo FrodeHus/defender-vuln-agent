@@ -74,6 +74,89 @@ def _breakdown(assets, cfg: Scoring) -> str:
     return " · ".join(parts) if parts else "No exposure signals"
 
 
+def previous_runs(run: Run, n: int) -> list[Run]:
+    """Up to `n` previous runs in the same runs dir (ids < run.id) that have a readable findings.json,
+    newest first. Corrupt manifests/findings are skipped with a log line rather than aborting the search."""
+    runs_dir = run.dir.parent
+    if not runs_dir.exists() or n <= 0:
+        return []
+    candidates = sorted(p.name for p in runs_dir.iterdir() if p.is_dir() and (p / "manifest.json").exists())
+    candidates = [rid for rid in candidates if rid < run.id]
+    result: list[Run] = []
+    for rid in reversed(candidates):
+        if len(result) >= n:
+            break
+        d = runs_dir / rid
+        if not (d / "findings.json").exists():
+            continue
+        try:
+            r = Run(d)
+            r.read_json("findings.json")
+        except DvaError as exc:
+            run.log(f"ignoring previous run {rid}: {exc}")
+            continue
+        result.append(r)
+    return result
+
+
+def _cve_counts_by_severity(rows: list[dict]) -> dict[str, int]:
+    totals = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    for r in rows:
+        c = r.get("counts") or {}
+        for k in totals:
+            totals[k] += c.get(k, 0)
+    return totals
+
+
+def _trend(run: Run, prevs: list[Run], current_row: dict) -> list[dict]:
+    rows = []
+    for r in reversed(prevs):  # oldest first
+        try:
+            doc_p = r.read_json("findings.json")
+        except DvaError as exc:
+            run.log(f"ignoring previous run {r.id}: {exc}")
+            continue
+        s = doc_p.get("summary", {})
+        rows.append({
+            "run_id": r.id, "generated_at": s.get("generated_at"), "exposure_score": s.get("exposure_score"),
+            "products_action": s.get("products_action"), "kev_cves": s.get("kev_cves"), "sla_breaches": s.get("sla_breaches"),
+            "cves_by_severity": _cve_counts_by_severity(doc_p.get("products", [])),
+        })
+    rows.append(current_row)
+    return rows
+
+
+def _new_and_fixed_cves(rows: list[dict], products: dict, prev_doc: dict | None) -> tuple[dict[str, int], dict[str, int]]:
+    current_pairs = {(r["key"], cve) for r in rows for cve in r.get("all_cves", [])}
+    prev_products = (prev_doc or {}).get("products", [])
+    previous_pairs = {(pr["key"], cve) for pr in prev_products for cve in pr.get("all_cves", [])}
+    prev_severity: dict[tuple[str, str], str] = {}
+    for pr in prev_products:
+        for dc in pr.get("driving_cves") or []:
+            prev_severity[(pr["key"], dc["id"])] = dc.get("severity")
+
+    def _bucket(pairs, sev_lookup) -> dict[str, int]:
+        out = {"critical": 0, "high": 0, "medium": 0, "low": 0, "unknown": 0}
+        for key, cve in pairs:
+            sev = (sev_lookup(key, cve) or "unknown").lower()
+            if sev not in out:
+                sev = "unknown"
+            out[sev] += 1
+        return out
+
+    def _current_sev(key, cve) -> str | None:
+        p = products.get(key)
+        ref = p.cves.get(cve) if p else None
+        return ref.severity if ref else None
+
+    def _prev_sev(key, cve) -> str | None:
+        return prev_severity.get((key, cve))
+
+    new_pairs = current_pairs - previous_pairs
+    fixed_pairs = previous_pairs - current_pairs
+    return _bucket(new_pairs, _current_sev), _bucket(fixed_pairs, _prev_sev)
+
+
 def _posture(run: Run) -> dict:
     cert_rows = run.read_json("hunt-certificates.json").get("results", []) if run.path("hunt-certificates.json").exists() else []
     cfg_rows = run.read_json("hunt-config-findings.json").get("results", []) if run.path("hunt-config-findings.json").exists() else []
@@ -162,35 +245,41 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
         accepted_expired.append({"key": key, "product": name, "reason": item.reason, "until": item.until, "owner": item.owner})
     accepted_expired.sort(key=lambda x: x["key"])
     exposure = run.read_json("exposure.json") if run.path("exposure.json").exists() else {}
-    prev = Run.latest(run.dir.parent, before=run.id)
-    prev_doc = None
-    if prev and prev.path("findings.json").exists():
-        try:
-            prev_doc = prev.read_json("findings.json")
-        except DvaError as exc:
-            run.log(f"ignoring previous run {prev.id}: {exc}")
-            prev = None
+    prevs = previous_runs(run, cfg.trend_runs)
+    prev = prevs[0] if prevs else None
+    prev_doc = prev.read_json("findings.json") if prev else None
     top_now = [r["key"] for r in rows[: cfg.top_n]]
     top_prev = [r["key"] for r in (prev_doc or {}).get("products", [])[: cfg.top_n]]
     kev_prev = {r["key"] for r in (prev_doc or {}).get("products", []) if r.get("flags", {}).get("kev")}
     kev_ids = {cid for cid, it in intel.items() if it.kev and cid in all_ids}
     inet_risk = {a.id for p in products.values() for a in (assets.get(x) for x in p.asset_ids) if a and a.internet_facing and any(r.severity == "Critical" for r in p.cves.values())}
+    generated_at = datetime.now(timezone.utc).isoformat()
+    exposure_score = round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None
+    sla_breaches = sum(1 for v in sla_by_key.values() if v["overdue_cves"] > 0)
+    current_trend_row = {
+        "run_id": run.id, "generated_at": generated_at, "exposure_score": exposure_score,
+        "products_action": action_count, "kev_cves": len(kev_ids), "sla_breaches": sla_breaches,
+        "cves_by_severity": _cve_counts_by_severity(rows),
+    }
+    new_cves, fixed_cves = _new_and_fixed_cves(rows, products, prev_doc)
     return {
         "run": run.manifest,
         "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),
                     "internet_facing_at_risk": len(inet_risk),
-                    "sla_breaches": sum(1 for v in sla_by_key.values() if v["overdue_cves"] > 0),
+                    "sla_breaches": sla_breaches,
                     "overdue_cves_total": sum(v["overdue_cves"] for v in sla_by_key.values()),
                     "eos_products": sum(1 for p in listed_products.values() if p.eos is not None),
-                    "exposure_score": (round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None),
+                    "exposure_score": exposure_score,
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
-                    "generated_at": datetime.now(timezone.utc).isoformat(), "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
+                    "generated_at": generated_at, "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
         "products": rows,
         "diff_from_previous": {"previous_run_id": prev.id if prev_doc else None,
                                "entered_top10": [k for k in top_now if k not in top_prev], "left_top10": [k for k in top_prev if k not in top_now],
-                               "new_kev": [r["key"] for r in rows if r["flags"]["kev"] and r["key"] not in kev_prev]},
+                               "new_kev": [r["key"] for r in rows if r["flags"]["kev"] and r["key"] not in kev_prev],
+                               "new_cves": new_cves, "fixed_cves": fixed_cves},
         "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
         "posture": _posture(run),
+        "trend": _trend(run, prevs, current_trend_row),
     }
 
 
