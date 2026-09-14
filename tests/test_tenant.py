@@ -107,3 +107,21 @@ def test_no_tenants_dir_keeps_single_tenant_behaviour(tmp_path, monkeypatch, cap
     assert capsys.readouterr().out.strip().startswith(str(tmp_path / "runs"))
     assert main(["tenant", "list"]) == 0
     assert capsys.readouterr().out.strip() == ""
+
+
+def test_sole_tenant_is_selected_automatically(tenants, capsys):
+    import shutil
+    shutil.rmtree(tenants / "fabrikam")
+    assert main(["tenant", "show"]) == 0
+    assert "tenant: contoso" in capsys.readouterr().out
+    assert main(["run", "new"]) == 0
+    assert capsys.readouterr().out.strip().startswith(str(tenants / "contoso" / "runs"))
+    assert os.environ["DVA_TENANT_ID"] == "t-contoso"
+
+
+def test_several_tenants_require_a_choice(tenants, capsys):
+    assert main(["run", "new"]) == 1
+    err = capsys.readouterr().err
+    assert "contoso, fabrikam" in err and "--tenant" in err
+    assert main(["tenant", "show"]) == 0          # informational commands still work
+    assert "no tenant active" in capsys.readouterr().out

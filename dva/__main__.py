@@ -29,8 +29,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         selected = args.tenant or os.environ.get("DVA_TENANT")
-        manages_tenants = args.command == "tenant" and getattr(args, "tenant_cmd", None) != "show"
-        if selected and not manages_tenants:
+        is_show = args.command == "tenant" and getattr(args, "tenant_cmd", None) == "show"
+        needs_tenant = args.command != "tenant" or is_show
+        if needs_tenant and not selected:
+            names = _tenant.list_tenants()
+            if len(names) == 1:
+                selected = names[0]  # a lone tenant needs no explicit selection
+            elif len(names) > 1 and not is_show:
+                raise DvaError(f"several tenants configured ({', '.join(names)}); choose one with --tenant NAME or DVA_TENANT=NAME")
+        if needs_tenant and selected:
             _tenant.activate(selected)  # tenant .env wins; nothing from the shell or repo .env leaks across tenants
         else:
             load_dotenv()  # single-tenant mode: .env in the cwd or repo root; exported shell variables take precedence

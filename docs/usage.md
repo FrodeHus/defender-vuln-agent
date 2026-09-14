@@ -24,7 +24,7 @@ The agent runs on Claude Sonnet by design (see `agents/vuln-assessor.md`); chang
 
 ## From the command line
 
-Every command accepts `--tenant NAME` before the subcommand, or `DVA_TENANT=NAME` in the environment. Omit both for a single-tenant install.
+Every command accepts `--tenant NAME` before the subcommand, or `DVA_TENANT=NAME` in the environment. Omit both for a single-tenant install or when only one tenant is configured (it is selected automatically); with several tenants the command refuses to guess.
 
 ```bash
 source .venv/bin/activate                                   # or prefix each command with: uv run

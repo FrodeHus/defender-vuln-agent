@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A lone configured tenant is selected automatically when `--tenant`/`DVA_TENANT` is absent; with several tenants the CLI now errors instead of silently using the repo `.env`. `dva doctor` prints which `.env` it checked.
 - `uv sync --locked` is the primary install path (`uv.lock` committed, `dependency-groups.dev`); the installer and CI use uv, with a pip fallback.
 - Packaged as a Claude Code plugin: `.claude-plugin/plugin.json` and `marketplace.json`, with the agent and skills moved from `.claude/agents/` and `.claude/skills/` to `agents/` and `skills/` at the repo root. Install from the checkout with `claude --plugin-dir .`, or from `/plugin marketplace add FrodeHus/defender-vuln-agent` into another project (see `docs/install.md` for pointing the bundled CVE server at this checkout via `DVA_HOME`). Version bumped to 0.3.0.
 - Accepted-risk exceptions: `dva exception list|add|remove|suggest` records known, accepted risks per tenant (a product or a CVE, with a reason, owner and expiry); excepted products are pulled out of scoring and the report and listed under `accepted_risks`, and re-enter ranking flagged once expired. `dva exception suggest` proposes candidates (embedded components, evidence bundled across unrelated products, no vendor fix, end of support).

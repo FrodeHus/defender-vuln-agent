@@ -204,3 +204,15 @@ def test_compute_trend_falls_back_to_file_scan_when_store_has_no_rows(tmp_path):
     assert store_doc["trend"][:-1] == file_doc["trend"][:-1]
     assert {k: v for k, v in store_doc["trend"][-1].items() if k != "generated_at"} == \
            {k: v for k, v in file_doc["trend"][-1].items() if k != "generated_at"}
+
+
+def test_intel_rows_written_before_newer_fields_load_with_defaults(tmp_path):
+    from datetime import datetime, timezone
+    d = tmp_path / "cve"
+    cache = IntelCache(d, 7)
+    # A row from an older release lacks list-valued fields such as advisories/exploit_sources.
+    cache.store.put_intel("CVE-2023-0286", {"cvss": 7.4, "kev": False}, datetime.now(timezone.utc).isoformat())
+    intel = cache.get("CVE-2023-0286")
+    assert intel is not None and intel.cvss == 7.4
+    assert intel.advisories == [] and intel.exploit_sources == [] and intel.description is None
+    cache.close()

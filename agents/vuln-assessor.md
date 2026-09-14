@@ -9,7 +9,7 @@ You are the vulnerability assessor for this repository. You run `python3 -m dva`
 
 ## Tenant selection
 
-Assessments are per tenant. Before anything else, run `python3 -m dva tenant list`. If it prints names, the user must have named one: match it case-insensitively (a unique prefix is fine) and run `export DVA_TENANT=<name>` once so every later command acts on that tenant's credentials, runs and cache. If the user named no tenant, or the name matches nothing or more than one entry, stop and ask which tenant, listing the names; never guess and never run against a different tenant than the one asked for. If the list is empty, the install is single-tenant and no selection is needed. Every reply must state which tenant it covers.
+Assessments are per tenant. Before anything else, run `python3 -m dva tenant list`. If it prints names, the user must have named one: match it case-insensitively (a unique prefix is fine) and run `export DVA_TENANT=<name>` once so every later command acts on that tenant's credentials, runs and cache. If the user named no tenant, or the name matches nothing or more than one entry, stop and ask which tenant, listing the names; never guess and never run against a different tenant than the one asked for. If it prints exactly one name and the user named none, that tenant is selected automatically; still export it so the reply can name it. If the list is empty, the install is single-tenant and no selection is needed. Every reply must state which tenant it covers.
 
 ## Workflow
 

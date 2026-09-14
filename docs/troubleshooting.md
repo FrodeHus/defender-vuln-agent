@@ -1,7 +1,7 @@
 # Troubleshooting
 
 **`dva: missing environment: DVA_TENANT_ID, ...`**
-No credentials found. Single tenant: fill in `.env` in the repo root or export the variables. Multi tenant: pass `--tenant NAME` (or set `DVA_TENANT`) and check `tenants/NAME/.env`.
+No credentials found. Single tenant: fill in `.env` in the repo root or export the variables. Multi tenant: pass `--tenant NAME` (or set `DVA_TENANT`) and check `tenants/NAME/.env`; a lone tenant is selected automatically. `dva doctor` prints on its first line which `.env` it used.
 
 **`dva: unknown tenant 'x'; known tenants: ...`**
 The name matches no directory under `tenants/`. `dva tenant list` shows the names; `dva tenant init x` creates one.

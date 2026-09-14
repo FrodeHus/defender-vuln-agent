@@ -6,7 +6,7 @@
 |---|---|---|
 | `DVA_TENANT_ID`, `DVA_CLIENT_ID`, `DVA_CLIENT_SECRET` | App registration credential (client secret) | required |
 | `DVA_CLIENT_CERT_PATH`, `DVA_CLIENT_CERT_THUMBPRINT` | Client certificate instead of a secret | |
-| `DVA_TENANT` | Tenant to act on (same as `--tenant`) | none, single-tenant mode |
+| `DVA_TENANT` | Tenant to act on (same as `--tenant`) | the only tenant when exactly one exists, otherwise single-tenant mode |
 | `DVA_TENANTS_DIR` | Where tenant directories live | `tenants/` |
 | `DVA_TENANT_NAME` | Friendly name shown in reports | looked up from Graph (`CrossTenantInformation.ReadBasic.All`, cached per tenant), else the tenant directory name, else `DVA_TENANT_ID` |
 | `DVA_RUNS_DIR` | Where run directories are created | `runs/`, or `tenants/<name>/runs/` |

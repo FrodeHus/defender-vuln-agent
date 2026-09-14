@@ -19,3 +19,21 @@ def test_run_checks_reports_pass_and_fail():
     assert status["Machine.Read.All"] is True and status["Score.Read.All"] is False
     table = format_table(results)
     assert "FAIL" in table and "Score.Read.All" in table
+
+
+def test_doctor_names_the_credentials_it_checked(tmp_path, monkeypatch, capsys):
+    from dva.__main__ import main
+    from dva import doctor
+    monkeypatch.setattr(doctor, "run_checks", lambda cs, f: [(c, True, "ok") for c in cs])
+    root = tmp_path / "tenants"; (root / "contoso").mkdir(parents=True)
+    (root / "contoso" / ".env").write_text("DVA_TENANT_ID=t1\nDVA_CLIENT_ID=c\nDVA_CLIENT_SECRET=s\n")
+    monkeypatch.setenv("DVA_TENANTS_DIR", str(root))
+    for k in ["DVA_TENANT", "DVA_TENANT_DIR", "DVA_TENANT_NAME"]:
+        monkeypatch.delenv(k, raising=False)
+    assert main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith(f"tenant: contoso (credentials from {root / 'contoso' / '.env'})")
+    monkeypatch.setenv("DVA_TENANTS_DIR", str(tmp_path / "none"))
+    monkeypatch.delenv("DVA_TENANT", raising=False); monkeypatch.delenv("DVA_TENANT_DIR", raising=False)
+    assert main(["doctor"]) == 0
+    assert capsys.readouterr().out.startswith("tenant: single-tenant mode (credentials from ")

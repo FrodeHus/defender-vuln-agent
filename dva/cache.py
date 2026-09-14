@@ -48,7 +48,8 @@ class IntelCache:
         try:
             if datetime.fromisoformat(fetched_at) < datetime.now(timezone.utc) - self.ttl:
                 return None
-            return CveIntel(**{k: fields.get(k) for k in CveIntel.__dataclass_fields__})
+            # Rows written by an older release may lack newer fields; fall back to the dataclass defaults.
+            return CveIntel(**{k: v for k, v in fields.items() if k in CveIntel.__dataclass_fields__ and v is not None})
         except (ValueError, TypeError):
             return None
 

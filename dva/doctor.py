@@ -65,10 +65,21 @@ def register(sub) -> None:
     p.set_defaults(func=run)
 
 
+def _credentials_line() -> str:
+    from dva import tenant
+    from dva.dotenv import find_env_file
+    t = tenant.current()
+    if t is not None:
+        return f"tenant: {t.name} (credentials from {t.dir / '.env'})"
+    env = find_env_file()
+    return f"tenant: single-tenant mode (credentials from {env if env else 'the shell environment'})"
+
+
 def run(args) -> int:
     from dva.mde import make_client
     def factory(scope, base_url):
         c = make_client(scope, base_url); c.max_attempts = 2; return c
+    print(_credentials_line())
     results = run_checks(checks(load_sources()), factory)
     print(format_table(results))
     failed = [c.permission for c, ok, _ in results if not ok]
