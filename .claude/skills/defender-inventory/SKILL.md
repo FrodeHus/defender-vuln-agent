@@ -26,6 +26,6 @@ Written under the run directory: `machines.json`, `vulns.jsonl`, `recommendation
 ## Gotchas
 
 - The vulnerability export uses a 50,000-row page size (`pageSize=50000` on `/machines/SoftwareVulnerabilitiesByMachine`); large tenants may need several pages, handled automatically.
-- The Defender export APIs are rate-limited to roughly 30 calls/minute; `mde all` paces itself, but running collectors in a tight loop across many runs can hit the limit — space out repeated runs.
+- The client retries on HTTP 429, honoring the `Retry-After` header; it does not pre-emptively pace calls. MDE's documented limits are 100 calls/min and 1,500/hour for most endpoints, and 30 calls/min and 1,000/hour for the vulnerabilities export. A throttled run takes longer to finish; it does not produce incomplete data.
 - `--fixture` is per-collector: pass a fixture file matching that collector's expected API shape, not a whole run's worth of data.
 - Never `cat` `vulns.jsonl` or `machines.json` directly — they can be very large; use the printed summaries or downstream `report.md`.
