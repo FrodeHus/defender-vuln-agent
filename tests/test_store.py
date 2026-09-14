@@ -31,6 +31,15 @@ def test_store_round_trip_intel_with_ttl(tmp_path):
     assert fields2["cvss"] == 9.8
 
 
+def test_touch_intel_rewrites_fetched_at_only(tmp_path):
+    store = Store(tmp_path / "dva.sqlite")
+    store.put_intel("CVE-2026-3", {"cvss": 4.0}, "2026-01-01T00:00:00+00:00")
+    store.touch_intel("CVE-2026-3", "2020-01-01T00:00:00+00:00")
+    fields, fetched_at = store.get_intel("CVE-2026-3")
+    assert fields == {"cvss": 4.0}
+    assert fetched_at == "2020-01-01T00:00:00+00:00"
+
+
 def test_record_run_twice_upserts(tmp_path):
     store = Store(tmp_path / "dva.sqlite")
     store.record_run("r1", "tenant-x", {"generated_at": "2026-01-01T00:00:00Z", "exposure_score": 10.0}, [
@@ -82,6 +91,17 @@ def test_intel_cache_import_skips_corrupt_legacy_file(tmp_path):
     (d / "CVE-2026-2.json").write_text("{not valid json")
     cache = IntelCache(d, 7)
     assert cache.store.get_intel("CVE-2026-2") is None
+
+
+def test_intel_cache_ignores_json_dropped_after_first_open(tmp_path):
+    d = tmp_path / "cve"
+    d.mkdir()
+    cache = IntelCache(d, 7)  # first open: nothing to import yet
+    (d / "CVE-2026-9.json").write_text(json.dumps({"cvss": 3.0, "fetched_at": "2026-01-01T00:00:00+00:00"}))
+    # get()/put()/all_fresh() never read the filesystem: the store is the sole source of truth.
+    assert cache.get("CVE-2026-9") is None
+    assert cache.store.get_intel("CVE-2026-9") is None
+    assert cache.all_fresh(["CVE-2026-9"]) == {}
 
 
 def test_intel_cache_api_unchanged_for_existing_callers(tmp_path):

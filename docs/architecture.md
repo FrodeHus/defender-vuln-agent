@@ -27,7 +27,7 @@ Every stage is a `python3 -m dva` command that reads and writes files under one 
 | `dva/rollup.py` | Devices and vulnerabilities into products and assets; de-duplication of cloud findings against MDE |
 | `dva/scoring.py` | Threat score per CVE, asset multiplier, product score, labels, reason text |
 | `dva/enrich.py` | Candidate selection, parsing of CVE server output, cache merge |
-| `dva/cache.py` | TTL cache of CVE intel, mirrored into the SQLite store |
+| `dva/cache.py` | TTL cache of CVE intel; reads and writes the SQLite store exclusively |
 | `dva/store.py` | `dva.sqlite` store: CVE intel and per-run history (mode 600, WAL) |
 | `dva/score_cmd.py` | `findings.json` writer with the diff from the previous run; records the run in the store |
 | `dva/report_md.py`, `report_html.py`, `report_json.py` | Renderers that read only `findings.json` |

@@ -90,6 +90,17 @@ class Store:
         except sqlite3.Error as exc:
             raise DvaError(f"store write failed for {cve_id}: {exc}")
 
+    def touch_intel(self, cve_id: str, fetched_at: str) -> None:
+        """Rewrite the fetched_at timestamp of an existing intel row (e.g. to age it in tests)."""
+        try:
+            self._conn.execute(
+                "UPDATE cve_intel SET fetched_at = ? WHERE cve_id = ?",
+                (fetched_at, cve_id.upper()),
+            )
+            self._conn.commit()
+        except sqlite3.Error as exc:
+            raise DvaError(f"store touch_intel failed for {cve_id}: {exc}")
+
     def record_run(self, run_id: str, tenant: str | None, summary: dict, products: list[dict]) -> None:
         try:
             self._conn.execute(

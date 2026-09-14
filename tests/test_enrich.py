@@ -20,9 +20,7 @@ def test_cache_ttl(tmp_path):
     assert c.get("CVE-1") is None
     c.put("CVE-1", CveIntel(cvss=9.0, kev=True))
     assert c.get("CVE-1").kev is True
-    stale = json.loads((tmp_path / "CVE-1.json").read_text())
-    stale["fetched_at"] = "2020-01-01T00:00:00+00:00"
-    (tmp_path / "CVE-1.json").write_text(json.dumps(stale))
+    c.store.touch_intel("CVE-1", "2020-01-01T00:00:00+00:00")
     assert c.get("CVE-1") is None
 
 

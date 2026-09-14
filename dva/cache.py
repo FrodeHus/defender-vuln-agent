@@ -8,15 +8,17 @@ from dva.store import open_intel_store
 
 
 class IntelCache:
+    """CVE intel cache backed entirely by the SQLite store: get/put/all_fresh read and write
+    only ``self.store``. Pre-existing per-file JSON entries (from before this cache was
+    store-backed) are imported into the store once, the first time a directory is opened;
+    after that the JSON files are never read again, even if new ones appear later."""
+
     def __init__(self, directory: Path, ttl_days: int):
         self.dir = Path(directory)
         self.dir.mkdir(parents=True, exist_ok=True)
         self.ttl = timedelta(days=ttl_days)
         self.store = open_intel_store(self.dir)
         self._import_legacy()
-
-    def _p(self, cve_id: str) -> Path:
-        return self.dir / f"{cve_id.upper()}.json"
 
     def _import_legacy(self) -> None:
         """Pull pre-existing per-file JSON entries into the store, once. Files that are already
@@ -36,8 +38,12 @@ class IntelCache:
                 continue
             self.store.put_intel(cve_id, d, fetched)
 
-    def _fresh(self, fields: dict | None, fetched_at: str | None) -> CveIntel | None:
-        if fields is None or not fetched_at:
+    def get(self, cve_id: str) -> CveIntel | None:
+        row = self.store.get_intel(cve_id)
+        if row is None:
+            return None
+        fields, fetched_at = row
+        if not fetched_at:
             return None
         try:
             if datetime.fromisoformat(fetched_at) < datetime.now(timezone.utc) - self.ttl:
@@ -46,27 +52,9 @@ class IntelCache:
         except (ValueError, TypeError):
             return None
 
-    def get(self, cve_id: str) -> CveIntel | None:
-        p = self._p(cve_id)
-        if p.exists():
-            try:
-                d = json.loads(p.read_text())
-            except json.JSONDecodeError:
-                return None
-            if not isinstance(d, dict):
-                return None
-            return self._fresh(d, d.get("fetched_at"))
-        row = self.store.get_intel(cve_id)
-        if row is None:
-            return None
-        fields, fetched_at = row
-        return self._fresh(fields, fetched_at)
-
     def put(self, cve_id: str, intel: CveIntel) -> None:
         intel.fetched_at = intel.fetched_at or datetime.now(timezone.utc).isoformat()
-        fields = asdict(intel)
-        self._p(cve_id).write_text(json.dumps(fields))
-        self.store.put_intel(cve_id, fields, intel.fetched_at)
+        self.store.put_intel(cve_id, asdict(intel), intel.fetched_at)
 
     def all_fresh(self, ids) -> dict[str, CveIntel]:
         out: dict[str, CveIntel] = {}
@@ -75,3 +63,6 @@ class IntelCache:
             if v is not None:
                 out[i] = v
         return out
+
+    def close(self) -> None:
+        self.store.close()
