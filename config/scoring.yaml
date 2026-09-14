@@ -1,0 +1,16 @@
+threat_weights: { cvss: 0.35, epss: 0.25, kev: 0.25, exploit: 0.15 }
+asset_bonus:
+  internet_facing: 0.6
+  exposure_high: 0.4
+  exposure_medium: 0.2
+  device_value_high: 0.4
+  criticality_tag: 0.5
+  public_lb: 0.6
+asset_cap: 2.5
+criticality_tags: [Tier0, Prod, DMZ]
+enrich_top_per_product: 3
+enrich_max_cves: 200
+report_threshold: 40
+top_n: 10
+cache_ttl_days: 7
+bands: { critical: 80, high: 60, medium: 40 }

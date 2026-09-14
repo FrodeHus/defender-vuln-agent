@@ -1,0 +1,5 @@
+mde: true
+hunting: true
+cloud: false
+subscriptions: []
+hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions]
