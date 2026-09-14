@@ -19,6 +19,7 @@ def test_new_named_queries_load():
     assert "__CONFIG_IDS__" in load_query("mitigations")
     assert "DeviceTvmSecureConfigurationAssessmentKB" in load_query("mitigation-catalog")
     assert "DeviceTvmCertificateInfo" in load_query("certificates")
+    assert "IssuedTo = tostring(IssuedTo)" in load_query("certificates")
     assert "IsCompliant == false" in load_query("config-findings")
 
 

@@ -2,6 +2,6 @@
 DeviceTvmCertificateInfo
 | extend Exp = todatetime(ExpirationDate)
 | where Exp between (now() .. now() + 30d)
-| summarize Devices = dcount(DeviceId), Sample = any(Path) by Thumbprint, FriendlyName, tostring(IssuedTo), Exp
+| summarize Devices = dcount(DeviceId), Sample = any(Path) by Thumbprint, FriendlyName, IssuedTo = tostring(IssuedTo), Exp
 | order by Exp asc
 | take 200
