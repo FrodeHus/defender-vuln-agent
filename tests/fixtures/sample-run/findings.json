@@ -2974,5 +2974,27 @@
     "new_kev": [
       "adobe/acrobat-reader-dc"
     ]
+  },
+  "accepted_risks": {
+    "active": [
+      {
+        "key": "openssl/openssl",
+        "product": "Openssl",
+        "vendor": "Openssl",
+        "reason": "Bundled OpenSSL in vendor appliances; vendor patches on their cadence",
+        "until": "2026-12-31",
+        "owner": "frode",
+        "would_be_score": 42
+      }
+    ],
+    "expired": [
+      {
+        "key": "oracle/java-runtime-8",
+        "product": "Java Runtime 8",
+        "reason": "Legacy line-of-business app, migration planned",
+        "until": "2026-08-01",
+        "owner": "frode"
+      }
+    ]
   }
 }

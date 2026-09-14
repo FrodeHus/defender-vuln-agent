@@ -159,6 +159,15 @@ Affected assets (690): 690 workstations · 0 internet-facing · 41 High value
 - ws-finance-114 — High value
 + 687 more in findings.json
 
+## Accepted risks
+
+| Product | Vendor | Reason | Until | Owner | Would-be score |
+|---|---|---|---|---|---|
+| Openssl | Openssl | Bundled OpenSSL in vendor appliances; vendor patches on their cadence | 2026-12-31 | frode | 42 |
+
+Expired (back in the ranking; flagged `Exception expired`):
+- Java Runtime 8 (until 2026-08-01, owner frode): Legacy line-of-business app, migration planned
+
 ## Method
 
 Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.

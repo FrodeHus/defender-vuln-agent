@@ -1,0 +1,14 @@
+# Accepted-risk exceptions. Copy this to config/exceptions.yaml (single-tenant install) or
+# tenants/<name>/exceptions.yaml (per-tenant install) — both are gitignored — or, better, manage
+# entries only through `dva exception add|remove|list`, never by hand-editing this file.
+#
+# Each entry excepts either a whole product (`product: <vendor>/<name>`, matching Product.key
+# exactly) or a single CVE (`cve: CVE-...`, removed from every product's CVE list before scoring).
+# Exactly one of `product` or `cve` should be set per entry.
+exceptions:
+  - product: openssl/openssl # product key, or use `cve: CVE-2023-0286` instead
+    reason: Bundled OpenSSL in vendor appliances; vendor patches on their cadence
+    until: 2026-12-31 # ISO date; required. Past dates re-enter the ranking, flagged "exception expired"
+    owner: frode
+    added: 2026-09-14T10:00:00+00:00
+    source: user # user | suggested

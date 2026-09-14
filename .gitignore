@@ -6,3 +6,4 @@ __pycache__/
 .superpowers/
 *.egg-info/
 tenants/
+config/exceptions.yaml

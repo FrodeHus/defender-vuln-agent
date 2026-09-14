@@ -52,6 +52,18 @@ def render(doc: dict) -> str:
             out += ["", "</details>"]
     if rest:
         out += ["", "## All prioritized products", "", "| # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |", "|---|---|---|---|---|---|---|---|---|---|"] + [_row(r) for r in rest]
+    ar = doc.get("accepted_risks") or {}
+    active, expired = ar.get("active") or [], ar.get("expired") or []
+    if active or expired:
+        out += ["", "## Accepted risks", ""]
+        if active:
+            out += ["| Product | Vendor | Reason | Until | Owner | Would-be score |", "|---|---|---|---|---|---|"]
+            out += [f"| {a['product']} | {a['vendor']} | {a['reason']} | {a['until']} | {a.get('owner') or '-'} | {a['would_be_score']} |" for a in active]
+        if expired:
+            if active:
+                out.append("")
+            out.append("Expired (back in the ranking; flagged `Exception expired`):")
+            out += [f"- {e['product']} (until {e['until']}, owner {e.get('owner') or '-'}): {e['reason']}" for e in expired]
     out += ["", "## Method", "", METHOD, "", "## Sources", ""]
     for name, st in sorted(doc["run"].get("sources", {}).items()):
         out.append(f"- {name}: {st.get('status')}" + (f" ({st.get('count')} records)" if st.get("count") is not None else "") + (f" — {st.get('error')}" if st.get("error") else ""))

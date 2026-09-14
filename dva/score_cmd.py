@@ -1,8 +1,9 @@
 from __future__ import annotations
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from dva.cache import IntelCache
 from dva.config import Scoring, load_scoring
+from dva import exceptions as exceptions_mod
 from dva.errors import DvaError
 from dva.rollup import build, display_name, display_vendor
 from dva.run import Run, add_run_arg, resolve_run, cache_dir
@@ -43,7 +44,10 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
     intel = cache.all_fresh(all_ids)
-    scored = sorted((product_score(p, assets, intel, cfg, estate) for p in products.values()), key=lambda s: (-s.score, s.product.name))
+    exc_items = exceptions_mod.load(exceptions_mod.path_for_current())
+    active_exceptions, expired_exceptions = exceptions_mod.split(exc_items, date.today())
+    listed_products, dropped_exceptions = exceptions_mod.apply(products, active_exceptions)
+    scored = sorted((product_score(p, assets, intel, cfg, estate) for p in listed_products.values()), key=lambda s: (-s.score, s.product.name))
     rows = []
     # Always list at least the top_n products so a small or clean estate still gets a ranked view;
     # report_threshold decides how many of them count as "needing action".
@@ -69,6 +73,30 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
             "partial_intel": any(r.id not in intel for r, _ in sp.driving),
         })
+    expired_product_keys = {i.product for i in expired_exceptions if i.product}
+    expired_cve_ids = {i.cve for i in expired_exceptions if i.cve}
+    for row in rows:
+        row["flags"]["exception_expired"] = row["key"] in expired_product_keys or bool(expired_cve_ids & set(row["all_cves"]))
+    accepted_active = []
+    for key, item in dropped_exceptions.items():
+        p = products[key]
+        sp = product_score(p, assets, intel, cfg, estate)
+        accepted_active.append({
+            "key": key, "product": display_name(p), "vendor": display_vendor(p),
+            "reason": item.reason, "until": item.until, "owner": item.owner, "would_be_score": sp.score,
+        })
+    accepted_active.sort(key=lambda x: x["key"])
+    accepted_expired = []
+    for item in expired_exceptions:
+        if item.product:
+            key = item.product
+            p = products.get(key)
+            name = display_name(p) if p else key
+        else:
+            key = item.cve
+            name = next((display_name(p2) for p2 in products.values() if item.cve in p2.cves), key)
+        accepted_expired.append({"key": key, "product": name, "reason": item.reason, "until": item.until, "owner": item.owner})
+    accepted_expired.sort(key=lambda x: x["key"])
     exposure = run.read_json("exposure.json") if run.path("exposure.json").exists() else {}
     prev = Run.latest(run.dir.parent, before=run.id)
     prev_doc = None
@@ -93,6 +121,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
         "diff_from_previous": {"previous_run_id": prev.id if prev_doc else None,
                                "entered_top10": [k for k in top_now if k not in top_prev], "left_top10": [k for k in top_prev if k not in top_now],
                                "new_kev": [r["key"] for r in rows if r["flags"]["kev"] and r["key"] not in kev_prev]},
+        "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
     }
 
 
