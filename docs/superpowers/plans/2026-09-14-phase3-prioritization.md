@@ -179,7 +179,20 @@ class Store:                      # sqlite3 stdlib; WAL mode; file mode 600
     def product_history(self, key, n) -> list[dict]
 def open_store() -> Store         # <DVA_CACHE_DIR>/dva.sqlite, or <repo>/.cache/cve.sqlite for intel when shared_cve_cache is true (intel only; runs always per tenant)
 ```
-Schema: `cve_intel(cve_id TEXT PRIMARY KEY, fields TEXT, fetched_at TEXT)`, `runs(run_id TEXT PRIMARY KEY, tenant TEXT, generated_at TEXT, summary TEXT)`, `product_history(run_id TEXT, key TEXT, score INT, label TEXT, PRIMARY KEY(run_id, key))`. `IntelCache` keeps its constructor signature `(directory, ttl_days)` and uses `directory / "dva.sqlite"` (or the shared file); existing per-file JSON entries are imported once on first open and then ignored.
+Schema: `cve_intel(cve_id TEXT PRIMARY KEY, fields TEXT, fetched_at TEXT)`, `runs(run_id TEXT PRIMARY KEY, tenant TEXT, generated_at TEXT, exposure_score REAL, secure_score REAL, summary TEXT)`, `product_history(run_id TEXT, key TEXT, score INT, label TEXT, PRIMARY KEY(run_id, key))`. `IntelCache` keeps its constructor signature `(directory, ttl_days)` and uses `directory / "dva.sqlite"` (or the shared file); existing per-file JSON entries are imported once on first open and then ignored.
 
 - [ ] **Step 1: Failing tests**: round trip intel with TTL; `record_run` twice for the same id upserts; `recent_runs(2)` order; legacy JSON import; `shared_cve_cache` routes intel to the repo-level file while runs stay per tenant; `IntelCache` API unchanged (existing `tests/test_enrich.py` cache tests keep passing); `compute` trend equals the file-scan result on the same runs.
 - [ ] **Step 2–4**: implement, suite green, commit `feat: per-tenant SQLite store for CVE intel and run history`.
+
+---
+
+### Task 9: Secure score, 12-month score trend, and recently patched critical CVEs
+
+**Files:**
+- Modify: `dva/mde.py` (`collect_score` also reads `GET /configurationScore` → `exposure.json["secure_score"]` rounded to 2 decimals; new `collect_changes(client, run, since_days=7)` reading `GET /machines/SoftwareVulnerabilityChangesByMachine?sinceTime=<ISO, 7 days ago>&pageSize=50000` and writing `vuln-changes.jsonl` with keys `device_id, vendor, product, version, cve_id, severity, status, event_time`; CLI `dva mde changes`, included in `mde all`), `dva/store.py` (`runs` row stores `exposure_score` and `secure_score`), `dva/score_cmd.py` (`score_trend`: `[{run_id, generated_at, exposure_score, secure_score}]` over the last 365 days from the store when present else from previous `findings.json` files; per product `patched_7d = {"critical": n, "high": n, "cves": [ids of Critical fixed, up to 5]}` from `vuln-changes.jsonl` rows with `status == "Fixed"`; summary `patched_7d_critical` total), `dva/report_md.py` (trend line summary "Exposure score 12-month: min/max/now", "Patched in the last 7 days: n critical, m high" per product), `dva/report_template.html` (inline SVG line chart with two series over 12 months, x = time, y = score; legend; no external assets), `dva/doctor.py` (no new permission; `/configurationScore` is under `Score.Read.All`)
+- Test: `tests/test_mde.py`, `tests/test_score_cmd.py`, `tests/test_report_md.py`, `tests/test_report_html.py`
+
+**Interfaces:** `collect_changes` skips rows with null `cveId`; `since` computed as `datetime.now(utc) - timedelta(days=since_days)` in ISO 8601 with `Z`; the MDE delta API caps `sinceTime` at 14 days, so `since_days` > 14 raises `DvaError`. `score_trend` rows are oldest first and include the current run; `secure_score` may be null for older runs.
+
+- [ ] **Step 1: Failing tests**: `collect_score` writes `secure_score`; `collect_changes` posts the right `sinceTime` (assert the params/URL), writes normalized rows, skips null CVEs, rejects `since_days=15`; `compute` yields `patched_7d` for a product with two Fixed Critical rows and one Fixed High; `score_trend` from two runs; golden shows the patched line; HTML template contains the SVG chart container id `score-trend`.
+- [ ] **Step 2–4**: implement, suite green, regenerate golden, commit `feat: secure score, 12-month score trend and recently patched critical CVEs`.
