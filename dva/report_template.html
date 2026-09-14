@@ -132,7 +132,7 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
     var findTable = findings.length ? '<p>By impact: ' + esc(by.high || 0) + ' high, ' + esc(by.medium || 0) + ' medium, ' + esc(by.low || 0) + ' low.</p><table><thead><tr><th>Configuration</th><th>Category</th><th>Subcategory</th><th>Impact</th><th>Devices</th></tr></thead><tbody>' + findRows + '</tbody></table>' : '';
     return '<div class="accepted"><h2>Posture</h2><h3 style="margin-top:12px">Certificates expiring within 30 days</h3>' + certTable + (findings.length ? '<h3 style="margin-top:16px">Non-compliant configurations</h3>' + findTable : '') + '</div>'; }
   function sparkline(values, color){
-    if (!values.length) return '';
+    if (values.length < 2) return '';
     var w = 240, h = 40, pad = 4;
     var max = Math.max.apply(null, values), min = Math.min.apply(null, values);
     var range = (max - min) || 1;
@@ -145,7 +145,8 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
     var rows = t.map(function(r){ var c = r.cves_by_severity || {};
       return '<tr><td>' + esc(r.run_id) + '</td><td>' + esc(r.generated_at) + '</td><td>' + (r.exposure_score == null ? '-' : esc(r.exposure_score)) + '</td><td>' + esc(r.products_action) + '</td><td>' + esc(r.kev_cves) + '</td><td>' + esc(r.sla_breaches) + '</td><td>' + esc(c.critical || 0) + '</td><td>' + esc(c.high || 0) + '</td><td>' + esc(c.medium || 0) + '</td><td>' + esc(c.low || 0) + '</td></tr>'; }).join('');
     var table = '<table><thead><tr><th>Run</th><th>Generated</th><th>Exposure score</th><th>Products needing action</th><th>KEV CVEs</th><th>SLA breaches</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th></tr></thead><tbody>' + rows + '</tbody></table>';
-    var exposureSpark = sparkline(t.map(function(r){ return r.exposure_score == null ? 0 : r.exposure_score; }), 'var(--blue)');
+    var exposureVals = t.map(function(r){ return r.exposure_score; }).filter(function(v){ return typeof v === 'number'; });
+    var exposureSpark = sparkline(exposureVals, 'var(--blue)');
     var actionSpark = sparkline(t.map(function(r){ return r.products_action || 0; }), 'var(--crit)');
     var sparks = '<div style="display:flex;gap:24px;margin-top:12px;flex-wrap:wrap"><div><div class="label">Exposure score</div>' + exposureSpark + '</div><div><div class="label">Products needing action</div>' + actionSpark + '</div></div>';
     return '<div class="accepted"><h2>Trend</h2>' + table + sparks + '</div>'; }
@@ -156,12 +157,18 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
     var n = st.length;
     function xAt(i){ return n > 1 ? padL + i * (w - padL - padR) / (n - 1) : (padL + w - padR) / 2; }
     function yAt(v){ return padT + (100 - v) / 100 * (h - padT - padB); }
+    function segments(key){
+      var segs = [], cur = [];
+      st.forEach(function(r, i){
+        if (typeof r[key] === 'number') { cur.push(i); }
+        else { if (cur.length) segs.push(cur); cur = []; } });
+      if (cur.length) segs.push(cur);
+      return segs; }
     function seriesLine(key, color){
-      var pts = [];
-      st.forEach(function(r, i){ var v = r[key]; if (typeof v !== 'number') return; pts.push(xAt(i).toFixed(1) + ',' + yAt(v).toFixed(1)); });
-      if (!pts.length) return '';
-      if (pts.length === 1) { var xy = pts[0].split(','); return '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="3" fill="' + color + '"/>'; }
-      return '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2"/>'; }
+      return segments(key).map(function(idxs){
+        if (idxs.length === 1) { var i = idxs[0]; return '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(st[i][key]).toFixed(1) + '" r="3" fill="' + color + '"/>'; }
+        var pts = idxs.map(function(i){ return xAt(i).toFixed(1) + ',' + yAt(st[i][key]).toFixed(1); }).join(' ');
+        return '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2"/>'; }).join(''); }
     var gridlines = [0, 25, 50, 75, 100].map(function(v){
       var gy = yAt(v).toFixed(1);
       return '<line x1="' + padL + '" x2="' + (w - padR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--line)" stroke-width="1"/>' +

@@ -48,6 +48,20 @@ def test_html_has_score_trend_chart_container():
     assert '<svg id="score-trend"' not in out.split("<script")[0]  # built client-side, not server-rendered
 
 
+def test_html_sparkline_filters_null_exposure_scores_instead_of_mapping_to_zero():
+    doc = json.loads(FX.read_text())
+    out = render(doc)
+    assert "exposure_score == null ? 0" not in out
+    assert "function segments(" in out
+
+
+def test_html_renders_without_exception_when_trend_has_null_exposure_score():
+    doc = json.loads(FX.read_text())
+    doc["trend"][0]["exposure_score"] = None
+    out = render(doc)  # must not raise
+    assert out.startswith("<!doctype html>")
+
+
 def test_html_escapes_script_close():
     doc = json.loads(FX.read_text()); doc["products"][0]["reason"] = "x</script><b>y"
     out = render(doc)
