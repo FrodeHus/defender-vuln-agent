@@ -44,6 +44,10 @@ A command-line tool and Claude Code agent for assessing Microsoft Defender for E
    export DVA_CLIENT_SECRET=<client-secret>
    ```
 
+   Alternatively put the same `KEY=VALUE` lines in a `.env` file in the repository root (it is
+   gitignored). `python -m dva` reads `.env` from the current directory or the repository root at
+   startup; variables already exported in the shell take precedence over the file.
+
    Other environment variables the tool honours:
 
    | Variable | Purpose | Default |

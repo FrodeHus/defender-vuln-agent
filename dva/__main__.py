@@ -21,6 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from dva.dotenv import load as load_dotenv
+    load_dotenv()  # .env in the cwd or repo root; exported shell variables take precedence
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
