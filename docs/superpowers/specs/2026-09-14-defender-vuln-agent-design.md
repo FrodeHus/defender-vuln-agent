@@ -56,7 +56,7 @@ dva/                               # shared Python package
   doctor.py
   queries/*.kql                    # named hunting queries
 config/
-  scoring.yaml                     # weights, thresholds, tag patterns
+  scoring.yaml                     # weights, thresholds, tag patterns, enrichment caps
   sources.yaml                     # which sources are enabled, subscriptions for MDC
 setup/
   create-app.sh                    # az CLI: create app, add API permissions, print env vars
@@ -166,18 +166,35 @@ running pod count when available, otherwise by image.
 
 ## Enrichment
 
-`dva enrich --list` prints the distinct CVE ids across all collected findings that are not in the
-cache (or whose cache entry is older than the TTL), in chunks of 50, as JSON lines. The agent calls
-the CVE MCP server's `batch_cve_lookup` and `triage_cve` tools for those ids and writes each result
-with `dva enrich --store <file>`. `dva.cache` stores one JSON per CVE under `.cache/cve/<id>.json`
-with a fetched-at timestamp; TTL is 7 days (configurable). `enrichment.json` in the run directory is
-the merged view for the run: for each CVE, cvss (base and vector), epss score and percentile, kev
-(listed, date added, ransomware use), exploit availability (Exploit-DB, GitHub PoC, Nuclei template,
-Metasploit), cwe, a one-line title, and the source timestamps.
+Enrichment is deliberately narrow to keep token use and CVE-server calls small. Defender already
+supplies a CVSS score, severity level and exploitability level for every finding, so those fields
+carry the bulk of scoring. Only the CVEs that can change a product's rank get external intelligence.
 
-If the CVE server is unreachable or a chunk fails, enrichment for those CVEs is marked missing. Scoring
-proceeds using Defender's own cvss and exploitability fields, and the report marks affected products
-with "partial intel". Enrichment is never blocking.
+**Candidate selection.** After roll-up (below), `dva enrich --list` selects, per product, the
+`enrich_top_per_product` CVEs (default 3) with the highest Defender `cvssScore`, ties broken by
+`exploitabilityLevel` (ExploitIsInKit > ExploitIsVerified > ExploitIsPublic > NoExploit) then by
+newest `firstSeenTimestamp`. Products are considered in descending order of their preliminary score
+(computed from Defender fields alone) and selection stops at `enrich_max_cves` (default 200) or when
+the preliminary score drops below `report_threshold` (default 40), whichever comes first. The list
+is de-duplicated across products, minus anything already cached, and printed as JSON lines in chunks
+of 20 (the CVE server's bulk limit).
+
+**Calls.** The agent calls `bulk_cve_lookup` with each chunk, then `triage_cve` (depth `standard`)
+only for CVEs that the bulk result marks as KEV-listed or with EPSS ≥ 0.5, and writes results with
+`dva enrich --store <file>`. A full run on a 5,000 device estate is therefore bounded at roughly
+10 bulk calls plus a few dozen triage calls, and the agent's context sees only the JSON lines for
+the selected ids and the store confirmations.
+
+**Cache.** `dva.cache` stores one JSON per CVE under `.cache/cve/<id>.json` with a fetched-at
+timestamp; TTL is 7 days (configurable). `enrichment.json` in the run directory is the merged view for
+the run: for each enriched CVE, cvss (base and vector), epss score and percentile, kev (listed, date
+added, ransomware use), exploit availability (Exploit-DB, GitHub PoC, Nuclei template, Metasploit),
+cwe, a one-line title, and the source timestamps. CVEs that were not selected have no entry and
+scoring uses Defender fields only for them.
+
+If the CVE server is unreachable or a chunk fails, enrichment for those CVEs is marked missing.
+Scoring proceeds using Defender's own fields, and the report marks affected products with
+"partial intel". Enrichment is never blocking.
 
 ## Prioritization
 
@@ -208,6 +225,11 @@ threat = 0.35 * cvss/10
        + 0.25 * (1 if kev else 0)
        + 0.15 * (1 if public exploit else 0.5 if Defender says exploit available else 0)
 ```
+
+For a CVE without enrichment, `cvss` is Defender's `cvssScore`, `epss_percentile` is 0, `kev` is
+false, and the exploit term comes from Defender's `exploitabilityLevel` alone (0.5 for
+ExploitIsPublic, 0.75 for ExploitIsVerified, 1.0 for ExploitIsInKit). The preliminary product score
+used for enrichment selection is the product score computed with these defaults for every CVE.
 
 **Asset context multiplier** (1.0 to 2.5, additive bonuses then capped):
 
@@ -291,8 +313,9 @@ Bash, Read, Glob, Grep, and the CVE MCP server's tools. Its instructions:
 3. Collect: `dva mde machines`, `dva mde vulns`, `dva mde recommendations`, `dva mde score`, then
    `dva hunt internet-facing`, `dva hunt exploited-cves`, `dva hunt device-tags`. In phase 2 also
    `dva cloud vulns` when `sources.yaml` enables it. Read only the printed summaries.
-4. Enrich: loop over `dva enrich --list` chunks, call `batch_cve_lookup` then `triage_cve` for KEV or
-   high-EPSS ids, store with `dva enrich --store`. Skip gracefully if the server is down.
+4. Enrich: loop over `dva enrich --list` chunks (top CVEs per product by Defender CVSS, capped),
+   call `bulk_cve_lookup` per chunk, then `triage_cve` only for ids the bulk result marks KEV or
+   EPSS ≥ 0.5, store with `dva enrich --store`. Skip gracefully if the server is down.
 5. Score: `python -m dva score`.
 6. Report: `python -m dva report --all`.
 7. Read `report.md` (only this file) and give the user a five-line summary with the top three
@@ -321,7 +344,8 @@ prompt rule is a courtesy, not the control.
 
 - **Unit tests** with recorded JSON fixtures under `tests/fixtures/`: paging and `@odata.nextLink`
   handling, MDE record normalization, hunting row cap detection, product roll-up and key
-  normalization, scoring formula against hand-computed cases, de-duplication (phase 2), diff against
+  normalization, enrichment candidate selection (per-product top N, global cap, threshold stop),
+  scoring formula against hand-computed cases, de-duplication (phase 2), diff against
   a previous run, each renderer against a golden file generated from `tests/fixtures/sample-run/`.
 - **Offline pipeline**: every collector accepts `--fixture <file>` so `dva score` and `dva report`
   run end to end without credentials. The sample run doubles as the demo data for the HTML report.
