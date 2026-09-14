@@ -34,3 +34,37 @@ def test_products_and_assets(tmp_path):
     assert assets["m2"].internet_facing is False and sorted(assets["m2"].tags) == ["Finance", "Prod"]
     adobe = products[product_key("adobe", "acrobat_reader_dc")]
     assert adobe.remediation is None and adobe.asset_ids == {"m2"}
+
+
+def test_cve_ref_merges_strongest_fields_across_rows(tmp_path):
+    run = Run.create(tmp_path)
+    run.write_json("machines.json", [
+        {"id": "m1", "name": "vpn-gw-01", "exposure_level": "High", "device_value": "High", "tags": [], "group": None, "is_internet_facing": None, "azure_resource_id": None},
+        {"id": "m2", "name": "ws-114", "exposure_level": "Medium", "device_value": "Normal", "tags": [], "group": None, "is_internet_facing": None, "azure_resource_id": None},
+    ])
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.1", "cve_id": "CVE-2026-21887", "severity": "High", "cvss": 5.0, "exploitability": "ExploitIsInKit", "first_seen": "2026-06-01", "recommendation_ref": None},
+        {"device_id": "m2", "device_name": "ws-114", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.1", "cve_id": "CVE-2026-21887", "severity": "Critical", "cvss": 9.8, "exploitability": "NoExploit", "first_seen": "2026-01-01", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    products, _ = build(run)
+    ref = products[product_key("ivanti", "connect_secure")].cves["CVE-2026-21887"]
+    assert ref.exploitability == "ExploitIsInKit"
+    assert ref.cvss == 9.8
+    assert ref.severity == "Critical"
+    assert ref.first_seen == "2026-01-01"
+
+
+def test_build_tolerates_unknown_exploitability_and_non_numeric_cvss(tmp_path):
+    run = Run.create(tmp_path)
+    run.write_json("machines.json", [
+        {"id": "m1", "name": "vpn-gw-01", "exposure_level": "High", "device_value": "High", "tags": [], "group": None, "is_internet_facing": None, "azure_resource_id": None},
+    ])
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.1", "cve_id": "CVE-2026-99999", "severity": "Low", "cvss": "N/A", "exploitability": "Weird", "first_seen": "2026-06-01", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    products, _ = build(run)
+    ref = products[product_key("ivanti", "connect_secure")].cves["CVE-2026-99999"]
+    assert ref.exploitability == "NoExploit"
+    assert ref.cvss == 0.0

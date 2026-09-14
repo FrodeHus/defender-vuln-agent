@@ -1,6 +1,8 @@
 from __future__ import annotations
-from dva.model import Asset, CveRef, Product, product_key, EXPLOIT_RANK
+from dva.model import Asset, CveRef, Product, product_key, EXPLOIT_RANK, SEVERITIES
 from dva.run import Run
+
+SEVERITY_RANK = {s: i for i, s in enumerate(reversed(SEVERITIES))}  # Low=0 ... Critical=3
 
 
 def _hunt(run: Run, name: str) -> list[dict]:
@@ -12,6 +14,28 @@ def _hunt(run: Run, name: str) -> list[dict]:
 
 def _split_tags(s) -> list[str]:
     return [t.strip() for t in (s or "").split(",") if t.strip()]
+
+
+def _norm_exploitability(e) -> str:
+    return e if e in EXPLOIT_RANK else "NoExploit"
+
+
+def _norm_cvss(c) -> float:
+    try:
+        return float(c)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _merge_cve_ref(cur: CveRef | None, new: CveRef) -> CveRef:
+    if cur is None:
+        return new
+    exploitability = new.exploitability if EXPLOIT_RANK[new.exploitability] > EXPLOIT_RANK[cur.exploitability] else cur.exploitability
+    cvss = max(new.cvss, cur.cvss)
+    severity = new.severity if SEVERITY_RANK.get(new.severity, 0) > SEVERITY_RANK.get(cur.severity, 0) else cur.severity
+    first_seens = [fs for fs in (new.first_seen, cur.first_seen) if fs]
+    first_seen = min(first_seens) if first_seens else None
+    return CveRef(id=cur.id, severity=severity, cvss=cvss, exploitability=exploitability, first_seen=first_seen)
 
 
 def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
@@ -58,14 +82,13 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         p.asset_ids.add(v["device_id"])
         if v.get("version"):
             version_devices.setdefault(key, {}).setdefault(v["version"], set()).add(v["device_id"])
-        expl = v.get("exploitability") or "NoExploit"
-        if v["cve_id"] in exploited and EXPLOIT_RANK.get(expl, 0) < 1:
+        expl = _norm_exploitability(v.get("exploitability") or "NoExploit")
+        if v["cve_id"] in exploited and EXPLOIT_RANK[expl] < EXPLOIT_RANK["ExploitIsPublic"]:
             expl = "ExploitIsPublic"
         cur = p.cves.get(v["cve_id"])
-        ref = CveRef(id=v["cve_id"], severity=v.get("severity") or "Low", cvss=float(v.get("cvss") or 0.0),
-                     exploitability=expl, first_seen=v.get("first_seen"))
-        if cur is None or EXPLOIT_RANK[ref.exploitability] > EXPLOIT_RANK[cur.exploitability] or ref.cvss > cur.cvss:
-            p.cves[v["cve_id"]] = ref
+        new_ref = CveRef(id=v["cve_id"], severity=v.get("severity") or "Low", cvss=_norm_cvss(v.get("cvss")),
+                          exploitability=expl, first_seen=v.get("first_seen"))
+        p.cves[v["cve_id"]] = _merge_cve_ref(cur, new_ref)
         if v["device_id"] not in assets:
             assets[v["device_id"]] = Asset(id=v["device_id"], name=v.get("device_name") or v["device_id"], group=v.get("group"))
 
