@@ -63,6 +63,7 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
             internet_facing=bool(m.get("is_internet_facing")),
             exposure_level=m.get("exposure_level"), device_value=m.get("device_value"),
             tags=list(m.get("tags") or []), group=m.get("group"),
+            azure_resource_id=m.get("azure_resource_id") or None,
         )
         if m.get("azure_resource_id"):
             azure_id_map[m["azure_resource_id"].lower()] = m["id"]
@@ -145,7 +146,23 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
     if run.path("cloud-vulns.jsonl").exists():
         _merge_cloud(run, products, assets, azure_id_map, name_label_map, exploited)
 
+    if run.path("cloud-attackpaths.json").exists():
+        _merge_attack_paths(run, assets)
+
     return products, assets
+
+
+def _merge_attack_paths(run: Run, assets: dict[str, Asset]) -> None:
+    rows = run.read_json("cloud-attackpaths.json")
+    resourced = [a for a in assets.values() if a.azure_resource_id]
+    for row in rows:
+        entities = (row.get("entities") or "").lower()
+        if not entities:
+            continue
+        name = row.get("display_name") or row.get("id") or ""
+        for a in resourced:
+            if a.azure_resource_id.lower() in entities and name not in a.attack_paths:
+                a.attack_paths.append(name)
 
 
 def _merge_cloud(run: Run, products: dict[str, Product], assets: dict[str, Asset],
@@ -184,7 +201,7 @@ def _merge_cloud(run: Run, products: dict[str, Product], assets: dict[str, Asset
                 p.cves[row["cve_id"]] = _merge_cve_ref(cur, new_ref)
         else:
             if resource_id and resource_id not in assets:
-                assets[resource_id] = Asset(id=resource_id, name=row.get("display_name") or resource_id, kind="device")
+                assets[resource_id] = Asset(id=resource_id, name=row.get("display_name") or resource_id, kind="device", azure_resource_id=resource_id)
             if resource_id and row.get("cve_id"):
                 # grouped by finding name (not installed software: Defender for Cloud server findings carry no vendor/product)
                 key = product_key("defender-for-cloud", row.get("display_name") or row["cve_id"])

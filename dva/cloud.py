@@ -17,6 +17,10 @@ QUERY = '''securityresources
 | project id, subscriptionId, resourceGroup, assessmentKey = extract(".*assessments/(.+?)/.*", 1, id), cveId = tostring(props.id), displayName = tostring(props.displayName), severity = tostring(props.status.severity), resourceId = tostring(props.resourceDetails.id), assessedType = tostring(props.additionalData.assessedResourceType), cvss = todouble(props.additionalData.cvss.["3.0"].base), patchable = tobool(props.additionalData.patchable), repo = tostring(props.additionalData.repositoryName), digest = tostring(props.additionalData.imageDigest)
 | where cveId startswith "CVE-"'''
 
+QUERY_ATTACKPATHS = '''securityresources
+| where type == "microsoft.security/attackpaths"
+| project id, subscriptionId, displayName = tostring(properties.displayName), riskCategories = properties.riskCategories, entities = tostring(properties.graphComponent.entities)'''
+
 
 def _norm_row(row: dict) -> dict:
     return {
@@ -59,6 +63,40 @@ def collect_vulns(client: Client, run: Run, subscriptions: list[str]) -> int:
         return n
 
 
+def _norm_attackpath_row(row: dict) -> dict:
+    return {
+        "id": row.get("id"),
+        "subscription": row.get("subscriptionId"),
+        "display_name": row.get("displayName"),
+        "risk_categories": row.get("riskCategories"),
+        "entities": row.get("entities") or "",
+    }
+
+
+def collect_attack_paths(client: Client, run: Run, subscriptions: list[str]) -> int:
+    with _Guard(run, "cloud.attackpaths"):
+        rows: list[dict] = []
+        skip_token = None
+        for _ in range(MAX_PAGES):
+            options = {"$top": PAGE_TOP, "$skip": 0}
+            if skip_token:
+                options["$skipToken"] = skip_token
+            body = {"subscriptions": list(subscriptions), "query": QUERY_ATTACKPATHS, "options": options}
+            resp = client.post_json(RG_PATH, body)
+            data = resp.get("data") or []
+            rows.extend(_norm_attackpath_row(r) for r in data)
+            skip_token = resp.get("$skipToken")
+            if not skip_token:
+                break
+        else:
+            raise DvaError(f"Resource Graph paging did not terminate after {MAX_PAGES} pages")
+        run.write_json("cloud-attackpaths.json", rows)
+        n = len(rows)
+        run.set_source("cloud.attackpaths", "ok", count=n)
+        run.summary(f"Defender for Cloud: {n} attack paths written to cloud-attackpaths.json.")
+        return n
+
+
 def _client(args) -> Client:
     if getattr(args, "fixture", None):
         from dva.mde import _FixtureSession
@@ -87,3 +125,20 @@ def register(sub) -> None:
         return 0
 
     q.set_defaults(func=_run)
+
+    ap = s.add_parser("attack-paths")
+    add_run_arg(ap)
+    ap.add_argument("--subscriptions", nargs="*", help="subscription ids (default: config/sources.yaml subscriptions)")
+    ap.add_argument("--fixture", help="path to a canned API response JSON file, used instead of calling the API")
+
+    def _run_attackpaths(args) -> int:
+        subs = args.subscriptions
+        if not subs:
+            from dva.config import load_sources
+            subs = load_sources().subscriptions
+        if not subs:
+            raise DvaError("no subscriptions configured; pass --subscriptions or set config/sources.yaml subscriptions")
+        collect_attack_paths(_client(args), resolve_run(args), subs)
+        return 0
+
+    ap.set_defaults(func=_run_attackpaths)

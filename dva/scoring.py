@@ -80,6 +80,9 @@ def asset_signals(asset: Asset, cfg: Scoring) -> list[tuple[str, float]]:
         sig.append(("Privileged user signs in", b["privileged_user"]))
     if asset.mitigations:
         sig.append((f"Mitigated: {asset.mitigations} controls", b["mitigated"]))
+    if asset.attack_paths:
+        extra = f" (+{len(asset.attack_paths) - 1} more)" if len(asset.attack_paths) > 1 else ""
+        sig.append((f"On attack path: {asset.attack_paths[0]}{extra}", b["attack_path"]))
     return sig
 
 

@@ -1,8 +1,10 @@
-from dva.cloud import collect_vulns, ARM_BASE, RG_PATH
+from dva.cloud import collect_vulns, collect_attack_paths, ARM_BASE, RG_PATH
 from dva.http import Client
 from dva.run import Run
 from dva.rollup import build
 from dva.model import Asset
+from dva.config import load_scoring
+from dva.scoring import asset_signals
 from tests.fakes import FakeSession, FakeResponse, FakeTokens
 
 ROW_VM = {"id": "/subscriptions/s1/.../assessments/k1/subassessments/x", "subscriptionId": "s1", "resourceGroup": "rg", "assessmentKey": "k1", "cveId": "CVE-2026-21335", "displayName": "Win32k EoP", "severity": "High", "resourceId": "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01", "assessedType": "ServerVulnerability", "cvss": 8.8, "patchable": True, "repo": "", "digest": ""}
@@ -58,3 +60,79 @@ def test_surviving_server_row_becomes_scored_product(tmp_path):
     p = matches[0]
     assert ROW_VM["resourceId"] in p.asset_ids
     assert p.cves["CVE-2026-21335"].severity == "High"
+
+
+ROW_PATH_1 = {
+    "id": "/subscriptions/s1/providers/Microsoft.Security/attackPaths/p1",
+    "subscriptionId": "s1",
+    "displayName": "Internet exposed VM leads to key vault",
+    "riskCategories": ["Lateral Movement"],
+    "entities": '[{"id":"/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01"},{"id":"/subscriptions/s1/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv1"}]',
+}
+ROW_PATH_2 = {
+    "id": "/subscriptions/s1/providers/Microsoft.Security/attackPaths/p2",
+    "subscriptionId": "s1",
+    "displayName": "Storage account exposed to internet",
+    "riskCategories": ["Exposure"],
+    "entities": '[{"id":"/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/st1"}]',
+}
+
+
+def test_attack_paths_paging(tmp_path):
+    run = Run.create(tmp_path)
+    s = FakeSession({f"POST {ARM_BASE}{RG_PATH}": [
+        FakeResponse(200, {"data": [ROW_PATH_1], "count": 1, "$skipToken": "t1"}),
+        FakeResponse(200, {"data": [ROW_PATH_2], "count": 1}),
+    ]})
+    c = Client(FakeTokens(), "s", base_url=ARM_BASE, session=s, sleep=lambda x: None)
+    assert collect_attack_paths(c, run, ["s1"]) == 2
+    assert s.calls[1][2]["json"]["options"]["$skipToken"] == "t1"
+    rows = run.read_json("cloud-attackpaths.json")
+    assert rows[0]["id"] == ROW_PATH_1["id"]
+    assert rows[0]["display_name"] == "Internet exposed VM leads to key vault"
+    assert rows[0]["subscription"] == "s1"
+    assert rows[0]["risk_categories"] == ["Lateral Movement"]
+    assert "vpn-gw-01" in rows[0]["entities"]
+    assert rows[1]["display_name"] == "Storage account exposed to internet"
+
+
+def test_rollup_marks_asset_on_attack_path_case_insensitive(tmp_path):
+    run = Run.create(tmp_path)
+    resource_id = "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01"
+    run.write_json("machines.json", [{
+        "id": "m1", "name": "vpn-gw-01.corp.example", "tags": [], "group": "g",
+        "azure_resource_id": resource_id.upper(),
+    }])
+    run.write_jsonl("vulns.jsonl", [])
+    run.write_json("cloud-attackpaths.json", [
+        {"id": "p1", "subscription": "s1", "display_name": "Internet exposed VM leads to key vault",
+         "risk_categories": ["Lateral Movement"], "entities": f'[{{"id":"{resource_id}"}}]'},
+    ])
+    products, assets = build(run)
+    a = assets["m1"]
+    assert a.attack_paths == ["Internet exposed VM leads to key vault"]
+
+
+def test_rollup_asset_on_multiple_attack_paths_and_scoring_bonus(tmp_path):
+    run = Run.create(tmp_path)
+    resource_id = "/subscriptions/s1/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vpn-gw-01"
+    run.write_json("machines.json", [{
+        "id": "m1", "name": "vpn-gw-01.corp.example", "tags": [], "group": "g",
+        "azure_resource_id": resource_id,
+    }])
+    run.write_jsonl("vulns.jsonl", [])
+    run.write_json("cloud-attackpaths.json", [
+        {"id": "p1", "subscription": "s1", "display_name": "Internet exposed VM leads to key vault",
+         "risk_categories": ["Lateral Movement"], "entities": f'[{{"id":"{resource_id}"}}]'},
+        {"id": "p2", "subscription": "s1", "display_name": "Second hop path",
+         "risk_categories": ["Exposure"], "entities": f'[{{"id":"{resource_id}"}}]'},
+    ])
+    products, assets = build(run)
+    a = assets["m1"]
+    assert a.attack_paths == ["Internet exposed VM leads to key vault", "Second hop path"]
+
+    cfg = load_scoring()
+    sig = asset_signals(a, cfg)
+    texts = [t for t, _ in sig]
+    assert "On attack path: Internet exposed VM leads to key vault (+1 more)" in texts
+    assert (cfg.asset_bonus["attack_path"] in [v for _, v in sig])
