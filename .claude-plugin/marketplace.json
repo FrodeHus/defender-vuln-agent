@@ -1,0 +1,24 @@
+{
+  "name": "defender-vuln-agent",
+  "owner": {
+    "name": "Frode Hus"
+  },
+  "description": "Read-only vulnerability assessment agent and skills for Microsoft Defender estates.",
+  "plugins": [
+    {
+      "name": "defender-vuln-agent",
+      "source": ".",
+      "displayName": "Defender Vulnerability Agent",
+      "description": "Read-only vulnerability assessment for Microsoft Defender estates: collect, enrich with CVE intelligence, prioritize by software product, report.",
+      "version": "0.3.0",
+      "author": {
+        "name": "Frode Hus"
+      },
+      "homepage": "https://github.com/FrodeHus/defender-vuln-agent",
+      "repository": "https://github.com/FrodeHus/defender-vuln-agent",
+      "license": "MIT",
+      "keywords": ["microsoft-defender", "vulnerability-management", "cve", "epss", "cisa-kev"],
+      "category": "security"
+    }
+  ]
+}

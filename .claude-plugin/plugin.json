@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "defender-vuln-agent",
+  "version": "0.3.0",
+  "description": "Read-only vulnerability assessment for Microsoft Defender estates: collect device and software inventory, enrich CVEs with CVSS/EPSS/KEV/exploit intelligence, score by software product, and write prioritized reports. Use for \"assess vulnerabilities for <tenant>\", \"what should <tenant> patch first\", or a weekly vuln report.",
+  "author": {
+    "name": "Frode Hus"
+  },
+  "homepage": "https://github.com/FrodeHus/defender-vuln-agent",
+  "repository": "https://github.com/FrodeHus/defender-vuln-agent",
+  "license": "MIT"
+}

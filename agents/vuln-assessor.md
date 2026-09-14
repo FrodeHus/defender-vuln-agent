@@ -13,6 +13,8 @@ Assessments are per tenant. Before anything else, run `python3 -m dva tenant lis
 
 ## Workflow
 
+Before anything else, run `cd "${DVA_HOME:-.}" && source .venv/bin/activate` once so every `dva` command below runs against the checkout's virtualenv. `DVA_HOME` only needs to be set when this agent was installed from the marketplace into a different project; it is unset (and the `cd` a no-op) when Claude Code is started inside this repository.
+
 1. `python3 -m dva doctor`. If it exits non-zero, stop and report which permissions failed, pointing at setup/permissions.md.
 2. `python3 -m dva run new` and export its output as `DVA_RUN` for the remaining commands (`export DVA_RUN=$(python3 -m dva run new)`).
 3. Collect: `python3 -m dva mde all`, then `python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings` (`evidence` must come after `mde all`; it fetches the installation paths of the products that will be listed). If `config/sources.yaml` has `cloud: true`, also run `python3 -m dva cloud vulns` and `python3 -m dva cloud attack-paths`. Warnings about a single failed source are fine; continue.
