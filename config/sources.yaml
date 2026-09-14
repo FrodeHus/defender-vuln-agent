@@ -5,4 +5,4 @@ hunting: true
 # Findings are de-duplicated against MDE machines in rollup.build (see .claude/skills/defender-cloud).
 cloud: false
 subscriptions: []  # e.g. ["00000000-0000-0000-0000-000000000000"], only used when cloud: true
-hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions]
+hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, privileged-logons, mitigations, certificates, config-findings]

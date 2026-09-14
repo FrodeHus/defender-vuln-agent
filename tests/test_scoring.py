@@ -27,6 +27,23 @@ def test_asset_multiplier_bonuses_and_cap():
     assert abs(asset_multiplier(b, cfg) - 1.2) < 1e-9
 
 
+def test_asset_signals_privileged_user_and_mitigated():
+    from dva.scoring import asset_signals
+
+    priv = Asset(id="p", name="p", privileged_user=True)
+    sig = asset_signals(priv, cfg)
+    assert ("Privileged user signs in", cfg.asset_bonus["privileged_user"]) in sig
+    assert abs(asset_multiplier(priv, cfg) - (1.0 + cfg.asset_bonus["privileged_user"])) < 1e-9
+
+    mitigated = Asset(id="m", name="m", mitigations=3)
+    sig2 = asset_signals(mitigated, cfg)
+    assert ("Mitigated: 3 controls", cfg.asset_bonus["mitigated"]) in sig2
+    assert abs(asset_multiplier(mitigated, cfg) - (1.0 + cfg.asset_bonus["mitigated"])) < 1e-9
+
+    plain = Asset(id="n", name="n")
+    assert asset_signals(plain, cfg) == []
+
+
 def test_product_score_ranks_kev_gateway_above_fleet_mediums():
     gw = Product(key="ivanti/connect-secure", vendor="ivanti", name="connect_secure", asset_ids={"a"}, cves={"CVE-1": ref(expl="ExploitIsInKit")})
     fleet = Product(key="x/y", vendor="x", name="y", asset_ids={f"d{i}" for i in range(300)}, cves={f"CVE-{i}": ref(id=f"CVE-{i}", cvss=5.5, sev="Medium") for i in range(20)})

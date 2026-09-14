@@ -170,6 +170,23 @@ Affected assets (690): 690 workstations · 0 internet-facing · 41 High value
 Expired (back in the ranking; flagged `Exception expired`):
 - Java Runtime 8 (until 2026-08-01, owner frode): Legacy line-of-business app, migration planned
 
+## Posture
+
+### Certificates expiring within 30 days
+
+| Thumbprint | Name | Issued to | Expires | Devices |
+|---|---|---|---|---|
+| AB12CD34 | vpn-gw-01 TLS cert | vpn-gw-01.contoso.com | 2026-09-28T00:00:00Z | 1 |
+
+### Non-compliant configurations
+
+By impact: 1 high, 1 medium, 0 low
+
+| Configuration | Category | Subcategory | Impact | Devices |
+|---|---|---|---|---|
+| scid-104 | Security controls | Firewall | 8 | 412 |
+| scid-211 | Application | Browser | 5 | 96 |
+
 ## Method
 
 Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.

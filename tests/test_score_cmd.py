@@ -117,3 +117,26 @@ def test_top_n_listed_even_below_threshold(tmp_path):
     doc = compute(run, cfg, IntelCache(tmp_path / "cache", 7))
     assert doc["summary"]["products_action"] == 0
     assert len(doc["products"]) == 2 and doc["products"][0]["rank"] == 1
+
+
+def test_posture_from_certificates_and_config_findings(tmp_path):
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-certificates.json", {"results": [
+        {"Thumbprint": "ABC123", "FriendlyName": "vpn-gw-01 cert", "IssuedTo": "vpn-gw-01.contoso.com", "Exp": "2026-09-20T00:00:00Z", "Devices": 1},
+    ]})
+    run.write_json("hunt-config-findings.json", {"results": [
+        {"ConfigurationId": "scid-1", "ConfigurationCategory": "Security controls", "ConfigurationSubcategory": "Firewall", "ConfigurationImpact": 8, "Devices": 5},
+        {"ConfigurationId": "scid-2", "ConfigurationCategory": "Application", "ConfigurationSubcategory": "Browser", "ConfigurationImpact": 5, "Devices": 2},
+        {"ConfigurationId": "scid-3", "ConfigurationCategory": "Application", "ConfigurationSubcategory": "Browser", "ConfigurationImpact": 1, "Devices": 1},
+    ]})
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    posture = doc["posture"]
+    assert posture["certificates_expiring"] == [{"thumbprint": "ABC123", "name": "vpn-gw-01 cert", "issued_to": "vpn-gw-01.contoso.com", "expires": "2026-09-20T00:00:00Z", "devices": 1}]
+    assert posture["config_findings"][0] == {"id": "scid-1", "category": "Security controls", "subcategory": "Firewall", "impact": 8, "devices": 5}
+    assert posture["config_by_impact"] == {"high": 1, "medium": 1, "low": 1}
+
+
+def test_posture_defaults_to_empty_lists_when_no_hunt_files(tmp_path):
+    run = seed(tmp_path / "runs")
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    assert doc["posture"] == {"certificates_expiring": [], "config_findings": [], "config_by_impact": {"high": 0, "medium": 0, "low": 0}}

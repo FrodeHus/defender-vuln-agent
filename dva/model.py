@@ -23,6 +23,8 @@ class Asset:
     tags: list[str] = field(default_factory=list)
     group: str | None = None
     public_lb: bool = False
+    privileged_user: bool = False
+    mitigations: int = 0
 
 
 @dataclass

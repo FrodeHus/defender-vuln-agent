@@ -1,0 +1,15 @@
+// Devices where a privileged or critical identity signed on in the last 7 days.
+// IdentityInfo.CriticalityLevel is inverted: lower is MORE critical (0 = very high, 1 = high).
+// The filter below keeps accounts with any assigned role, or a criticality level of 0 or 1.
+// Requires Defender for Identity or MDE Plan 2 (IdentityInfo). A failed query is tolerated.
+DeviceInfo
+| where Timestamp > ago(7d)
+| mv-expand LoggedOnUsers
+| extend AccountName = tostring(LoggedOnUsers.UserName), AccountDomain = tostring(LoggedOnUsers.DomainName)
+| join kind=inner (
+    IdentityInfo
+    | where array_length(AssignedRoles) > 0 or CriticalityLevel <= 1
+    | distinct AccountName, AccountDomain, AssignedRoles, CriticalityLevel
+) on AccountName, AccountDomain
+| summarize Roles = make_set(AssignedRoles, 10), Users = dcount(AccountName) by DeviceId, DeviceName
+| take 10000

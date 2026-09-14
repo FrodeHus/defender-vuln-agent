@@ -77,6 +77,20 @@ def render(doc: dict) -> str:
                 out.append("")
             out.append("Expired (back in the ranking; flagged `Exception expired`):")
             out += [f"- {e['product']} (until {e['until']}, owner {e.get('owner') or '-'}): {e['reason']}" for e in expired]
+    posture = doc.get("posture") or {}
+    certs, findings, by_impact = posture.get("certificates_expiring") or [], posture.get("config_findings") or [], posture.get("config_by_impact") or {}
+    if certs or findings:
+        out += ["", "## Posture", ""]
+        if certs:
+            out += ["### Certificates expiring within 30 days", "", "| Thumbprint | Name | Issued to | Expires | Devices |", "|---|---|---|---|---|"]
+            out += [f"| {c.get('thumbprint') or '-'} | {c.get('name') or '-'} | {c.get('issued_to') or '-'} | {c.get('expires') or '-'} | {c.get('devices', 0)} |" for c in certs]
+        if findings:
+            if certs:
+                out.append("")
+            out += ["### Non-compliant configurations", "",
+                    f"By impact: {by_impact.get('high', 0)} high, {by_impact.get('medium', 0)} medium, {by_impact.get('low', 0)} low", "",
+                    "| Configuration | Category | Subcategory | Impact | Devices |", "|---|---|---|---|---|"]
+            out += [f"| {f.get('id') or '-'} | {f.get('category') or '-'} | {f.get('subcategory') or '-'} | {f.get('impact', '-')} | {f.get('devices', 0)} |" for f in findings]
     out += ["", "## Method", "", METHOD, "", "## Sources", ""]
     for name, st in sorted(doc["run"].get("sources", {}).items()):
         out.append(f"- {name}: {st.get('status')}" + (f" ({st.get('count')} records)" if st.get("count") is not None else "") + (f" — {st.get('error')}" if st.get("error") else ""))

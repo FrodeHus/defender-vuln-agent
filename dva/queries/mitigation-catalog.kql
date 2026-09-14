@@ -1,0 +1,7 @@
+// Helper query (not scored): lists available secure-configuration controls so the tenant can pick
+// ids for scoring.yaml: mitigation_configs.
+DeviceTvmSecureConfigurationAssessmentKB
+| where ConfigurationCategory in~ ("Security controls", "Application")
+| project ConfigurationId, ConfigurationName, ConfigurationCategory, ConfigurationSubcategory, ConfigurationImpact
+| order by ConfigurationImpact desc
+| take 200

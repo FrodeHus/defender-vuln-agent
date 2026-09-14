@@ -1,0 +1,6 @@
+// Non-compliant secure-configuration findings, for the posture appendix (not scored).
+DeviceTvmSecureConfigurationAssessment
+| where IsApplicable == true and IsCompliant == false
+| summarize Devices = dcount(DeviceId) by ConfigurationId, ConfigurationCategory, ConfigurationSubcategory, ConfigurationImpact
+| order by ConfigurationImpact desc, Devices desc
+| take 200

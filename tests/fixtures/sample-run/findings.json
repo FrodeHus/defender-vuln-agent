@@ -3058,5 +3058,37 @@
         "owner": "frode"
       }
     ]
+  },
+  "posture": {
+    "certificates_expiring": [
+      {
+        "thumbprint": "AB12CD34",
+        "name": "vpn-gw-01 TLS cert",
+        "issued_to": "vpn-gw-01.contoso.com",
+        "expires": "2026-09-28T00:00:00Z",
+        "devices": 1
+      }
+    ],
+    "config_findings": [
+      {
+        "id": "scid-104",
+        "category": "Security controls",
+        "subcategory": "Firewall",
+        "impact": 8,
+        "devices": 412
+      },
+      {
+        "id": "scid-211",
+        "category": "Application",
+        "subcategory": "Browser",
+        "impact": 5,
+        "devices": 96
+      }
+    ],
+    "config_by_impact": {
+      "high": 1,
+      "medium": 1,
+      "low": 0
+    }
   }
 }

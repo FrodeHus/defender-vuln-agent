@@ -74,6 +74,29 @@ def _breakdown(assets, cfg: Scoring) -> str:
     return " · ".join(parts) if parts else "No exposure signals"
 
 
+def _posture(run: Run) -> dict:
+    cert_rows = run.read_json("hunt-certificates.json").get("results", []) if run.path("hunt-certificates.json").exists() else []
+    cfg_rows = run.read_json("hunt-config-findings.json").get("results", []) if run.path("hunt-config-findings.json").exists() else []
+    certificates_expiring = [{
+        "thumbprint": r.get("Thumbprint"), "name": r.get("FriendlyName"), "issued_to": r.get("IssuedTo"),
+        "expires": r.get("Exp"), "devices": r.get("Devices"),
+    } for r in cert_rows]
+    config_findings = []
+    config_by_impact = {"high": 0, "medium": 0, "low": 0}
+    for r in cfg_rows:
+        try:
+            impact_n = float(r.get("ConfigurationImpact"))
+        except (TypeError, ValueError):
+            impact_n = 0.0
+        bucket = "high" if impact_n >= 7 else "medium" if impact_n >= 4 else "low"
+        config_by_impact[bucket] += 1
+        config_findings.append({
+            "id": r.get("ConfigurationId"), "category": r.get("ConfigurationCategory"),
+            "subcategory": r.get("ConfigurationSubcategory"), "impact": r.get("ConfigurationImpact"), "devices": r.get("Devices"),
+        })
+    return {"certificates_expiring": certificates_expiring, "config_findings": config_findings, "config_by_impact": config_by_impact}
+
+
 def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     products, assets = build(run)
@@ -167,6 +190,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                                "entered_top10": [k for k in top_now if k not in top_prev], "left_top10": [k for k in top_prev if k not in top_now],
                                "new_kev": [r["key"] for r in rows if r["flags"]["kev"] and r["key"] not in kev_prev]},
         "accepted_risks": {"active": accepted_active, "expired": accepted_expired},
+        "posture": _posture(run),
     }
 
 

@@ -1,0 +1,7 @@
+// Devices compliant with the tenant's chosen compensating controls (scoring.yaml: mitigation_configs).
+// __CONFIG_IDS__ is rendered by hunting.py into a quoted KQL string list before this is posted;
+// the query is skipped entirely (empty ok result) when mitigation_configs is empty.
+DeviceTvmSecureConfigurationAssessment
+| where ConfigurationId in~ (__CONFIG_IDS__) and IsApplicable == true
+| summarize Compliant = countif(IsCompliant == true), Total = count() by DeviceId, DeviceName
+| where Compliant > 0

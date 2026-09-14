@@ -76,6 +76,10 @@ def asset_signals(asset: Asset, cfg: Scoring) -> list[tuple[str, float]]:
         sig.append(("Exposure Medium", b["exposure_medium"]))
     if asset.public_lb:
         sig.append(("Public LoadBalancer", b["public_lb"]))
+    if asset.privileged_user:
+        sig.append(("Privileged user signs in", b["privileged_user"]))
+    if asset.mitigations:
+        sig.append((f"Mitigated: {asset.mitigations} controls", b["mitigated"]))
     return sig
 
 

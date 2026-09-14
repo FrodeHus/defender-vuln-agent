@@ -56,15 +56,36 @@ def _evidence_kql(run: Run) -> str | None:
     return build_query(pairs) if pairs else None
 
 
+def _kql_id_list(values) -> str:
+    return ", ".join('"' + v.replace('"', '\\"') + '"' for v in values)
+
+
+def _mitigations_kql() -> str | None:
+    """Compliance for the tenant's chosen compensating controls (scoring.yaml: mitigation_configs)."""
+    from dva.config import load_scoring
+    ids = load_scoring().mitigation_configs
+    if not ids:
+        return None
+    return load_query("mitigations").replace("__CONFIG_IDS__", _kql_id_list(ids))
+
+
 def run_named(client: Client, run: Run, names: list[str]) -> int:
     failures = 0
     for n in names:
         try:
-            kql = _evidence_kql(run) if n == "evidence" else load_query(n)
+            if n == "evidence":
+                kql = _evidence_kql(run)
+                skip_summary = "Hunting evidence: no listed products yet; skipped."
+            elif n == "mitigations":
+                kql = _mitigations_kql()
+                skip_summary = "Hunting mitigations: skipped: no mitigation_configs configured."
+            else:
+                kql = load_query(n)
+                skip_summary = None
             if kql is None:
-                run.write_json("hunt-evidence.json", {"schema": [], "results": [], "capped": False})
-                run.set_source("hunting.evidence", "ok", count=0)
-                run.summary("Hunting evidence: no listed products yet; skipped.")
+                run.write_json(f"hunt-{n}.json", {"schema": [], "results": [], "capped": False})
+                run.set_source(f"hunting.{n}", "ok", count=0)
+                run.summary(skip_summary)
                 continue
         except DvaError as e:
             source = f"hunting.{n}"
