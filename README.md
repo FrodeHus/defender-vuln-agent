@@ -17,8 +17,8 @@ It pulls device inventory and per-device vulnerabilities from Defender for Endpo
 ```bash
 git clone https://github.com/frodehus/defender-vuln-agent
 cd defender-vuln-agent
-scripts/install.sh                                   # uv sync (or venv+pip), cve-mcp-server, tests
-echo "NVD_API_KEY=<your key>" >> ../cve-mcp-server/.env
+scripts/install.sh                                   # uv sync, tests, caches the CVE server
+echo "NVD_API_KEY=<your key>" >> .env
 az login
 setup/create-app.sh --tenant contoso                 # app registration + tenants/contoso/.env
 # grant admin consent as the script instructs, then:
@@ -27,7 +27,7 @@ python3 -m dva --tenant contoso doctor               # every line must say ok
 claude --plugin-dir .                                # approve the cve-mcp server when asked
 ```
 
-This repository is also a Claude Code plugin. To use the agent and skills from another project instead of this checkout, run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent`, and see [docs/install.md](docs/install.md#6-claude-code) for pointing the CVE server at this checkout's virtualenv with `DVA_HOME`.
+This repository is also a Claude Code plugin. To use the agent and skills from another project instead of this checkout, run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent`, and see [docs/install.md](docs/install.md#6-claude-code) for pointing the agent at this checkout with `DVA_HOME`.
 
 Then, in Claude Code:
 
@@ -71,11 +71,11 @@ python3 -m dva exception suggest                               # suggested accep
 
 ## Requirements
 
-Python 3.11+, a Defender for Endpoint tenant, an Entra app registration with read permissions (the setup script creates it), and Claude Code for the agent. See [docs/install.md](docs/install.md).
+[uv](https://docs.astral.sh/uv/), a Defender for Endpoint tenant, an Entra app registration with read permissions (the setup script creates it), and Claude Code for the agent. See [docs/install.md](docs/install.md).
 
 ## Acknowledgements
 
-CVE intelligence comes from [cve-mcp-server](https://github.com/mukul975/cve-mcp-server) by Mahipal Jangra (Apache License 2.0), an MCP server that fans out to NVD, EPSS, CISA KEV, Exploit-DB, GitHub, vendor advisories and more. This project does not bundle it; the installer clones it next to this repository and the agent talks to it over MCP. Its `triage_cve`, `lookup_cve` and `get_vendor_advisory` tools are what make the enrichment step possible.
+CVE intelligence comes from [cve-mcp-server](https://github.com/mukul975/cve-mcp-server) by Mahipal Jangra (Apache License 2.0), an MCP server that fans out to NVD, EPSS, CISA KEV, Exploit-DB, GitHub, vendor advisories and more. This project does not bundle it; `scripts/cve-mcp.sh` runs a pinned upstream commit through `uvx` and the agent talks to it over MCP. Its `triage_cve`, `lookup_cve` and `get_vendor_advisory` tools are what make the enrichment step possible.
 
 ## License
 

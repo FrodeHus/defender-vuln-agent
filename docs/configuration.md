@@ -12,7 +12,8 @@
 | `DVA_RUNS_DIR` | Where run directories are created | `runs/`, or `tenants/<name>/runs/` |
 | `DVA_CACHE_DIR` | Token cache, `dva.sqlite` (run history) and `cve/dva.sqlite` (CVE intel) — see below | `.cache/`, or `tenants/<name>/.cache/` |
 | `DVA_RUN` | Pin commands to one run directory instead of the latest | latest run |
-| `CVE_MCP_PYTHON` | Interpreter Claude Code uses to start the CVE server | `.venv/bin/python3` |
+| `NVD_API_KEY`, `GITHUB_TOKEN` | API keys `scripts/cve-mcp.sh` passes to the CVE server | none (NVD unauthenticated rate limit) |
+| `CVE_MCP_REF` | Upstream `cve-mcp-server` commit `scripts/cve-mcp.sh` runs through `uvx` | pinned in the script; change only with new parser fixtures |
 
 Precedence: a selected tenant's `.env` overrides everything; otherwise exported shell variables override the repository `.env`.
 
@@ -86,4 +87,4 @@ The Claude Code agent is `agents/vuln-assessor.md`; its `model:` line picks the 
 
 ## CVE server
 
-`.mcp.json` starts `cve-mcp` with the project venv's interpreter. Its API keys come from `../cve-mcp-server/.env`. Only `triage_cve` is required; the parser also understands `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists` and `get_vendor_advisory` output if you save any of those into the run directory.
+`.mcp.json` starts `cve-mcp` through `scripts/cve-mcp.sh`, which runs a pinned upstream commit with `uvx` and exports `NVD_API_KEY`/`GITHUB_TOKEN` from the repo `.env`. Only `triage_cve` is required; the parser also understands `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists` and `get_vendor_advisory` output if you save any of those into the run directory.

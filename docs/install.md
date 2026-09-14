@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- [uv](https://docs.astral.sh/uv/) (recommended; it installs the right Python and the locked dependencies) or Python 3.11+ with `pip`; `git` and `bash`.
+- [uv](https://docs.astral.sh/uv/): `uv sync` installs the right Python and the locked dependencies, and `uvx` runs the CVE server. (`dva` alone also works with Python 3.11+ and `pip`.) Plus `git` and `bash`.
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) if you want the agent (the CLI works without it).
 - The [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) to create the app registration with the provided script (you can also create it by hand).
 - A Microsoft Entra tenant with Defender for Endpoint, and an account that can grant admin consent for application permissions.
@@ -16,37 +16,28 @@ cd defender-vuln-agent
 scripts/install.sh
 ```
 
-The script uses `uv` when it is installed: `uv sync --locked` creates `.venv` from `uv.lock` (exact, reproducible versions), then it clones and installs the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) next to the repo into the same environment (which is how `.mcp.json` starts it), copies `.env.example` to `.env`, and runs the test suite. Without `uv` it falls back to `python3 -m venv` and `pip`. Pass `--cve-server-dir DIR` if you already have a clone elsewhere.
+The script runs `uv sync --locked` (creates `.venv` from `uv.lock`, exact reproducible versions), copies `.env.example` to `.env`, runs the test suite, and pre-downloads the [`cve-mcp-server`](https://github.com/mukul975/cve-mcp-server) so Claude Code's first start is fast. Without `uv` it installs `dva` with `python3 -m venv` and `pip`, but the CVE server still needs `uvx`.
 
-Manual equivalent with uv:
-
-```bash
-uv sync --locked
-git clone https://github.com/mukul975/cve-mcp-server ../cve-mcp-server
-uv pip install -e ../cve-mcp-server
-```
-
-Manual equivalent with pip:
+Manual equivalent:
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-git clone https://github.com/mukul975/cve-mcp-server ../cve-mcp-server
-pip install -e ../cve-mcp-server
+uv sync --locked            # or: python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+scripts/cve-mcp.sh --warm   # optional: cache the CVE server now instead of on first use
 ```
 
-Either way the environment lives in `.venv`; run commands as `uv run dva ...` or activate it (`source .venv/bin/activate`) and use `python3 -m dva ...`. The docs show the activated form.
+The environment lives in `.venv`; run commands as `uv run dva ...` or activate it (`source .venv/bin/activate`) and use `python3 -m dva ...`. The docs show the activated form.
+
+**How the CVE server is run.** Nothing is cloned. `.mcp.json` starts `scripts/cve-mcp.sh`, which runs the server with `uvx` from a pinned upstream commit (`CVE_MCP_REF` in the script) and pins the MCP SDK below 2.0, which upstream needs but does not declare. The parsers in this repo are tested against that commit's output, so the pin only moves together with the fixtures. The command in `.mcp.json` is `${CLAUDE_PLUGIN_ROOT:-.}/scripts/cve-mcp.sh`, so the same file works for a marketplace install and for `claude` started in the checkout.
 
 ## 2. NVD API key
 
-Put the key in the CVE server's own env file, not this repo's:
+Put the key in this repo's `.env` (the wrapper exports it to the server; an exported shell variable wins over the file):
 
 ```
-# ../cve-mcp-server/.env
 NVD_API_KEY=your-key
 ```
 
-The server loads the `.env` next to its own source first, and an empty `NVD_API_KEY=` line there blocks any other value. Optional: `GITHUB_TOKEN` for PoC searches on GitHub.
+Optional: `GITHUB_TOKEN` in the same file for PoC searches on GitHub. The key is tenant-independent, so it lives in the repo `.env` even on a multi-tenant install.
 
 ## 3. App registration and credentials
 
@@ -108,9 +99,7 @@ The repository is also a Claude Code plugin (`.claude-plugin/plugin.json`). Pick
 
 **a. From the checkout (recommended).** Start `claude --plugin-dir .` in the repository (a plain `claude` also works: project-scoped `.mcp.json` is picked up either way). On first start it asks to approve the project's `cve-mcp` server from `.mcp.json`; accept it. `claude mcp list` should then show `cve-mcp ... Connected`. The `vuln-assessor` agent and the `skills/` under the repo root are picked up automatically.
 
-**b. From the marketplace, into another project.** Run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent` in any project. The agent and skills install, but the plugin's own `.mcp.json` resolves `cve-mcp`'s interpreter relative to wherever `claude` is started, which is not this checkout for a marketplace install — the CVE server needs `dva`'s venv. Point at it one of two ways:
-   - set `DVA_HOME` to this checkout's absolute path before starting `claude` (the agent runs `cd "${DVA_HOME:-.}"` and activates the venv before every `dva` command), and set `CVE_MCP_PYTHON=$DVA_HOME/.venv/bin/python3` so `.mcp.json`'s `${CVE_MCP_PYTHON:-.venv/bin/python3}` resolves to it; or
-   - register the server directly with `claude mcp add cve-mcp -- "$DVA_HOME/.venv/bin/python3" -m cve_mcp.server`, bypassing the bundled `.mcp.json`.
+**b. From the marketplace, into another project.** Run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent` in any project. The plugin's `.mcp.json` starts the CVE server from the plugin's own directory through `uvx`, so it needs no configuration; the NVD key then comes from an exported `NVD_API_KEY` (the plugin directory has no `.env`). The `dva` CLI, tenants and run data still live in this checkout: set `DVA_HOME` to its absolute path before starting `claude` (the agent runs `cd "${DVA_HOME:-.}"` and activates the venv before every `dva` command).
 
 Continue with [usage.md](usage.md).
 

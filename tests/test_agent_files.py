@@ -18,7 +18,10 @@ def test_skills_and_mcp():
         t = Path(f"skills/{s}/SKILL.md").read_text()
         assert t.startswith("---") and f"name: {s}" in t and "description:" in t
     mcp = json.loads(Path(".mcp.json").read_text())
-    assert mcp["mcpServers"]["cve-mcp"]["command"] and "cve_mcp.server" in " ".join(mcp["mcpServers"]["cve-mcp"]["args"])
+    cmd = mcp["mcpServers"]["cve-mcp"]["command"]
+    # Works both as a plugin (CLAUDE_PLUGIN_ROOT set) and as the project .mcp.json of a plain `claude` in the checkout.
+    assert cmd == "${CLAUDE_PLUGIN_ROOT:-.}/scripts/cve-mcp.sh" and "args" not in mcp["mcpServers"]["cve-mcp"]
+    assert Path("scripts/cve-mcp.sh").stat().st_mode & 0o111, "wrapper must be executable"
 
 
 def test_inventory_skill_matches_actual_output_filename():

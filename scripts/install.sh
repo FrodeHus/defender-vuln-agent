@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
-# One-shot local install: virtualenv, this package, and the cve-mcp-server the agent uses for CVE intel.
-# Uses uv (https://docs.astral.sh/uv/) when available, otherwise python3 -m venv + pip.
-# Usage: scripts/install.sh [--cve-server-dir DIR]   (default: ../cve-mcp-server next to this repo)
+# One-shot local install: virtualenv + this package (uv sync, or python3 -m venv + pip without uv),
+# then pre-downloads the cve-mcp-server that .mcp.json starts through `uvx` (scripts/cve-mcp.sh).
+# Usage: scripts/install.sh
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CVE_DIR="$HERE/../cve-mcp-server"
-while [[ $# -gt 0 ]]; do case "$1" in --cve-server-dir) CVE_DIR="$2"; shift 2;; *) echo "unknown arg $1" >&2; exit 2;; esac; done
-
+[[ $# -eq 0 ]] || { echo "usage: scripts/install.sh (no arguments)" >&2; exit 2; }
 cd "$HERE"
-if [[ ! -d "$CVE_DIR" ]]; then
-  echo "Cloning cve-mcp-server into $CVE_DIR"
-  git clone -q https://github.com/mukul975/cve-mcp-server "$CVE_DIR"
-fi
 
 if command -v uv >/dev/null; then
   echo "Installing with uv (locked)"
   uv sync --locked
-  uv pip install -q -e "$CVE_DIR"
   PY="uv run python3"
 else
-  echo "uv not found; falling back to python3 -m venv + pip"
+  echo "uv not found; installing dva with python3 -m venv + pip (the CVE server still needs uv: https://docs.astral.sh/uv/)"
   command -v python3 >/dev/null || { echo "python3 is required (3.11+)" >&2; exit 1; }
   python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || { echo "python3 3.11 or newer is required" >&2; exit 1; }
   [[ -d .venv ]] || python3 -m venv .venv
@@ -27,25 +20,27 @@ else
   source .venv/bin/activate
   python3 -m pip install -q --upgrade pip
   python3 -m pip install -q -e ".[dev]"
-  python3 -m pip install -q -e "$CVE_DIR"
   PY="python3"
 fi
 
-if [[ ! -f "$CVE_DIR/.env" ]]; then
-  cp "$CVE_DIR/.env.example" "$CVE_DIR/.env" 2>/dev/null || touch "$CVE_DIR/.env"
-fi
 [[ -f .env ]] || cp .env.example .env
 
 $PY -m pytest -q -W error >/dev/null && echo "Tests pass." || { echo "Tests failed; run '$PY -m pytest' to see why." >&2; exit 1; }
 
+if command -v uvx >/dev/null; then
+  echo "Caching the CVE server (first download takes a moment)"
+  "$HERE/scripts/cve-mcp.sh" --warm
+else
+  echo "Skipped caching the CVE server: install uv, then run scripts/cve-mcp.sh --warm" >&2
+fi
+
 cat <<EOT
 
 Installed. Next steps:
-  1. Put your NVD API key in $CVE_DIR/.env   (NVD_API_KEY=...; free at https://nvd.nist.gov/developers/request-an-api-key)
+  1. Put your NVD API key in .env:  NVD_API_KEY=...   (free at https://nvd.nist.gov/developers/request-an-api-key)
   2. Create an app registration and credentials:  setup/create-app.sh [--tenant NAME]
      (or fill in .env for a single tenant / tenants/NAME/.env per tenant)
-  3. Verify:  source .venv/bin/activate && python3 -m dva doctor  [--tenant NAME]
-     (or without activating: uv run dva doctor)
+  3. Verify:  uv run dva doctor  [--tenant NAME]   (or: source .venv/bin/activate && python3 -m dva doctor)
   4. Start Claude Code here with:  claude --plugin-dir .   and ask:
        "Use the vuln-assessor agent to run a vulnerability assessment for NAME"
 Docs: docs/install.md, docs/usage.md

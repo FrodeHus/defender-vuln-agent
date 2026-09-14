@@ -11,7 +11,7 @@ uv sync --locked            # creates .venv from uv.lock (pip fallback: pip inst
 uv run pytest -q -W error   # ~200 tests, no credentials or network needed; CI runs the same
 ```
 
-`scripts/install.sh` runs `uv sync --locked` (falls back to venv + pip), installs `cve-mcp-server` next to the repo into the same `.venv`, and runs the suite. Commands in docs assume an activated `.venv` (`source .venv/bin/activate`); `uv run ...` works without activating. The whole pipeline also runs offline with `--fixture` inputs (`tests/test_e2e.py`).
+`scripts/install.sh` runs `uv sync --locked` (falls back to venv + pip), runs the suite, and pre-caches the CVE server. The CVE server is not cloned: `.mcp.json` runs `scripts/cve-mcp.sh`, which starts a pinned upstream commit through `uvx` with the MCP SDK pinned below 2. Commands in docs assume an activated `.venv` (`source .venv/bin/activate`); `uv run ...` works without activating. The whole pipeline also runs offline with `--fixture` inputs (`tests/test_e2e.py`).
 
 Golden report files regenerate with `DVA_UPDATE_GOLDEN=1 python3 -m pytest tests/test_report_md.py`; review the diff before committing.
 
@@ -21,7 +21,7 @@ Golden report files regenerate with `DVA_UPDATE_GOLDEN=1 python3 -m pytest tests
 - `agents/vuln-assessor.md` — the Claude Code agent definition (plugin default `agents/` dir).
 - `skills/*/SKILL.md` — one skill per command group (auth, inventory, hunting, cloud, prioritize/report), used by the agent (plugin default `skills/` dir).
 - `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` — plugin and marketplace manifests.
-- `.mcp.json` — declares the `cve-mcp` server; works from a plain clone (`.venv/bin/python3`).
+- `.mcp.json` — declares the `cve-mcp` server as `${CLAUDE_PLUGIN_ROOT:-.}/scripts/cve-mcp.sh`, so it works as a plugin and from a plain clone.
 - `config/` — `scoring.yaml` (weights), `sources.yaml` (which hunting sources run).
 - `tenants/<name>/` — per-tenant credentials, runs, cache; nothing tenant-specific lives elsewhere.
 - `tests/` — fixtures under `tests/fixtures/`; `tests/test_agent_files.py` pins the agent/skill text to the real CLI.
@@ -47,6 +47,6 @@ From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks
 ## Gotchas
 
 - Always `python3`, never `python`.
-- The CVE server's NVD key lives in `../cve-mcp-server/.env`, not this repo's `.env`; an empty `NVD_API_KEY=` line there blocks any other value.
+- The CVE server's `NVD_API_KEY` lives in this repo's `.env` (exported by `scripts/cve-mcp.sh`). The upstream commit is pinned by `CVE_MCP_REF` in that script; bump it only after re-capturing `tests/fixtures/cve`.
 - Select a tenant with `DVA_TENANT=<name>` (or `--tenant`); required whenever `dva tenant list` prints more than one name.
 - `dva enrich --store` and `dva exception add|remove` are the only supported ways to write `enrichment` intel and `exceptions.yaml`; never hand-edit either.

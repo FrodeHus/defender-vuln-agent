@@ -16,10 +16,10 @@ The permission exists on the app but admin consent was not granted, or the permi
 Assign the role: `az role assignment create --assignee <app-id> --role Reader --scope /subscriptions/<id>`. Only needed when `cloud: true`.
 
 **Claude Code shows no `cve-mcp` tools / the agent says the CVE server is unreachable**
-Run `claude mcp list` in the repo. If `cve-mcp` is missing, start `claude` from the repository root and accept the server prompt. If it shows an error, run `.venv/bin/python3 -m cve_mcp.server` by hand: `No module named cve_mcp` means the server is not installed in the venv (`pip install -e ../cve-mcp-server`).
+Run `claude mcp list` in the repo. If `cve-mcp` is missing, start `claude` from the repository root and accept the server prompt. If it shows an error, run `scripts/cve-mcp.sh` by hand and read its stderr: `'uvx' ... is required` means uv is not installed or not on the PATH Claude Code sees; a download error means the first `uvx` run could not reach GitHub or PyPI (run `scripts/cve-mcp.sh --warm` once with network, after which the server starts from the uv cache). A start that takes longer than Claude Code's MCP timeout on the very first run is fixed the same way.
 
 **CVE server logs `NVD_API_KEY not set`**
-The key must be in `../cve-mcp-server/.env`. An empty `NVD_API_KEY=` line there blocks any value from elsewhere.
+Put `NVD_API_KEY=...` in this repo's `.env` (or export it before starting `claude`). For a marketplace install the plugin directory has no `.env`, so export it.
 
 **`enrich --store` prints `stored 0` or `no CVE data recognized`**
 The saved file is not in a format the parser knows. It expects the text output of `triage_cve` (or `compare_cves`, `get_epss_score`, `lookup_cve`, `check_kev`, `check_poc_exists`). If the server changed its format, compare with `tests/fixtures/cve/triage-standard.txt` and open an issue with a sample.

@@ -5,7 +5,7 @@ Thanks for helping. This project is small and test-driven; the bar for a change 
 ## Set up
 
 ```bash
-scripts/install.sh          # uv sync --locked (or venv+pip), cve-mcp-server, runs the tests
+scripts/install.sh          # uv sync --locked (or venv+pip), runs the tests, caches the CVE server
 uv run pytest -q -W error   # ~200 tests, no credentials or network needed
 # or: source .venv/bin/activate && python3 -m pytest -q -W error
 ```

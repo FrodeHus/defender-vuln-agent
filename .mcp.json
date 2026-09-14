@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "cve-mcp": {
-      "command": "${CVE_MCP_PYTHON:-.venv/bin/python3}",
-      "args": ["-m", "cve_mcp.server"]
+      "command": "${CLAUDE_PLUGIN_ROOT:-.}/scripts/cve-mcp.sh"
     }
   }
 }
