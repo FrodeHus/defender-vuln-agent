@@ -137,8 +137,12 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         p = products.get(key)
         if p is None:
             continue
+        eos_date = row.get("EndOfSupportDate") or None
         if p.eos is None:
-            p.eos = {"status": status, "date": row.get("EndOfSupportDate") or None, "versions": []}
+            p.eos = {"status": status, "date": eos_date, "versions": []}
+        elif eos_date and (p.eos["date"] is None or eos_date < p.eos["date"]):
+            # earliest non-empty EndOfSupportDate across this product's EOS versions
+            p.eos["date"] = eos_date
         version = row.get("SoftwareVersion")
         if version and version not in p.eos["versions"]:
             p.eos["versions"].append(version)

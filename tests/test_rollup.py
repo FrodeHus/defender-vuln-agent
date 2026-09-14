@@ -77,6 +77,18 @@ def test_eos_marked_from_product_versions_hunt(tmp_path):
     assert adobe.eos is None
 
 
+def test_eos_date_is_earliest_across_versions_regardless_of_row_order(tmp_path):
+    run = seed(tmp_path)
+    run.write_json("hunt-product-versions.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.1", "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-06-01", "Devices": 1},
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.0", "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-01-01", "Devices": 1},
+    ]})
+    products, _ = build(run)
+    ics = products[product_key("ivanti", "connect_secure")]
+    assert ics.eos["date"] == "2025-01-01"
+    assert sorted(ics.eos["versions"]) == ["22.7R2.0", "22.7R2.1"]
+
+
 def test_eos_not_applicable_or_empty_status_ignored(tmp_path):
     run = seed(tmp_path)
     run.write_json("hunt-product-versions.json", {"results": [
