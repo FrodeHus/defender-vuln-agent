@@ -45,3 +45,5 @@ class Product:
     remediation: str | None = None
     remediation_type: str | None = None
     recommended_version: str | None = None
+    eos: dict | None = None
+    fixes: dict[str, set[str]] = field(default_factory=dict)

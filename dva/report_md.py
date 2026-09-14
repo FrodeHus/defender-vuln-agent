@@ -7,7 +7,14 @@ METHOD = ("Each product's score (0 to 100) combines threat signals for its CVEs 
 
 
 def _flags(r: dict) -> str:
-    f = r["flags"]; return ", ".join(x for x, on in [("KEV", f["kev"]), ("exploit", f["exploit"]), ("internet-facing", f["internet_facing"])] if on) or "-"
+    f = r["flags"]
+    bits = [x for x, on in [("KEV", f["kev"]), ("exploit", f["exploit"]), ("internet-facing", f["internet_facing"])] if on]
+    sla = r.get("sla") or {}
+    if sla.get("overdue_cves"):
+        bits.append(f"Overdue by {sla['overdue_by_days']} days")
+    if r.get("eos"):
+        bits.append("End of support")
+    return ", ".join(bits) or "-"
 
 
 def _row(r: dict) -> str:
@@ -35,8 +42,14 @@ def render(doc: dict) -> str:
     out += ["", "## Top 10 products to patch", "", "| # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |", "|---|---|---|---|---|---|---|---|---|---|"]
     out += [_row(r) for r in top]
     for r in top:
-        out += ["", f"### {r['rank']}. {r['product']} ({r['vendor']}) — {r['score']} {r['label']}", "", f"Why: {r['reason']}", "", f"Risk: {r.get('risk_summary', '')}", "", f"Remediation: {r['remediation']}", "",
-                f"Driving vulnerabilities ({sum(r['counts'].values())} open CVEs in total" + (", partial intel" if r.get("partial_intel") else "") + "):"]
+        total_cves = sum(r["counts"].values())
+        out += ["", f"### {r['rank']}. {r['product']} ({r['vendor']}) — {r['score']} {r['label']}", "", f"Why: {r['reason']}", "", f"Risk: {r.get('risk_summary', '')}", "", f"Remediation: {r['remediation']}"]
+        fixes = r.get("fixes") or []
+        if fixes:
+            top_fix = fixes[0]
+            out += ["", f"Upgrading to {top_fix['update']} fixes {top_fix['cves']} of {total_cves} CVEs."]
+        out += ["",
+                f"Driving vulnerabilities ({total_cves} open CVEs in total" + (", partial intel" if r.get("partial_intel") else "") + "):"]
         for c in r["driving_cves"]:
             bits = [c["id"], f"CVSS {c['cvss']}"] + ([f"EPSS {c['epss']}"] if c.get("epss") is not None else []) + (["KEV"] if c["kev"] else []) + (["Exploit"] if c["poc"] else []) + ([c["title"]] if c.get("title") else [])
             out.append("- " + " · ".join(str(b) for b in bits))

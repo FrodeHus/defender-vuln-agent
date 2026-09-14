@@ -1,3 +1,3 @@
 DeviceTvmSoftwareInventory
-| summarize Devices = dcount(DeviceId) by SoftwareVendor, SoftwareName, SoftwareVersion, EndOfSupportStatus
+| summarize Devices = dcount(DeviceId), EndOfSupportDate = max(EndOfSupportDate) by SoftwareVendor, SoftwareName, SoftwareVersion, EndOfSupportStatus
 | order by Devices desc

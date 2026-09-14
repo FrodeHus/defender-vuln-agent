@@ -4,6 +4,7 @@ from dva.model import Asset, CveRef, Product, product_key, EXPLOIT_RANK, SEVERIT
 from dva.run import Run
 
 SEVERITY_RANK = {s: i for i, s in enumerate(reversed(SEVERITIES))}  # Low=0 ... Critical=3
+_EOS_IGNORE = {"", "None", "NotApplicable"}
 
 
 def _hunt(run: Run, name: str) -> list[dict]:
@@ -112,11 +113,27 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         new_ref = CveRef(id=v["cve_id"], severity=v.get("severity") or "Low", cvss=_norm_cvss(v.get("cvss")),
                           exploitability=expl, first_seen=v.get("first_seen"))
         p.cves[v["cve_id"]] = _merge_cve_ref(cur, new_ref)
+        if v.get("security_update"):
+            p.fixes.setdefault(v["security_update"], set()).add(v["cve_id"])
         if v["device_id"] not in assets:
             assets[v["device_id"]] = Asset(id=v["device_id"], name=v.get("device_name") or v["device_id"], group=v.get("group"))
 
     for key, versions in version_devices.items():
         products[key].versions = {ver: len(devices) for ver, devices in versions.items()}
+
+    for row in _hunt(run, "product-versions"):
+        status = row.get("EndOfSupportStatus")
+        if status in _EOS_IGNORE or status is None:
+            continue
+        key = product_key(row.get("SoftwareVendor"), row.get("SoftwareName"))
+        p = products.get(key)
+        if p is None:
+            continue
+        if p.eos is None:
+            p.eos = {"status": status, "date": row.get("EndOfSupportDate") or None, "versions": []}
+        version = row.get("SoftwareVersion")
+        if version and version not in p.eos["versions"]:
+            p.eos["versions"].append(version)
 
     if run.path("cloud-vulns.jsonl").exists():
         _merge_cloud(run, products, assets, azure_id_map, name_label_map, exploited)

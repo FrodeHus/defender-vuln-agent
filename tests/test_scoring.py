@@ -49,3 +49,11 @@ def test_threat_uses_maturity_and_ransomware():
 
 def test_label_and_reason():
     assert label_for(80, cfg) == "Critical" and label_for(59, cfg) == "Medium" and label_for(10, cfg) == "Low"
+
+
+def test_overdue_boost_raises_score():
+    p = Product(key="x/y", vendor="x", name="y", asset_ids={"a"}, cves={"CVE-1": ref(cvss=6.0, sev="Medium")})
+    assets = {"a": Asset(id="a", name="a")}
+    normal = product_score(p, assets, {}, cfg, estate_size=100)
+    overdue = product_score(p, assets, {}, cfg, estate_size=100, overdue=True)
+    assert overdue.score > normal.score

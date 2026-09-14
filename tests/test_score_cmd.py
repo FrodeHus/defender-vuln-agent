@@ -1,4 +1,6 @@
+from datetime import datetime, timezone
 from tests.test_rollup import seed
+from dva.run import Run
 from dva.score_cmd import compute
 from dva.config import load_scoring
 from dva.cache import IntelCache
@@ -57,6 +59,54 @@ def test_corrupt_previous_findings_treated_as_no_previous_run(tmp_path):
     assert d["previous_run_id"] is None
     assert d["left_top10"] == []
     assert doc["summary"]["previous_exposure_score"] is None
+
+
+def test_sla_overdue_by_days_and_summary(tmp_path):
+    run = Run.create(tmp_path / "runs")
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "d1", "vendor": "x", "product": "y", "version": "1.0", "cve_id": "CVE-2026-1", "severity": "High", "cvss": 7.5, "exploitability": "NoExploit", "first_seen": "2026-07-16", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    now = datetime(2026, 9, 14, tzinfo=timezone.utc)  # 60 days after first_seen
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7), now=now)
+    row = doc["products"][0]
+    assert row["sla"] == {"oldest_days": 60, "overdue_cves": 1, "overdue_by_days": 30}
+    assert doc["summary"]["sla_breaches"] == 1
+    assert doc["summary"]["overdue_cves_total"] == 1
+
+
+def test_sla_not_overdue_when_within_window(tmp_path):
+    run = Run.create(tmp_path / "runs")
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "d1", "vendor": "x", "product": "y", "version": "1.0", "cve_id": "CVE-2026-1", "severity": "High", "cvss": 7.5, "exploitability": "NoExploit", "first_seen": "2026-09-01", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    now = datetime(2026, 9, 14, tzinfo=timezone.utc)  # 13 days after first_seen; High SLA is 30 days
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7), now=now)
+    row = doc["products"][0]
+    assert row["sla"]["overdue_cves"] == 0 and row["sla"]["overdue_by_days"] == 0
+    assert doc["summary"]["sla_breaches"] == 0
+
+
+def test_fix_rollup_in_row(tmp_path):
+    run = seed(tmp_path / "runs")
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    top = doc["products"][0]
+    assert top["product"] == "Connect Secure"
+    assert top["fixes"][0]["update"] == "22.7R2.5"
+    assert top["fixes"][0]["cves"] == 2
+    assert top["fixes"][0]["share"] == 1.0
+
+
+def test_eos_in_row_and_summary(tmp_path):
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-product-versions.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "SoftwareVersion": "22.7R2.0", "EndOfSupportStatus": "EndOfSupportSoftware", "EndOfSupportDate": "2025-01-01", "Devices": 1},
+    ]})
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    top = doc["products"][0]
+    assert top["eos"] == {"status": "EndOfSupportSoftware", "date": "2025-01-01", "versions": ["22.7R2.0"]}
+    assert doc["summary"]["eos_products"] == 1
 
 
 def test_top_n_listed_even_below_threshold(tmp_path):

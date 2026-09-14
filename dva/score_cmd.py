@@ -24,6 +24,44 @@ def _risk(sp, intel, pa, cfg: Scoring, product_name: str) -> str:
                         sum(1 for a in pa if (a.device_value or "").lower() == "high"))
 
 
+def age_days(first_seen: str | None, now: datetime) -> int | None:
+    if not first_seen:
+        return None
+    s = first_seen.strip()
+    dt = None
+    try:
+        dt = datetime.fromisoformat(s.replace(" ", "T"))
+    except ValueError:
+        try:
+            dt = datetime.fromisoformat(s[:10])
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (now - dt).days
+
+
+def _sla(p, cfg: Scoring, now: datetime) -> dict:
+    ages = []
+    overdue_cves = 0
+    overdue_by_days = 0
+    for ref in p.cves.values():
+        age = age_days(ref.first_seen, now)
+        if age is None:
+            continue
+        ages.append(age)
+        threshold = cfg.sla_days.get(ref.severity.lower())
+        if threshold is not None and age > threshold:
+            overdue_cves += 1
+            overdue_by_days = max(overdue_by_days, age - threshold)
+    return {"oldest_days": max(ages) if ages else None, "overdue_cves": overdue_cves, "overdue_by_days": overdue_by_days}
+
+
+def _fixes(p, total: int) -> list[dict]:
+    ranked = sorted(p.fixes.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    return [{"update": u, "cves": len(ids), "share": round(len(ids) / total, 2) if total else 0.0} for u, ids in ranked[:5]]
+
+
 def _breakdown(assets, cfg: Scoring) -> str:
     parts = []
     inet = sum(1 for a in assets if a.internet_facing)
@@ -36,7 +74,8 @@ def _breakdown(assets, cfg: Scoring) -> str:
     return " · ".join(parts) if parts else "No exposure signals"
 
 
-def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None) -> dict:
+def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None) -> dict:
+    now = now or datetime.now(timezone.utc)
     products, assets = build(run)
     from dva.evidence import summarize as _summarize_paths
     ev = run.read_json("hunt-evidence.json").get("results", []) if run.path("hunt-evidence.json").exists() else []
@@ -47,7 +86,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     exc_items = exceptions_mod.load(exceptions_mod.path_for_current())
     active_exceptions, expired_exceptions = exceptions_mod.split(exc_items, date.today())
     listed_products, dropped_exceptions = exceptions_mod.apply(products, active_exceptions)
-    scored = sorted((product_score(p, assets, intel, cfg, estate) for p in listed_products.values()), key=lambda s: (-s.score, s.product.name))
+    sla_by_key = {key: _sla(p, cfg, now) for key, p in listed_products.items()}
+    scored = sorted((product_score(p, assets, intel, cfg, estate, overdue=sla_by_key[p.key]["overdue_cves"] > 0) for p in listed_products.values()), key=lambda s: (-s.score, s.product.name))
     rows = []
     # Always list at least the top_n products so a small or clean estate still gets a ranked view;
     # report_threshold decides how many of them count as "needing action".
@@ -63,6 +103,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "counts": sp.counts, "flags": sp.flags, "reason": reason_for(sp),
             "remediation": p.remediation or (f"Update to {p.recommended_version}" if p.recommended_version else "Update to a fixed version; see vendor advisory."),
             "remediation_type": p.remediation_type, "recommended_version": p.recommended_version, "versions": p.versions,
+            "sla": sla_by_key[p.key], "eos": p.eos, "fixes": _fixes(p, len(p.cves)),
             "driving_cves": [{"id": r.id, "severity": r.severity, "cvss": (intel[r.id].cvss if r.id in intel and intel[r.id].cvss is not None else r.cvss),
                               "epss": intel[r.id].epss if r.id in intel else None, "kev": bool(r.id in intel and intel[r.id].kev),
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
@@ -114,7 +155,11 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     return {
         "run": run.manifest,
         "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),
-                    "internet_facing_at_risk": len(inet_risk), "exposure_score": (round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None),
+                    "internet_facing_at_risk": len(inet_risk),
+                    "sla_breaches": sum(1 for v in sla_by_key.values() if v["overdue_cves"] > 0),
+                    "overdue_cves_total": sum(v["overdue_cves"] for v in sla_by_key.values()),
+                    "eos_products": sum(1 for p in listed_products.values() if p.eos is not None),
+                    "exposure_score": (round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None),
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
                     "generated_at": datetime.now(timezone.utc).isoformat(), "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
         "products": rows,

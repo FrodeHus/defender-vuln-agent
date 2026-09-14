@@ -24,7 +24,10 @@
     "exposure_score": 61.0,
     "previous_exposure_score": 54.0,
     "generated_at": "2026-09-14T08:00:00+00:00",
-    "tenant": "Contoso"
+    "tenant": "Contoso",
+    "sla_breaches": 1,
+    "overdue_cves_total": 1,
+    "eos_products": 1
   },
   "products": [
     {
@@ -49,6 +52,24 @@
       "remediation": "Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.",
       "remediation_type": "version_update",
       "recommended_version": "22.7R2.5",
+      "sla": {
+        "oldest_days": 21,
+        "overdue_cves": 1,
+        "overdue_by_days": 7
+      },
+      "eos": null,
+      "fixes": [
+        {
+          "update": "22.7R2.5",
+          "cves": 3,
+          "share": 0.12
+        },
+        {
+          "update": "22.7R1",
+          "cves": 1,
+          "share": 0.04
+        }
+      ],
       "versions": [
         "22.6R1",
         "22.7R1"
@@ -251,7 +272,14 @@
       ],
       "partial_intel": false,
       "risk_summary": "The most critical issue is CVE-2026-24471 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 89%. A SQL injection in the DAS component allows an unauthenticated attacker to execute arbitrary SQL commands. An attacker could read or change the application's database over the network without any credentials. 3 devices run FortiClient EMS, 3 of them internet-facing; leaving it unpatched risks data theft or tampering on systems reachable from the internet.",
-      "paths": []
+      "paths": [],
+      "sla": {
+        "oldest_days": 0,
+        "overdue_cves": 0,
+        "overdue_by_days": 0
+      },
+      "eos": null,
+      "fixes": []
     },
     {
       "rank": 3,
@@ -360,7 +388,14 @@
       ],
       "partial_intel": false,
       "risk_summary": "The most critical issue is CVE-2026-21410 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 82%. An elevation of privilege vulnerability allows remote code execution through NTLM relay against the Exchange server. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 4 devices run Exchange Server 2019, 4 of them internet-facing and 4 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet.",
-      "paths": []
+      "paths": [],
+      "sla": {
+        "oldest_days": 0,
+        "overdue_cves": 0,
+        "overdue_by_days": 0
+      },
+      "eos": null,
+      "fixes": []
     },
     {
       "rank": 4,
@@ -384,6 +419,19 @@
       "remediation": "Deploy September 2026 cumulative update via ring 2. Reboot required.",
       "remediation_type": "patch",
       "recommended_version": null,
+      "sla": {
+        "oldest_days": 5,
+        "overdue_cves": 0,
+        "overdue_by_days": 0
+      },
+      "eos": {
+        "status": "EndOfSupportSoftware",
+        "date": "2024-01-09",
+        "versions": [
+          "10.0.17763"
+        ]
+      },
+      "fixes": [],
       "versions": [
         "10.0.17763"
       ],
@@ -2184,7 +2232,14 @@
           "kind": "registry",
           "devices": 1140
         }
-      ]
+      ],
+      "sla": {
+        "oldest_days": 0,
+        "overdue_cves": 0,
+        "overdue_by_days": 0
+      },
+      "eos": null,
+      "fixes": []
     },
     {
       "rank": 6,
@@ -2960,7 +3015,14 @@
       ],
       "partial_intel": false,
       "risk_summary": "The most critical issue is CVE-2025-30663 (medium, CVSS 6.6). A time-of-check time-of-use race condition allows a local authenticated user to escalate privileges. An attacker could turn a foothold into administrator-level control with local access to the device. 690 devices run Zoom Workplace, 41 marked high value; leaving it unpatched risks privilege escalation.",
-      "paths": []
+      "paths": [],
+      "sla": {
+        "oldest_days": 0,
+        "overdue_cves": 0,
+        "overdue_by_days": 0
+      },
+      "eos": null,
+      "fixes": []
     }
   ],
   "diff_from_previous": {

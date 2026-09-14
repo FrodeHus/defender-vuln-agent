@@ -93,7 +93,7 @@ def label_for(score: int, cfg: Scoring) -> str:
     return "Low"
 
 
-def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveIntel], cfg: Scoring, estate_size: int) -> ScoredProduct:
+def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveIntel], cfg: Scoring, estate_size: int, overdue: bool = False) -> ScoredProduct:
     threats = sorted(((ref, threat_score(ref, intel.get(ref.id), cfg)) for ref in p.cves.values()), key=lambda x: (-x[1], -x[0].cvss, x[0].id))
     driving = threats[:3]
     top3 = sum(t for _, t in driving) / len(driving) if driving else 0.0
@@ -109,6 +109,8 @@ def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveInte
     any_inet = any(a.internet_facing for a in ranked_assets)
     boost = 1.25 if (any_kev and any_inet) else 1.0
     raw = top3 * (0.6 + 0.3 * asset_mean / cfg.asset_cap + 0.1 * reach) * boost
+    if overdue:
+        raw *= cfg.overdue_boost
     score = int(round(100 * min(1.0, raw)))
     counts = {s.lower(): sum(1 for r in p.cves.values() if r.severity == s) for s in SEVERITIES}
     flags = {

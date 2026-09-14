@@ -12,10 +12,10 @@ Since run 20260907T080000Z: entered the top 10: Zoom Workplace; left the top 10:
 
 | # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Connect Secure | Ivanti | 97 Critical | 6 | 4 | 7 | 12 | 3 | KEV, exploit, internet-facing |
+| 1 | Connect Secure | Ivanti | 97 Critical | 6 | 4 | 7 | 12 | 3 | KEV, exploit, internet-facing, Overdue by 7 days |
 | 2 | FortiClient EMS | Fortinet | 91 Critical | 3 | 2 | 3 | 5 | 1 | KEV, exploit, internet-facing |
 | 3 | Exchange Server 2019 | Microsoft | 88 Critical | 4 | 3 | 5 | 9 | 4 | KEV, exploit, internet-facing |
-| 4 | Windows Server 2019 | Microsoft | 79 High | 312 | 5 | 22 | 61 | 40 | KEV, exploit |
+| 4 | Windows Server 2019 | Microsoft | 79 High | 312 | 5 | 22 | 61 | 40 | KEV, exploit, End of support |
 | 5 | Acrobat Reader DC | Adobe | 66 High | 1140 | 3 | 11 | 24 | 8 | KEV |
 | 6 | Zoom Workplace | Zoom | 18 Low | 690 | 0 | 0 | 4 | 2 | - |
 
@@ -26,6 +26,8 @@ Why: VPN gateways, all internet-facing, two KEV entries added this week
 Risk: The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 94%. An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 6 devices run Connect Secure, 6 of them internet-facing and 6 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet.
 
 Remediation: Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.
+
+Upgrading to 22.7R2.5 fixes 3 of 26 CVEs.
 
 Driving vulnerabilities (26 open CVEs in total):
 - CVE-2026-21887 · CVSS 9.8 · EPSS 0.94 · KEV · Exploit · Unauthenticated remote code execution in web component
