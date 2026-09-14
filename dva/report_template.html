@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vulnerability assessment — __TITLE__</title>
+<style>
+:root{--ink:#101d32;--muted:#526176;--blue:#075bd8;--mist:#f5f7fb;--line:#dce3ec;--navy:#0e2138;--crit:#b42318;--high:#c2410c;--med:#d9910f;--low:#075bd8;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:#fff;color:var(--ink);font-family:var(--font);line-height:1.5;font-size:15px;-webkit-font-smoothing:antialiased}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline;text-underline-offset:4px}
+.wrap{width:min(1120px,calc(100% - 48px));margin-inline:auto}
+.report-header{background:var(--mist);border-bottom:1px solid var(--line);padding-block:40px 32px}
+.eyebrow{margin:0 0 8px;color:var(--muted);font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+h1{margin:0 0 12px;font-size:clamp(32px,4vw,48px);letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+h2{margin:0;font-size:24px;letter-spacing:-.01em}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 24px;margin:0;padding:0;list-style:none;color:var(--muted);font-size:14px}
+.meta strong{display:block;color:var(--ink);font-weight:600}
+.verdict{margin:24px 0 0;font-size:clamp(18px,2vw,22px);line-height:1.35;max-width:900px;text-wrap:pretty}
+.sub{margin:8px 0 0;color:var(--muted);max-width:900px;text-wrap:pretty}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+.tile{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}
+.tile .head{display:flex;justify-content:space-between;align-items:center;gap:8px}.tile .name{font-weight:600}
+.tile .counts{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;min-height:32px}.tile .n{font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.tile .unit,.tile .line{color:var(--muted);font-size:13px}.tile .line{margin:0}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;background:var(--mist);color:var(--muted);white-space:nowrap}
+.pill.critical{background:#fee4e2;color:var(--crit)}.pill.high{background:#ffe8d9;color:var(--high)}.pill.medium{background:#fef0c7;color:#b54708}.pill.low{background:#e0ecff;color:var(--blue)}.pill.kev{background:#fee4e2;color:var(--crit)}.pill.exploit{background:#fef0c7;color:#b54708}.pill.inet{background:#e0ecff;color:var(--blue)}
+.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-top:24px;position:sticky;top:12px;z-index:2;box-shadow:0 6px 24px rgba(16,29,50,.06)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:#fff;cursor:pointer}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}.sep{width:1px;height:24px;background:var(--line)}.tb-label{color:var(--muted);font-size:13px}
+.section{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px}.section p{margin:4px 0 0;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap}.legend span{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.cards{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.card{border:1px solid var(--line);border-radius:20px;padding:16px 24px;min-width:0}.card.compact{border-radius:16px;padding:12px 20px}
+.rowhead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;min-width:0;cursor:pointer}
+.rank{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}.rank.small{width:auto;height:auto;background:none;color:var(--muted);font-size:14px;min-width:28px;justify-content:flex-start}
+.title{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:4px}.title .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.title .name{font-size:17px;font-weight:600}.title .vendor,.title .why{color:var(--muted);font-size:14px}
+.counts{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}.counts span{white-space:nowrap}.counts b{font-size:20px;font-weight:700;letter-spacing:-.02em}.counts small{color:var(--muted);font-size:13px}
+.strip{display:flex;height:6px;gap:2px;border-radius:3px;overflow:hidden;width:200px;max-width:100%;margin-top:6px}
+.devices{display:flex;flex-direction:column;align-items:flex-end}.devices b{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}.devices small{color:var(--muted);font-size:13px}
+.score{display:flex;align-items:center;gap:10px}.score b{font-size:24px;font-weight:700;letter-spacing:-.02em;min-width:40px;text-align:right}
+.caret{width:20px;height:20px;flex:none;transition:transform .15s}.open .caret{transform:rotate(90deg)}
+.body{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px 32px;margin-top:16px;align-items:start}.body>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.cve{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:10px 0;border-top:1px solid var(--line);min-width:0}.cve .id{font-weight:600;white-space:nowrap}.cve .nums{display:flex;gap:12px;font-size:13px;color:var(--muted);white-space:nowrap;align-items:baseline}.cve .t{flex:1 1 220px;min-width:0;font-size:14px;color:var(--muted)}
+.asset{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:6px 0;border-top:1px solid var(--line)}.asset .n{font-weight:600;white-space:nowrap}.asset .w{font-size:13px;color:var(--muted)}
+.more,.breakdown{font-size:13px;color:var(--muted)}
+.appendix{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px 32px}.appendix h2{font-size:20px;color:var(--ink)}.appendix p{margin:6px 0 0;text-wrap:pretty}
+footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
+@media print{.toolbar{display:none}.card{break-inside:avoid}.body{display:grid!important}}
+</style></head>
+<body>
+<header class="report-header"><div class="wrap" id="head"></div></header>
+<main class="wrap">
+  <div class="toolbar" id="toolbar"></div>
+  <section class="section"><div><h2>Top 10 products to patch</h2><p>One row per product, so one patch action fixes many CVEs. Ranked by composite score.</p></div>
+    <div class="legend"><span><i class="dot" style="background:var(--crit)"></i>Critical</span><span><i class="dot" style="background:var(--high)"></i>High</span><span><i class="dot" style="background:var(--med)"></i>Medium</span><span><i class="dot" style="background:var(--low)"></i>Low</span></div></section>
+  <div class="cards" id="top"></div>
+  <section class="section" style="border-top:1px solid var(--line);padding-top:24px;margin-top:48px"><div><h2>All prioritized products</h2><p>Every product above the reporting threshold. Expand a row for its driving CVEs and assets.</p></div><span class="tb-label" id="shown"></span></section>
+  <div class="cards" id="all"></div>
+  <div class="appendix" id="appendix"></div>
+  <footer>Generated by defender-vuln-agent. Read-only assessment; no changes were made in Defender.</footer>
+</main>
+<script id="data" type="application/json">__FINDINGS_JSON__</script>
+<script>
+(function(){
+  var DOC = JSON.parse(document.getElementById('data').textContent);
+  var S = DOC.summary, D = DOC.diff_from_previous, ROWS = DOC.products;
+  var state = { filter: 'all', sort: 'score', open: {} };
+  ROWS.slice(0, 3).forEach(function(r){ state.open['top:' + r.key] = true; });
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pill(cls, txt){ return '<span class="pill ' + cls + '">' + esc(txt) + '</span>'; }
+  function flags(r){ var f = r.flags; return (f.kev ? pill('kev','KEV') : '') + (f.exploit ? pill('exploit','Public exploit') : '') + (f.internet_facing ? pill('inet','Internet-facing') : ''); }
+  function strip(c){ var t = c.critical + c.high + c.medium + c.low || 1; function w(n){ return Math.round(100 * n / t) + '%'; }
+    return '<div class="strip"><div style="width:' + w(c.critical) + ';background:var(--crit)"></div><div style="width:' + w(c.high) + ';background:var(--high)"></div><div style="width:' + w(c.medium) + ';background:var(--med)"></div><div style="width:' + w(c.low) + ';background:var(--low)"></div></div>'; }
+  function counts(c){ return '<div class="counts"><span><b style="color:' + (c.critical ? 'var(--crit)' : 'var(--muted)') + '">' + c.critical + '</b> <small>critical</small></span><span><b style="color:var(--high)">' + c.high + '</b> <small>high</small></span><span><b style="color:#b8860b">' + c.medium + '</b> <small>medium</small></span><span><b style="color:var(--blue)">' + c.low + '</b> <small>low</small></span></div>'; }
+  function body(r){ var total = r.counts.critical + r.counts.high + r.counts.medium + r.counts.low;
+    var cves = r.driving_cves.map(function(c){ return '<div class="cve"><span class="id">' + esc(c.id) + '</span><span class="nums"><span>CVSS <b>' + esc(c.cvss) + '</b></span>' + (c.epss != null ? '<span>EPSS <b>' + esc(c.epss) + '</b></span>' : '') + (c.kev ? pill('kev','KEV') : '') + (c.poc ? pill('','Exploit') : '') + '</span><span class="t">' + esc(c.title || '') + '</span></div>'; }).join('');
+    var a = r.assets, more = a.count - a.top.length;
+    var assets = a.top.map(function(x){ return '<div class="asset"><span class="n">' + esc(x.name) + '</span><span class="w">' + esc(x.why) + '</span></div>'; }).join('');
+    return '<div class="body"><div><div class="label">Top 3 driving vulnerabilities · ' + total + ' open CVEs in total' + (r.partial_intel ? ' · partial intel' : '') + '</div>' + cves + '</div>' +
+      '<div><div class="label">Remediation</div><div>' + esc(r.remediation) + '</div><div class="label" style="margin-top:14px">Affected assets · ' + a.count + '</div><div class="breakdown">' + esc(a.breakdown) + '</div>' + assets + (more > 0 ? '<div class="more">+ ' + more + ' more in findings.json</div>' : '') + '</div></div>'; }
+  function card(r, compact){ var key = (compact ? 'all:' : 'top:') + r.key, open = !!state.open[key];
+    return '<div class="card' + (compact ? ' compact' : '') + (open ? ' open' : '') + '" data-key="' + esc(key) + '"><div class="rowhead">' +
+      '<div class="rank' + (compact ? ' small' : '') + '">' + r.rank + '</div><div class="title"><div class="row"><span class="name">' + esc(r.product) + '</span><span class="vendor">' + esc(r.vendor) + '</span>' + flags(r) + '</div>' + (compact ? '' : '<div class="why">' + esc(r.reason) + '</div>') + '</div>' +
+      '<div>' + counts(r.counts) + (compact ? '' : strip(r.counts)) + '</div><div class="devices"><b>' + r.assets.count.toLocaleString() + '</b><small>devices</small></div>' +
+      '<div class="score">' + pill(r.label.toLowerCase(), r.label) + '<b>' + r.score + '</b></div>' +
+      '<svg class="caret" viewBox="0 0 20 20" fill="none" stroke="#526176" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5l5 5-5 5"/></svg></div>' + (open ? body(r) : '') + '</div>'; }
+  function tile(name, pillCls, pillTxt, nums, line){ return '<div class="tile"><div class="head"><span class="name">' + esc(name) + '</span>' + pill(pillCls, pillTxt) + '</div><div class="counts">' + nums.map(function(n){ return '<span><span class="n" style="color:' + (n[2] || 'inherit') + '">' + esc(n[0]) + '</span> <span class="unit">' + esc(n[1]) + '</span></span>'; }).join('') + '</div><p class="line">' + esc(line) + '</p></div>'; }
+  function head(){ var top = ROWS.slice(0, 10), em = top.filter(function(r){ return r.flags.kev && r.flags.internet_facing; }).length;
+    var verdict = '<strong>' + S.products_action + ' of ' + S.products_total + ' software products across ' + Number(S.devices).toLocaleString() + ' devices need action.</strong> ' + (em ? em + ' of the top 10 carry KEV-listed CVEs on internet-facing hosts; treat those as emergency changes.' : 'No top 10 product combines a KEV-listed CVE with an internet-facing host.');
+    var sub = D.previous_run_id ? 'Since run ' + esc(D.previous_run_id) + ': ' + (D.entered_top10.length ? D.entered_top10.length + ' product(s) entered the top 10' : 'no changes to the top 10') + (D.left_top10.length ? ', ' + D.left_top10.length + ' left' : '') + '.' + (S.previous_exposure_score != null && S.exposure_score != null ? ' Exposure score moved from ' + S.previous_exposure_score + ' to ' + S.exposure_score + '.' : '') : 'First run; no previous run to compare with.';
+    var failed = Object.keys(DOC.run.sources || {}).filter(function(k){ return DOC.run.sources[k].status !== 'ok'; });
+    document.getElementById('head').innerHTML = '<p class="eyebrow">Vulnerability assessment · Microsoft Defender</p><h1>' + esc(S.tenant) + '</h1>' +
+      '<ul class="meta"><li>Run at<strong>' + esc(S.generated_at) + '</strong></li><li>Previous run<strong>' + esc(D.previous_run_id || 'none') + '</strong></li><li>Sources<strong>' + esc(Object.keys(DOC.run.sources || {}).join(' · ') || 'fixture') + '</strong></li><li>Tool<strong>defender-vuln-agent</strong></li></ul>' +
+      '<p class="verdict">' + verdict + '</p><p class="sub">' + sub + '</p><div class="tiles">' +
+      tile('Emergency', 'critical', em ? 'Critical' : 'Clear', [[em, 'products', 'var(--crit)']], 'KEV-listed CVEs on internet-facing hosts.') +
+      tile('Products needing action', 'medium', 'Attention', [[S.products_action, 'of ' + S.products_total]], 'Products scoring above the reporting threshold.') +
+      tile('Known exploited', 'critical', D.new_kev.length ? '+' + D.new_kev.length + ' products' : 'KEV', [[S.kev_cves, 'CVEs', 'var(--crit)'], [S.internet_facing_at_risk, 'exposed devices']], 'CISA KEV entries present, and internet-facing devices with a critical CVE.') +
+      tile('Coverage', failed.length ? 'medium' : 'low', failed.length ? failed.length + ' source issue(s)' : 'Complete', [[Number(S.devices).toLocaleString(), 'devices'], [S.exposure_score == null ? '–' : S.exposure_score, 'exposure score']], failed.length ? 'Sources not ok: ' + failed.join(', ') : 'All sources collected.') + '</div>'; }
+  function toolbar(){ var f = [['all','All'],['critical','Has critical'],['kev','KEV-listed'],['inet','Internet-facing']], s = [['score','Score'],['devices','Devices'],['critical','Critical CVEs']];
+    document.getElementById('toolbar').innerHTML = '<span class="tb-label">Show</span>' + f.map(function(x){ return '<button type="button" class="chip' + (state.filter === x[0] ? ' on' : '') + '" data-filter="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+      '<span class="sep"></span><span class="tb-label">Sort</span>' + s.map(function(x){ return '<button type="button" class="chip' + (state.sort === x[0] ? ' on' : '') + '" data-sort="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+      '<span class="sep"></span><button type="button" class="chip" data-open="1">Expand all</button><button type="button" class="chip" data-open="0">Collapse all</button>'; }
+  function lists(){ var top = ROWS.slice(0, 10); document.getElementById('top').innerHTML = top.map(function(r){ return card(r, false); }).join('');
+    var rows = ROWS.filter(function(r){ return state.filter === 'all' || (state.filter === 'critical' && r.counts.critical > 0) || (state.filter === 'kev' && r.flags.kev) || (state.filter === 'inet' && r.flags.internet_facing); });
+    rows = rows.slice().sort(function(a, b){ return state.sort === 'score' ? b.score - a.score : state.sort === 'devices' ? b.assets.count - a.assets.count : b.counts.critical - a.counts.critical; });
+    document.getElementById('all').innerHTML = rows.map(function(r){ return card(r, true); }).join('');
+    document.getElementById('shown').textContent = rows.length + ' of ' + ROWS.length + ' products'; }
+  function appendix(){ document.getElementById('appendix').innerHTML = '<div><h2>How scores are computed</h2><p>Each product\'s score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, public exploit availability), the context of affected assets (internet exposure, Defender exposure level, device value, criticality tags) and the number of affected devices. Weights live in scoring.yaml.</p></div><div><h2>Grouping</h2><p>Findings are grouped by software product so one row maps to one patch action. Only the three CVEs contributing most to a product\'s score and its most critical assets are shown; full lists are in findings.json.</p></div><div><h2>Data freshness</h2><p>Generated ' + esc(S.generated_at) + '. CVE intelligence is cached for at most 7 days. Sources and their status are listed in the header.</p></div>'; }
+  document.addEventListener('click', function(e){ var t = e.target.closest('[data-filter],[data-sort],[data-open],.rowhead'); if (!t) return;
+    if (t.dataset.filter) { state.filter = t.dataset.filter; toolbar(); lists(); }
+    else if (t.dataset.sort) { state.sort = t.dataset.sort; toolbar(); lists(); }
+    else if (t.dataset.open !== undefined) { var v = t.dataset.open === '1'; state.open = {}; if (v) ROWS.forEach(function(r){ state.open['top:' + r.key] = true; state.open['all:' + r.key] = true; }); lists(); }
+    else { var k = t.parentElement.dataset.key; state.open[k] = !state.open[k]; lists(); } });
+  head(); toolbar(); lists(); appendix();
+})();
+</script>
+</body></html>
