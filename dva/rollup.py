@@ -42,7 +42,8 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
     assets: dict[str, Asset] = {}
     azure_id_map: dict[str, str] = {}  # lower(azure_resource_id) -> asset id
     name_label_map: dict[str, str] = {}  # lower(first label of asset name) -> asset id
-    for m in run.read_json("machines.json"):
+    machines = run.read_json("machines.json") if run.path("machines.json").exists() else []
+    for m in machines:
         assets[m["id"]] = Asset(
             id=m["id"], name=m.get("name") or m["id"],
             internet_facing=bool(m.get("is_internet_facing")),

@@ -23,7 +23,7 @@ def _breakdown(assets, cfg: Scoring) -> str:
 
 def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
     products, assets = build(run)
-    estate = len(assets)
+    estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
     intel = cache.all_fresh(all_ids)
     scored = sorted((product_score(p, assets, intel, cfg, estate) for p in products.values()), key=lambda s: (-s.score, s.product.name))

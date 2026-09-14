@@ -33,6 +33,19 @@ def test_diff_against_previous(tmp_path):
     assert doc["summary"]["previous_exposure_score"] == 61.0
 
 
+def test_scores_without_machines_json(tmp_path):
+    from dva.run import Run
+
+    run = Run.create(tmp_path / "runs")
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.1", "cve_id": "CVE-2026-21887", "severity": "Critical", "cvss": 9.8, "exploitability": "ExploitIsInKit", "first_seen": "2026-09-08", "recommendation_ref": None},
+    ])
+    run.write_json("recommendations.json", [])
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    assert doc["summary"]["devices"] == 1
+    assert doc["products"][0]["product"] == "Connect Secure"
+
+
 def test_corrupt_previous_findings_treated_as_no_previous_run(tmp_path):
     run = seed(tmp_path / "runs")
     prev_dir = tmp_path / "runs" / "20200101T000000Z"
