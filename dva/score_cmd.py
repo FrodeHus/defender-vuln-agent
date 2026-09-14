@@ -28,7 +28,13 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
     intel = cache.all_fresh(all_ids)
     scored = sorted((product_score(p, assets, intel, cfg, estate) for p in products.values()), key=lambda s: (-s.score, s.product.name))
     rows = []
-    for i, sp in enumerate(s for s in scored if s.score >= cfg.report_threshold):
+    # Always list at least the top_n products so a small or clean estate still gets a ranked view;
+    # report_threshold decides how many of them count as "needing action".
+    listed = [s for s in scored if s.score >= cfg.report_threshold]
+    if len(listed) < cfg.top_n:
+        listed = scored[: cfg.top_n]
+    action_count = sum(1 for s in scored if s.score >= cfg.report_threshold)
+    for i, sp in enumerate(listed):
         p = sp.product
         pa = [assets.get(a) for a in p.asset_ids if a in assets]
         rows.append({
@@ -60,7 +66,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
     inet_risk = {a.id for p in products.values() for a in (assets.get(x) for x in p.asset_ids) if a and a.internet_facing and any(r.severity == "Critical" for r in p.cves.values())}
     return {
         "run": run.manifest,
-        "summary": {"devices": estate, "products_total": len(products), "products_action": len(rows), "kev_cves": len(kev_ids),
+        "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),
                     "internet_facing_at_risk": len(inet_risk), "exposure_score": exposure.get("score"),
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
                     "generated_at": datetime.now(timezone.utc).isoformat(), "tenant": os.environ.get("DVA_TENANT_NAME", os.environ.get("DVA_TENANT_ID", "unknown"))},

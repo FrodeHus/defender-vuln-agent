@@ -57,3 +57,13 @@ def test_corrupt_previous_findings_treated_as_no_previous_run(tmp_path):
     assert d["previous_run_id"] is None
     assert d["left_top10"] == []
     assert doc["summary"]["previous_exposure_score"] is None
+
+
+def test_top_n_listed_even_below_threshold(tmp_path):
+    from dva.config import Scoring, load_scoring
+    run = seed(tmp_path / "runs")
+    cfg = load_scoring()
+    cfg.report_threshold = 95  # nothing clears this
+    doc = compute(run, cfg, IntelCache(tmp_path / "cache", 7))
+    assert doc["summary"]["products_action"] == 0
+    assert len(doc["products"]) == 2 and doc["products"][0]["rank"] == 1
