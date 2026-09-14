@@ -232,7 +232,8 @@ def _trend(run: Run, prevs: list[Run], current_row: dict) -> list[dict]:
     return rows
 
 
-def _new_and_fixed_cves(rows: list[dict], products: dict, prev_doc: dict | None) -> tuple[dict[str, int], dict[str, int]]:
+def _new_and_fixed_cves(rows: list[dict], products: dict, prev_doc: dict | None,
+                         excepted_cve_ids: set[str] = frozenset()) -> tuple[dict[str, int], dict[str, int]]:
     current_pairs = {(r["key"], cve) for r in rows for cve in r.get("all_cves", [])}
     prev_products = (prev_doc or {}).get("products", [])
     previous_pairs = {(pr["key"], cve) for pr in prev_products for cve in pr.get("all_cves", [])}
@@ -259,7 +260,9 @@ def _new_and_fixed_cves(rows: list[dict], products: dict, prev_doc: dict | None)
         return prev_severity.get((key, cve))
 
     new_pairs = current_pairs - previous_pairs
-    fixed_pairs = previous_pairs - current_pairs
+    # A CVE dropped from the current run because of an active CVE exception was never actually
+    # patched, so it must not be counted as fixed.
+    fixed_pairs = {(key, cve) for key, cve in (previous_pairs - current_pairs) if cve not in excepted_cve_ids}
     return _bucket(new_pairs, _current_sev), _bucket(fixed_pairs, _prev_sev)
 
 
@@ -375,7 +378,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
         "cves_by_severity": _cve_counts_by_severity(rows),
     }
     current_score_row = {"run_id": run.id, "generated_at": generated_at, "exposure_score": exposure_score, "secure_score": secure_score}
-    new_cves, fixed_cves = _new_and_fixed_cves(rows, products, prev_doc)
+    excepted_cve_ids = {i.cve for i in active_exceptions if i.cve}
+    new_cves, fixed_cves = _new_and_fixed_cves(rows, products, prev_doc, excepted_cve_ids)
     return {
         "run": run.manifest,
         "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),

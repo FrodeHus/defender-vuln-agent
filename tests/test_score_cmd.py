@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from tests.test_rollup import seed
 from dva.run import Run
@@ -5,6 +6,7 @@ from dva.score_cmd import compute, score_trend
 from dva.config import load_scoring
 from dva.cache import IntelCache
 from dva.scoring import CveIntel
+from dva import exceptions as exceptions_mod
 
 
 def test_findings_document(tmp_path):
@@ -41,6 +43,32 @@ def test_advisories_empty_when_top_driving_cve_has_no_intel(tmp_path):
     run.write_json("exposure.json", {"score": 54.0, "by_group": {}})
     doc = compute(run, load_scoring(), cache)
     assert doc["products"][0]["advisories"] == []
+
+
+def test_fixed_cves_excludes_ones_removed_by_active_exception(tmp_path, monkeypatch):
+    run = seed(tmp_path / "runs")
+    prev_dir = tmp_path / "runs" / "20200101T000000Z"
+    prev_dir.mkdir()
+    prev_dir.joinpath("manifest.json").write_text('{"run_id": "20200101T000000Z", "sources": {}}')
+    prev_dir.joinpath("findings.json").write_text(json.dumps({
+        "summary": {"exposure_score": 61.0},
+        "products": [{
+            "key": "ivanti/connect-secure", "rank": 1, "flags": {"kev": False},
+            "all_cves": ["CVE-2026-21887", "CVE-2099-99999"],
+            "driving_cves": [{"id": "CVE-2026-21887", "severity": "Critical"}, {"id": "CVE-2099-99999", "severity": "High"}],
+        }],
+    }))
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    exceptions_mod.save(exceptions_mod.path_for_current(), [
+        exceptions_mod.Exception_(product=None, cve="CVE-2026-21887", reason="accepted", until="2099-01-01",
+                                   owner="me", added="2026-01-01", source="user"),
+    ])
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    fixed = doc["diff_from_previous"]["fixed_cves"]
+    # CVE-2026-21887 is gone from the current run only because it's excepted, not patched.
+    assert fixed["critical"] == 0
+    # CVE-2099-99999 is genuinely absent (not on this product at all): a real fix.
+    assert fixed["high"] == 1
 
 
 def test_diff_against_previous(tmp_path):
