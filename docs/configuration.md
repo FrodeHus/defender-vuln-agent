@@ -82,7 +82,7 @@ tenants/
 
 ## Agent and skills
 
-The Claude Code agent is `.claude/agents/vuln-assessor.md`; its `model:` line picks the model and `tools:` restricts it to Bash, file reading and the CVE server tools. The skills under `.claude/skills/` document each command group for the agent. `tests/test_agent_files.py` pins the commands and flags they cite to the real CLI, so update the tests if you change them.
+The Claude Code agent is `agents/vuln-assessor.md`; its `model:` line picks the model and `tools:` restricts it to Bash, file reading and the CVE server tools. The skills under `skills/` document each command group for the agent. `tests/test_agent_files.py` pins the commands and flags they cite to the real CLI, so update the tests if you change them.
 
 ## CVE server
 

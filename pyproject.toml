@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "defender-vuln-agent"
-version = "0.2.0"
+version = "0.3.0"
 description = "Read-only vulnerability assessment for Microsoft Defender estates: collect, enrich with CVE intelligence, prioritize by software product, report. Ships a Claude Code agent."
 readme = "README.md"
 license = { file = "LICENSE" }

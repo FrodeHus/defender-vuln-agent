@@ -20,7 +20,7 @@ Follow-ups that work well:
 - `Re-score contoso with report_threshold 30` edits the tenant's `scoring.yaml` override and re-runs only the score and report steps.
 - `Run the internet-facing hunting query again for contoso` runs one named query.
 
-The agent runs on Claude Sonnet by design (see `.claude/agents/vuln-assessor.md`); change `model:` there if you prefer another.
+The agent runs on Claude Sonnet by design (see `agents/vuln-assessor.md`); change `model:` there if you prefer another.
 
 ## From the command line
 

@@ -24,8 +24,10 @@ setup/create-app.sh --tenant contoso                 # app registration + tenant
 # grant admin consent as the script instructs, then:
 source .venv/bin/activate
 python3 -m dva --tenant contoso doctor               # every line must say ok
-claude                                               # approve the cve-mcp server when asked
+claude --plugin-dir .                                # approve the cve-mcp server when asked
 ```
+
+This repository is also a Claude Code plugin. To use the agent and skills from another project instead of this checkout, run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent`, and see [docs/install.md](docs/install.md#6-claude-code) for pointing the CVE server at this checkout's virtualenv with `DVA_HOME`.
 
 Then, in Claude Code:
 
@@ -49,6 +51,7 @@ An executive summary with the estate's exposure score and what changed since the
 | [docs/architecture.md](docs/architecture.md) | Pipeline, modules, data model, scoring formulas, failure model |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common errors and fixes |
 | [setup/permissions.md](setup/permissions.md) | Every permission, why it is needed, what `doctor` prints without it |
+| [CLAUDE.md](CLAUDE.md) | Orientation for Claude Code working in this repository |
 | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md) | |
 
 ## Manual pipeline

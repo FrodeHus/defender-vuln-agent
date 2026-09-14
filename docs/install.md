@@ -94,7 +94,15 @@ Every line must read `ok`. `FAIL ... HTTP 401` means the token was rejected (wro
 
 ## 6. Claude Code
 
-Start `claude` in the repository. On first start it asks to approve the project's `cve-mcp` server from `.mcp.json`; accept it. `claude mcp list` should then show `cve-mcp ... Connected`. The `vuln-assessor` agent and its skills under `.claude/` are picked up automatically. Continue with [usage.md](usage.md).
+The repository is also a Claude Code plugin (`.claude-plugin/plugin.json`). Pick one of these two ways to load the `vuln-assessor` agent and its skills:
+
+**a. From the checkout (recommended).** Start `claude --plugin-dir .` in the repository (a plain `claude` also works: project-scoped `.mcp.json` is picked up either way). On first start it asks to approve the project's `cve-mcp` server from `.mcp.json`; accept it. `claude mcp list` should then show `cve-mcp ... Connected`. The `vuln-assessor` agent and the `skills/` under the repo root are picked up automatically.
+
+**b. From the marketplace, into another project.** Run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent` in any project. The agent and skills install, but the plugin's own `.mcp.json` resolves `cve-mcp`'s interpreter relative to wherever `claude` is started, which is not this checkout for a marketplace install — the CVE server needs `dva`'s venv. Point at it one of two ways:
+   - set `DVA_HOME` to this checkout's absolute path before starting `claude` (the agent runs `cd "${DVA_HOME:-.}"` and activates the venv before every `dva` command), and set `CVE_MCP_PYTHON=$DVA_HOME/.venv/bin/python3` so `.mcp.json`'s `${CVE_MCP_PYTHON:-.venv/bin/python3}` resolves to it; or
+   - register the server directly with `claude mcp add cve-mcp -- "$DVA_HOME/.venv/bin/python3" -m cve_mcp.server`, bypassing the bundled `.mcp.json`.
+
+Continue with [usage.md](usage.md).
 
 ## Upgrading
 

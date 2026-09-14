@@ -19,7 +19,7 @@ The whole pipeline runs offline with `--fixture` inputs (see [docs/usage.md](doc
 - **Every failure is a one-line `DvaError`.** Wrap library exceptions at the boundary so `python3 -m dva ...` always exits 1 with `dva: <reason>` on stderr, never a traceback.
 - **Tenant isolation.** Anything a tenant produces or needs lives under `tenants/<name>/`. Do not add shared state keyed by tenant.
 - **No new runtime dependencies** without discussion. Today: `msal`, `requests`, `pyyaml`.
-- **Docs and skills must match the CLI.** If you change a flag or an output file, update `README.md`, `docs/`, the agent definition in `.claude/agents/` and the relevant `.claude/skills/*/SKILL.md`, and the tests in `tests/test_agent_files.py` that pin them.
+- **Docs and skills must match the CLI.** If you change a flag or an output file, update `README.md`, `docs/`, the agent definition in `agents/` and the relevant `skills/*/SKILL.md`, and the tests in `tests/test_agent_files.py` that pin them.
 
 ## Tests
 
