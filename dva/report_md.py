@@ -35,7 +35,7 @@ def render(doc: dict) -> str:
     out += ["", "## Top 10 products to patch", "", "| # | Product | Vendor | Score | Devices | Crit | High | Med | Low | Flags |", "|---|---|---|---|---|---|---|---|---|---|"]
     out += [_row(r) for r in top]
     for r in top:
-        out += ["", f"### {r['rank']}. {r['product']} ({r['vendor']}) — {r['score']} {r['label']}", "", f"Why: {r['reason']}", "", f"Remediation: {r['remediation']}", "",
+        out += ["", f"### {r['rank']}. {r['product']} ({r['vendor']}) — {r['score']} {r['label']}", "", f"Why: {r['reason']}", "", f"Risk: {r.get('risk_summary', '')}", "", f"Remediation: {r['remediation']}", "",
                 f"Driving vulnerabilities ({sum(r['counts'].values())} open CVEs in total" + (", partial intel" if r.get("partial_intel") else "") + "):"]
         for c in r["driving_cves"]:
             bits = [c["id"], f"CVSS {c['cvss']}"] + ([f"EPSS {c['epss']}"] if c.get("epss") is not None else []) + (["KEV"] if c["kev"] else []) + (["Exploit"] if c["poc"] else []) + ([c["title"]] if c.get("title") else [])

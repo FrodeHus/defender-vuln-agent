@@ -42,6 +42,24 @@ def select_candidates(products: dict[str, Product], assets: dict[str, Asset], ca
     return out
 
 
+def select_describe(products: dict[str, Product], assets: dict[str, Asset], cache: IntelCache, cfg: Scoring, estate_size: int, limit: int = 25) -> list[str]:
+    """The single top CVE of each product that will be listed, for lookup_cve descriptions (skips ids already described)."""
+    prelim = sorted(products.values(), key=lambda p: (-product_score(p, assets, {}, cfg, estate_size).score, p.key))
+    out: list[str] = []
+    for p in prelim[: max(cfg.top_n, 0) + 15]:
+        if not p.cves:
+            continue
+        top = sorted(p.cves.values(), key=_rank_key)[0]
+        cached = cache.get(top.id)
+        if cached is not None and cached.description:
+            continue
+        if top.id not in out:
+            out.append(top.id)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def _first(d: dict, *paths):
     for path in paths:
         cur = d
@@ -124,7 +142,7 @@ def _f(v):
 def _merge_intel(cur: CveIntel | None, new: CveIntel) -> CveIntel:
     if cur is None:
         return new
-    for f in ("cvss", "epss", "epss_percentile", "kev_added", "title", "cwe"):
+    for f in ("cvss", "epss", "epss_percentile", "kev_added", "title", "cwe", "description", "vector"):
         if getattr(cur, f) is None and getattr(new, f) is not None:
             setattr(cur, f, getattr(new, f))
     cur.kev = cur.kev or new.kev
@@ -140,6 +158,8 @@ def _parse_triage_block(cid: str, block: str) -> CveIntel:
     intel = CveIntel()
     m = re.search(r"^\s*CVSS:\s+([\d.]+)", block, re.M)
     intel.cvss = _f(m.group(1)) if m else None
+    mv = re.search(r"^\s*Vector:\s+(CVSS:\S+)", block, re.M)
+    intel.vector = mv.group(1) if mv else None
     m = re.search(r"^\s*EPSS:\s+([\d.]+)%\s*\(percentile\s+([\d.]+)th", block, re.M)
     if m:
         intel.epss = _f(m.group(1)) / 100.0 if _f(m.group(1)) is not None else None
@@ -177,8 +197,13 @@ def parse_text(text: str) -> dict[str, CveIntel]:
         intel.cvss = _f(sc.group(1)) if sc else None
         cw = re.search(r"^Weaknesses:\s*(CWE-\d+)", block, re.M)
         intel.cwe = cw.group(1) if cw else None
-        d = re.search(r"^Description:\s*\n(.+)", block, re.M)
-        intel.title = d.group(1).strip()[:120] if d else None
+        vv = re.search(r"^Vector:\s+(CVSS:\S+)", block, re.M)
+        intel.vector = vv.group(1) if vv else None
+        d = re.search(r"^Description:\s*\n(.+?)(?:\n\s*\n(?:[A-Z][A-Za-z ]+:|===)|\Z)", block, re.M | re.S)
+        if d:
+            full = re.sub(r"\s+", " ", d.group(1)).strip()
+            intel.description = full[:600]
+            intel.title = full[:120]
         add(cid, intel)
     # compare_cves table rows
     for m in _RE_COMPARE_ROW.finditer(text):
@@ -240,7 +265,11 @@ def _run(args) -> int:
         run.write_json("enrich-candidates.json", ids)
         for n in range(0, len(ids), CHUNK):
             print(json.dumps({"chunk": n // CHUNK + 1, "cve_ids": ids[n:n + CHUNK]}))
-        run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded).")
+        describe = select_describe(products, assets, cache, cfg, estate)
+        run.write_json("enrich-describe.json", describe)
+        if describe:
+            print(json.dumps({"describe": describe}))
+        run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded); {len(describe)} CVEs need a description for the risk summaries.")
         return 0
     parsed: dict[str, CveIntel] = {}
     for raw in args.store:

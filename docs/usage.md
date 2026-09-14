@@ -37,10 +37,10 @@ python3 -m dva cloud vulns                                  # only if sources.ya
 python3 -m dva enrich --list                                # prints the CVE ids to look up, 20 per line
 ```
 
-Enrichment needs the CVE server. From Claude Code the agent does this step; by hand, call `triage_cve(cve_id, depth="standard")` for each listed id (for example with the MCP Inspector, `npx @modelcontextprotocol/inspector .venv/bin/python3 -m cve_mcp.server`), save each text result as `$DVA_RUN/cve-triage-<id>.txt`, then:
+Enrichment needs the CVE server. From Claude Code the agent does this step; by hand, call `triage_cve(cve_id, depth="standard")` for each listed id (for example with the MCP Inspector, `npx @modelcontextprotocol/inspector .venv/bin/python3 -m cve_mcp.server`), save each text result as `$DVA_RUN/cve-triage-<id>.txt`. `enrich --list` also prints a `{"describe": [...]}` line: call `lookup_cve(cve_id)` for those and save to `$DVA_RUN/cve-lookup-<id>.txt`; their descriptions feed the per-product risk summary. Then:
 
 ```bash
-python3 -m dva enrich --store "$DVA_RUN"/cve-triage-*.txt   # prints "stored N, missing M"
+python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt          # prints "stored N, missing M"
 python3 -m dva score                                        # writes findings.json
 python3 -m dva report --all                                 # report.md, report.html, report.json
 ```
@@ -61,7 +61,7 @@ Ad hoc KQL: `python3 -m dva hunt --kql "DeviceInfo | summarize count() by OSPlat
 
 ## Reading the reports
 
-- **`report.md`**: executive summary, top 10 products with the three CVEs driving each score, remediation text from Defender's recommendations, and the most critical affected assets with a count. Diffable between runs.
+- **`report.md`**: executive summary, top 10 products, each with a plain-language "Risk" paragraph explaining what the most critical vulnerability lets an attacker do and what is exposed, the three CVEs driving the score, remediation text from Defender's recommendations, and the most critical affected assets with a count. Diffable between runs.
 - **`report.html`**: the same content as a self-contained page with filters (has critical, KEV-listed, internet-facing), sorting and expandable rows. Open it in a browser or share the file; it makes no network requests.
 - **`report.json`** and **`findings.json`**: the full scored data, including every CVE and every asset per product, for downstream tooling.
 
@@ -96,7 +96,7 @@ This is exactly what `tests/test_e2e.py` runs. The resulting report shows an Iva
 | `hunt-<name>.json` | `hunt` | Raw Advanced Hunting result |
 | `cloud-vulns.jsonl` | `cloud vulns` | Defender for Cloud findings per resource and CVE |
 | `enrich-candidates.json` | `enrich --list` | CVE ids selected for enrichment |
-| `cve-triage-*.txt` | the agent | Saved CVE server results |
+| `cve-triage-*.txt`, `cve-lookup-*.txt` | the agent | Saved CVE server results (triage and descriptions) |
 | `enrichment.json` | `enrich --store` | Parsed CVE intel for this run |
 | `findings.json` | `score` | Scored products and the diff from the previous run |
 | `report.md` / `.html` / `.json` | `report` | Rendered reports |

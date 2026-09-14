@@ -19,6 +19,8 @@ class CveIntel:
     exploit_sources: list[str] = field(default_factory=list)
     title: str | None = None
     cwe: str | None = None
+    description: str | None = None
+    vector: str | None = None
     fetched_at: str | None = None
 
 

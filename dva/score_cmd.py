@@ -9,6 +9,20 @@ from dva.run import Run, add_run_arg, resolve_run, cache_dir
 from dva.scoring import product_score, reason_for
 
 
+def _risk(sp, intel, pa, cfg: Scoring, product_name: str) -> str:
+    from dva.summary import risk_summary
+    if not sp.driving:
+        return f"No open CVEs are recorded for {product_name}."
+    r = sp.driving[0][0]
+    it = intel.get(r.id)
+    cve = {"id": r.id, "severity": r.severity, "cvss": (it.cvss if it and it.cvss is not None else r.cvss),
+           "epss": it.epss if it else None, "kev": bool(it and it.kev), "poc": bool((it and it.exploit_public) or r.exploitability != "NoExploit")}
+    return risk_summary(product_name, cve, it.description if it else None, it.vector if it else None, len(sp.product.asset_ids),
+                        sum(1 for a in pa if a.internet_facing),
+                        sum(1 for a in pa if any(t.lower() == pat.lower() for t in a.tags for pat in cfg.criticality_tags)),
+                        sum(1 for a in pa if (a.device_value or "").lower() == "high"))
+
+
 def _breakdown(assets, cfg: Scoring) -> str:
     parts = []
     inet = sum(1 for a in assets if a.internet_facing)
@@ -21,7 +35,7 @@ def _breakdown(assets, cfg: Scoring) -> str:
     return " · ".join(parts) if parts else "No exposure signals"
 
 
-def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
+def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None) -> dict:
     products, assets = build(run)
     estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
@@ -47,6 +61,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
                               "title": intel[r.id].title if r.id in intel else None} for r, _ in sp.driving],
             "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
+            "risk_summary": _risk(sp, intel, pa, cfg, display_name(p)),
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
             "partial_intel": any(r.id not in intel for r, _ in sp.driving),
         })
@@ -67,9 +82,9 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache) -> dict:
     return {
         "run": run.manifest,
         "summary": {"devices": estate, "products_total": len(products), "products_action": action_count, "kev_cves": len(kev_ids),
-                    "internet_facing_at_risk": len(inet_risk), "exposure_score": exposure.get("score"),
+                    "internet_facing_at_risk": len(inet_risk), "exposure_score": (round(exposure["score"], 2) if isinstance(exposure.get("score"), (int, float)) else None),
                     "previous_exposure_score": (prev_doc or {}).get("summary", {}).get("exposure_score"),
-                    "generated_at": datetime.now(timezone.utc).isoformat(), "tenant": os.environ.get("DVA_TENANT_NAME", os.environ.get("DVA_TENANT_ID", "unknown"))},
+                    "generated_at": datetime.now(timezone.utc).isoformat(), "tenant": tenant_name or os.environ.get("DVA_TENANT_NAME") or os.environ.get("DVA_TENANT") or os.environ.get("DVA_TENANT_ID", "unknown")},
         "products": rows,
         "diff_from_previous": {"previous_run_id": prev.id if prev_doc else None,
                                "entered_top10": [k for k in top_now if k not in top_prev], "left_top10": [k for k in top_prev if k not in top_now],
@@ -83,7 +98,12 @@ def register(sub) -> None:
 
 def _run(args) -> int:
     run, cfg = resolve_run(args), load_scoring()
-    doc = compute(run, cfg, IntelCache(cache_dir() / "cve", cfg.cache_ttl_days))
+    from dva.tenantinfo import resolve_display_name
+    from dva.hunting import GRAPH_BASE
+    from dva.auth import GRAPH_SCOPE
+    from dva.mde import make_client
+    tenant_name = resolve_display_name(cache_dir(), client_factory=lambda: make_client(GRAPH_SCOPE, GRAPH_BASE), log=run.log)
+    doc = compute(run, cfg, IntelCache(cache_dir() / "cve", cfg.cache_ttl_days), tenant_name=tenant_name)
     run.write_json("findings.json", doc)
     top = ", ".join(f"{r['product']} ({r['score']})" for r in doc["products"][:3])
     run.summary(f"Scored {doc['summary']['products_total']} products; {doc['summary']['products_action']} need action; top: {top}.")

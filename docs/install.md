@@ -50,6 +50,7 @@ Each tenant needs one Entra app registration with these **application** permissi
 | WindowsDefenderATP | `SecurityRecommendation.Read.All` | remediation text per product |
 | WindowsDefenderATP | `Score.Read.All` | organization exposure score |
 | Microsoft Graph | `ThreatHunting.Read.All` | Advanced Hunting queries |
+| Microsoft Graph | `CrossTenantInformation.ReadBasic.All` (optional) | Tenant display name in report headers; otherwise set `DVA_TENANT_NAME` |
 | Azure RBAC | `Reader` on each subscription | Defender for Cloud findings (optional) |
 
 Create it with the script (needs `az login` as someone who can create apps):

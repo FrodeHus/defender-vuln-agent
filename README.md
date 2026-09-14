@@ -34,7 +34,7 @@ The agent replies with the top products, how many need action and any source tha
 
 ## What the report looks like
 
-An executive summary with the estate's exposure score and what changed since the last run, then the top 10 products to patch. Each product shows its score, the three CVEs driving it, CVE counts by severity, Defender's remediation guidance, and the most critical affected devices with a count of the rest. The HTML version has filters and expandable rows and is a single self-contained file.
+An executive summary with the estate's exposure score and what changed since the last run, then the top 10 products to patch. Each product gets a plain-language risk summary of its most critical vulnerability, its score, the three CVEs driving it, CVE counts by severity, Defender's remediation guidance, and the most critical affected devices with a count of the rest. The HTML version has filters and expandable rows and is a single self-contained file.
 
 ## Documentation
 
@@ -57,7 +57,7 @@ python3 -m dva mde all
 python3 -m dva hunt internet-facing exploited-cves device-tags
 python3 -m dva enrich --list                                  # CVE ids to look up
 # call the CVE server's triage_cve for each id, saving to $DVA_RUN/cve-triage-<id>.txt, then:
-python3 -m dva enrich --store "$DVA_RUN"/cve-triage-*.txt
+python3 -m dva enrich --store "$DVA_RUN"/cve-*.txt
 python3 -m dva score
 python3 -m dva report --all
 ```

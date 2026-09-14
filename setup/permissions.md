@@ -45,6 +45,7 @@ The app registration credential must be configured via one of these sets of envi
 
 | Permission | Used for | Without this permission | Doctor check |
 |---|---|---|---|
+| CrossTenantInformation.ReadBasic.All (Microsoft Graph, optional) | Look up the tenant display name for report headers via `findTenantInformationByTenantId` | Reports show the tenant directory name or id instead; set `DVA_TENANT_NAME` in the tenant `.env` as an alternative | Not checked by `dva doctor`; a failed lookup is logged to the run's `log.txt` and the fallback name is used |
 | Reader on each subscription (config/sources.yaml) | Resource Graph reads for Defender for Cloud (phase 2) | Resource Graph queries fail; cloud assessments unavailable | Success: `ARM   Reader (12345678-1234-1234-1234-123456789012)ok   POST /providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01` or Failure: `ARM   Reader (12345678-1234-1234-1234-123456789012)FAIL POST https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01 failed with HTTP 403: The client does not have permission to perform action.` |
 
 ## Granting Permissions

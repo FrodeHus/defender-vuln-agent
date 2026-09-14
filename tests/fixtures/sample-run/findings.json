@@ -144,7 +144,8 @@
         "vpn-gw-05",
         "vpn-gw-06"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 94%. An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 6 devices run Connect Secure, 6 of them internet-facing and 6 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet."
     },
     {
       "rank": 2,
@@ -236,7 +237,8 @@
         "ems-prod-01",
         "ems-prod-02"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2026-24471 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 89%. A SQL injection in the DAS component allows an unauthenticated attacker to execute arbitrary SQL commands. An attacker could read or change the application's database over the network without any credentials. 3 devices run FortiClient EMS, 3 of them internet-facing; leaving it unpatched risks data theft or tampering on systems reachable from the internet."
     },
     {
       "rank": 3,
@@ -343,7 +345,8 @@
         "exch-03",
         "exch-04"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2026-21410 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 82%. An elevation of privilege vulnerability allows remote code execution through NTLM relay against the Exchange server. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 4 devices run Exchange Server 2019, 4 of them internet-facing and 4 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet."
     },
     {
       "rank": 4,
@@ -869,7 +872,8 @@
         "sccm-01",
         "web-frontend-03"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2026-21335 (critical, CVSS 8.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 61%. A use after free in the Win32k kernel driver allows a local attacker to elevate privileges to SYSTEM. An attacker could turn a foothold into administrator-level control with local access to the device. 312 devices run Windows Server 2019, 9 of them internet-facing and 40 tagged as critical; leaving it unpatched risks privilege escalation on systems reachable from the internet."
     },
     {
       "rank": 5,
@@ -2141,7 +2145,8 @@
         "ws-hr-007",
         "ws-legal-021"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2026-24433 (critical, CVSS 8.6): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; EPSS puts the chance of exploitation in the next 30 days at 45%. A use after free when parsing a crafted PDF could lead to arbitrary code execution when a user opens the file. An attacker could run their own code on the affected device and take control of it with local access to the device without any credentials if a user opens a crafted file or link. 1140 devices run Acrobat Reader DC, 62 marked high value; leaving it unpatched risks full compromise."
     },
     {
       "rank": 6,
@@ -2915,7 +2920,8 @@
         "ws-gen-0686",
         "ws-gen-0687"
       ],
-      "partial_intel": false
+      "partial_intel": false,
+      "risk_summary": "The most critical issue is CVE-2025-30663 (medium, CVSS 6.6). A time-of-check time-of-use race condition allows a local authenticated user to escalate privileges. An attacker could turn a foothold into administrator-level control with local access to the device. 690 devices run Zoom Workplace, 41 marked high value; leaving it unpatched risks privilege escalation."
     }
   ],
   "diff_from_previous": {

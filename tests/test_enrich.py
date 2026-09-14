@@ -178,3 +178,26 @@ def test_store_accepts_multiple_text_files(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
     rc = main(["enrich", "--store", str(_FX / "triage-standard.txt"), str(_FX / "epss.txt"), "--run", str(run.dir)])
     assert rc == 0 and "stored 2" in capsys.readouterr().out
+
+
+def test_lookup_text_yields_description_and_vector():
+    out = parse_file(_FX / "lookup.txt")["CVE-2023-0286"]
+    assert out.description.startswith("There is a type confusion vulnerability") and len(out.description) <= 600
+    assert "X.400" in out.description and out.vector == "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H"
+    tri = parse_file(_FX / "triage-standard.txt")["CVE-2024-6345"]
+    assert tri.vector == "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+
+
+def test_list_prints_describe_ids(tmp_path, monkeypatch, capsys):
+    from dva.__main__ import main
+    from dva.run import Run
+    run = Run.create(tmp_path / "runs")
+    run.write_json("machines.json", [{"id": "m1", "name": "h", "tags": ["Tier0"], "exposure_level": "High", "device_value": "High", "group": None, "is_internet_facing": True, "azure_resource_id": None}])
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "h", "vendor": "v", "product": "p", "version": "1", "cve_id": "CVE-2024-0001", "severity": "Critical", "cvss": 9.8, "exploitability": "ExploitIsInKit", "first_seen": None, "recommendation_ref": None},
+        {"device_id": "m1", "device_name": "h", "vendor": "v", "product": "p", "version": "1", "cve_id": "CVE-2024-0002", "severity": "High", "cvss": 7.0, "exploitability": "NoExploit", "first_seen": None, "recommendation_ref": None}])
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    assert main(["enrich", "--list", "--run", str(run.dir)]) == 0
+    lines = [json.loads(l) for l in capsys.readouterr().out.splitlines() if l.startswith("{")]
+    assert any("describe" in l and l["describe"] == ["CVE-2024-0001"] for l in lines)
+    assert run.read_json("enrich-describe.json") == ["CVE-2024-0001"]

@@ -23,6 +23,8 @@ Since run 20260907T080000Z: entered the top 10: Zoom Workplace; left the top 10:
 
 Why: VPN gateways, all internet-facing, two KEV entries added this week
 
+Risk: The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 94%. An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 6 devices run Connect Secure, 6 of them internet-facing and 6 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet.
+
 Remediation: Upgrade to 22.7R2.5. Apply Ivanti mitigation XML until the change window.
 
 Driving vulnerabilities (26 open CVEs in total):
@@ -42,6 +44,8 @@ Affected assets (6): All 6 internet-facing · 6 Tier0 · exposure High
 
 Why: Management server reachable from the internet, KEV-listed SQL injection
 
+Risk: The most critical issue is CVE-2026-24471 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 89%. A SQL injection in the DAS component allows an unauthenticated attacker to execute arbitrary SQL commands. An attacker could read or change the application's database over the network without any credentials. 3 devices run FortiClient EMS, 3 of them internet-facing; leaving it unpatched risks data theft or tampering on systems reachable from the internet.
+
 Remediation: Upgrade to 7.4.3. Restrict admin interface to the management VLAN.
 
 Driving vulnerabilities (11 open CVEs in total):
@@ -57,6 +61,8 @@ Affected assets (3): 3 internet-facing · 3 Prod · Azure VMs
 ### 3. Exchange Server 2019 (Microsoft) — 88 Critical
 
 Why: OWA published externally, KEV entry with public proof of concept
+
+Risk: The most critical issue is CVE-2026-21410 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 82%. An elevation of privilege vulnerability allows remote code execution through NTLM relay against the Exchange server. An attacker could run their own code on the affected device and take control of it over the network without any credentials. 4 devices run Exchange Server 2019, 4 of them internet-facing and 4 tagged as critical; leaving it unpatched risks full compromise on systems reachable from the internet.
 
 Remediation: Install September 2026 SU (KB5052xxx). Enable Extended Protection.
 
@@ -74,6 +80,8 @@ Affected assets (4): 4 internet-facing · 4 Tier0 · device group Messaging
 ### 4. Windows Server 2019 (Microsoft) — 79 High
 
 Why: Largest fleet, one KEV-listed kernel CVE, 40 hosts marked High value
+
+Risk: The most critical issue is CVE-2026-21335 (critical, CVSS 8.8): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; public exploit code is available; EPSS puts the chance of exploitation in the next 30 days at 61%. A use after free in the Win32k kernel driver allows a local attacker to elevate privileges to SYSTEM. An attacker could turn a foothold into administrator-level control with local access to the device. 312 devices run Windows Server 2019, 9 of them internet-facing and 40 tagged as critical; leaving it unpatched risks privilege escalation on systems reachable from the internet.
 
 Remediation: Deploy September 2026 cumulative update via ring 2. Reboot required.
 
@@ -94,6 +102,8 @@ Affected assets (312): 40 Tier0 · 9 internet-facing · 118 exposure High · 9 d
 
 Why: Installed on most workstations, one KEV-listed CVE, no exposed hosts
 
+Risk: The most critical issue is CVE-2026-24433 (critical, CVSS 8.6): it is in CISA's Known Exploited Vulnerabilities catalog, so it is being used in real attacks; EPSS puts the chance of exploitation in the next 30 days at 45%. A use after free when parsing a crafted PDF could lead to arbitrary code execution when a user opens the file. An attacker could run their own code on the affected device and take control of it with local access to the device without any credentials if a user opens a crafted file or link. 1140 devices run Acrobat Reader DC, 62 marked high value; leaving it unpatched risks full compromise.
+
 Remediation: Push 24.003.20xxx via Intune. Auto-update policy currently disabled.
 
 Driving vulnerabilities (46 open CVEs in total):
@@ -112,6 +122,8 @@ Affected assets (1140): 1,140 workstations · 0 internet-facing · 62 High value
 ### 6. Zoom Workplace (Zoom) — 18 Low
 
 Why: Medium severity only, auto-update enabled
+
+Risk: The most critical issue is CVE-2025-30663 (medium, CVSS 6.6). A time-of-check time-of-use race condition allows a local authenticated user to escalate privileges. An attacker could turn a foothold into administrator-level control with local access to the device. 690 devices run Zoom Workplace, 41 marked high value; leaving it unpatched risks privilege escalation.
 
 Remediation: No action; auto-update will resolve within 14 days.
 

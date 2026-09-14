@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Plain-language risk summary per product, built from the driving CVE, its description (via `lookup_cve`), CVSS vector and asset exposure.
+- Tenant display name resolved through Graph `findTenantInformationByTenantId` (optional `CrossTenantInformation.ReadBasic.All`), with `DVA_TENANT_NAME` and directory-name fallbacks.
+- Exposure scores rounded to two decimals.
+- HTML report: filter and sort bar now sits directly above the list it controls.
+
 ## 0.2.0 - 2026-09-14
 
 - Multi-tenant support: `tenants/<name>/` holds each tenant's credentials, runs, caches and optional config overrides; select with `--tenant` or `DVA_TENANT`; `dva tenant list|init|show`.

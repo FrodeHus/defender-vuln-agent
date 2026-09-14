@@ -8,6 +8,7 @@ while [[ $# -gt 0 ]]; do case "$1" in --name) NAME="$2"; shift 2;; --tenant) TEN
 MDE_APP="fc780465-2017-40d4-a0c5-307022471b92"
 GRAPH_APP="00000003-0000-0000-c000-000000000000"
 GRAPH_THREATHUNTING="dd98c7f5-2d42-42d3-a0e4-633161547251"
+GRAPH_CROSSTENANT_BASIC="cac88765-0581-4025-9725-5ebc13f729ee"   # CrossTenantInformation.ReadBasic.All (optional: tenant display name in reports)
 MDE_PERMS=(Machine.Read.All Vulnerability.Read.All Software.Read.All SecurityRecommendation.Read.All Score.Read.All)
 run() { if [[ $DRY -eq 1 ]]; then echo "+ $*"; else "$@"; fi; }
 echo "Creating app registration '$NAME'"
@@ -20,6 +21,7 @@ for p in "${MDE_PERMS[@]}"; do
        az ad app permission add --id "$APP_ID" --api "$MDE_APP" --api-permissions "$ROLE=Role"; fi
 done
 run az ad app permission add --id "$APP_ID" --api "$GRAPH_APP" --api-permissions "$GRAPH_THREATHUNTING=Role"   # ThreatHunting.Read.All
+run az ad app permission add --id "$APP_ID" --api "$GRAPH_APP" --api-permissions "$GRAPH_CROSSTENANT_BASIC=Role"   # CrossTenantInformation.ReadBasic.All
 if [[ $DRY -eq 1 ]]; then echo "+ az ad app credential reset --id $APP_ID --years 1 --query password -o tsv"; SECRET="<client-secret>"
 else SECRET=$(az ad app credential reset --id "$APP_ID" --years 1 --query password -o tsv); fi
 if [[ -n "$TENANT_NAME" && $DRY -eq 0 ]]; then

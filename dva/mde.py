@@ -96,10 +96,17 @@ def collect_recommendations(client: Client, run: Run) -> int:
         return len(recs)
 
 
+def _round2(v):
+    try:
+        return round(float(v), 2)
+    except (TypeError, ValueError):
+        return None
+
+
 def collect_score(client: Client, run: Run) -> None:
     with _Guard(run, "mde.score"):
-        score = client.get_json("/exposureScore").get("score")
-        groups = {g.get("rbacGroupName"): g.get("score") for g in client.get_json("/exposureScore/ByMachineGroups").get("value", [])}
+        score = _round2(client.get_json("/exposureScore").get("score"))
+        groups = {g.get("rbacGroupName"): _round2(g.get("score")) for g in client.get_json("/exposureScore/ByMachineGroups").get("value", [])}
         run.write_json("exposure.json", {"score": score, "by_group": groups})
         run.set_source("mde.score", "ok", count=1)
         run.summary(f"MDE exposure score: {score}.")

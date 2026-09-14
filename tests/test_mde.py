@@ -79,3 +79,13 @@ def test_mde_all_fixture_end_to_end(tmp_path):
     assert len(list(run.read_jsonl("vulns.jsonl"))) == 4
     assert len(run.read_json("recommendations.json")) == 2
     assert run.read_json("exposure.json")["score"] == 54.2
+
+
+def test_exposure_score_rounded_to_two_decimals(tmp_path):
+    run = Run.create(tmp_path)
+    c = client({
+        f"GET {MDE_BASE}/exposureScore": [FakeResponse(200, {"score": 31.59096493849269})],
+        f"GET {MDE_BASE}/exposureScore/ByMachineGroups": [FakeResponse(200, {"value": [{"rbacGroupName": "Servers", "score": 61.0049}]})],
+    })
+    collect_score(c, run)
+    assert run.read_json("exposure.json") == {"score": 31.59, "by_group": {"Servers": 61.0}}
