@@ -1,11 +1,8 @@
 import pytest
+import requests
 from dva.http import Client
 from dva.errors import DvaError
 from tests.fakes import FakeSession, FakeResponse, FakeTokens
-
-
-def mk(routes, **kw):
-    return Client(FakeTokens(), "scope", base_url="https://h/api", session=FakeSession(routes), sleep=lambda s: None, **kw)
 
 
 def test_get_json_sets_bearer():
@@ -45,3 +42,33 @@ def test_paged_follows_next_link():
     c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s)
     assert list(c.paged("/items")) == [1, 2, 3]
     assert "$skiptoken=abc" in s.calls[1][1]
+
+
+def test_retries_on_network_exception():
+    slept = []
+    s = FakeSession({"GET https://h/api/x": [requests.ConnectionError("connection failed"), FakeResponse(200, {"ok": True})]})
+    c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s, sleep=slept.append)
+    assert c.get_json("/x") == {"ok": True}
+    assert len(slept) == 1
+
+
+def test_network_exception_exhausts_retries():
+    s = FakeSession({"GET https://h/api/x": [requests.ConnectionError("connection failed")]})
+    c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s, sleep=lambda s: None, max_attempts=3)
+    with pytest.raises(DvaError, match="failed after 3 attempts"):
+        c.get_json("/x")
+
+
+def test_non_json_body_raises_dva_error():
+    s = FakeSession({"GET https://h/api/x": [FakeResponse(200, None, json_error=ValueError("not json"), text="<html>")]})
+    c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s)
+    with pytest.raises(DvaError, match="non-JSON body.*<html>"):
+        c.get_json("/x")
+
+
+def test_http_date_retry_after():
+    slept = []
+    s = FakeSession({"GET https://h/api/x": [FakeResponse(429, {}, {"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"}), FakeResponse(200, {"ok": True})]})
+    c = Client(FakeTokens(), "scope", base_url="https://h/api", session=s, sleep=slept.append)
+    assert c.get_json("/x") == {"ok": True}
+    assert slept[0] == 0.0 or slept[0] < 0.1

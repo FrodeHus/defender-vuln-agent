@@ -1,17 +1,24 @@
 from __future__ import annotations
 import json
-from urllib.parse import urlsplit, parse_qsl
 
 
 class FakeResponse:
-    def __init__(self, status, body=None, headers=None):
-        self.status_code, self._body, self.headers = status, body, headers or {}
+    def __init__(self, status, body=None, headers=None, json_error=None, text=None):
+        self.status_code = status
+        self._body = body
+        self.headers = headers or {}
+        self.json_error = json_error
+        self._text = text
 
     def json(self):
+        if self.json_error:
+            raise self.json_error
         return self._body
 
     @property
     def text(self):
+        if self._text is not None:
+            return self._text
         return json.dumps(self._body)
 
 
@@ -29,7 +36,10 @@ class FakeSession:
         if key not in self.routes:
             raise AssertionError(f"unexpected request {key}")
         queue = self.routes[key]
-        return queue.pop(0) if len(queue) > 1 else queue[0]
+        item = queue.pop(0) if len(queue) > 1 else queue[0]
+        if isinstance(item, Exception):
+            raise item
+        return item
 
 
 class FakeTokens:
