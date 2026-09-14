@@ -97,6 +97,10 @@ def split(items: list[Exception_], today: date) -> tuple[list[Exception_], list[
 def apply(products: dict[str, Product], items_active: list[Exception_]) -> tuple[dict[str, Product], dict[str, Exception_]]:
     """Removes excepted CVEs from products, drops products with an active product exception.
 
+    A product left with no CVEs after CVE-exception removal is also dropped (nothing left to
+    score or list it for) — it is not added to the returned `dropped` mapping since no exception
+    names it directly; it simply has no open findings any more.
+
     Returns (remaining products, {key: exception} for dropped products).
     """
     product_exc = {i.product: i for i in items_active if i.product}
@@ -111,6 +115,8 @@ def apply(products: dict[str, Product], items_active: list[Exception_]) -> tuple
             for cid in list(p.cves):
                 if cid in cve_exc_ids:
                     del p.cves[cid]
+        if not p.cves:
+            continue
         remaining[key] = p
     return remaining, dropped
 
@@ -163,10 +169,17 @@ def _add(args) -> int:
     _validate_key_against_latest_run(args.product, args.cve)
     path = path_for_current()
     items = load(path)
-    items.append(Exception_(product=args.product, cve=args.cve, reason=args.reason, until=args.until,
-                             owner=args.owner, added=datetime.now(timezone.utc).isoformat(), source="user"))
+    new_item = Exception_(product=args.product, cve=args.cve, reason=args.reason, until=args.until,
+                           owner=args.owner, added=datetime.now(timezone.utc).isoformat(), source="user")
+    key = args.product or args.cve
+    existing_idx = next((i for i, it in enumerate(items) if it.product == args.product and it.cve == args.cve), None)
+    if existing_idx is None:
+        items.append(new_item)
+        print(f"added exception for {key} until {args.until} ({path})")
+    else:
+        items[existing_idx] = new_item
+        print(f"updated exception for {key} until {args.until} ({path})")
     save(path, items)
-    print(f"added exception for {'product ' + args.product if args.product else 'CVE ' + args.cve} until {args.until} ({path})")
     return 0
 
 

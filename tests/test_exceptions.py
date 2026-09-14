@@ -51,19 +51,46 @@ def test_split_active_and_expired():
 
 
 def test_apply_drops_product_and_removes_cve(tmp_path):
+    # adobe/acrobat-reader-dc has only one CVE in the seed run, so excepting it directly (rather
+    # than via a CVE exception that would empty its cves) keeps this test focused on the
+    # product-exception path; the CVE-exception-empties-a-product path is covered separately below.
     run = seed(tmp_path / "runs")
     products, assets = build(run)
     items = [
-        exc.Exception_(product="ivanti/connect-secure", cve=None, reason="vendor cadence", until="2099-01-01",
+        exc.Exception_(product="adobe/acrobat-reader-dc", cve=None, reason="vendor cadence", until="2099-01-01",
                         owner="frode", added="2026-09-14T10:00:00+00:00", source="user"),
-        exc.Exception_(product=None, cve="CVE-2026-24433", reason="tracked elsewhere", until="2099-01-01",
+        exc.Exception_(product=None, cve="CVE-2025-46512", reason="tracked elsewhere", until="2099-01-01",
                         owner="frode", added="2026-09-14T10:00:00+00:00", source="user"),
     ]
     remaining, dropped = exc.apply(products, items)
-    assert "ivanti/connect-secure" not in remaining
-    assert dropped["ivanti/connect-secure"].reason == "vendor cadence"
-    assert "adobe/acrobat-reader-dc" in remaining
-    assert "CVE-2026-24433" not in remaining["adobe/acrobat-reader-dc"].cves
+    assert "adobe/acrobat-reader-dc" not in remaining
+    assert dropped["adobe/acrobat-reader-dc"].reason == "vendor cadence"
+    assert "ivanti/connect-secure" in remaining
+    assert "CVE-2025-46512" not in remaining["ivanti/connect-secure"].cves
+    assert "CVE-2026-21887" in remaining["ivanti/connect-secure"].cves  # the product's other CVE survives
+
+
+def test_apply_drops_product_left_with_no_cves_after_cve_exception(tmp_path):
+    run = seed(tmp_path / "runs")
+    products, assets = build(run)
+    items = [exc.Exception_(product=None, cve="CVE-2026-24433", reason="only CVE excepted", until="2099-01-01",
+                             owner="frode", added="2026-09-14T10:00:00+00:00", source="user")]
+    remaining, dropped = exc.apply(products, items)
+    assert "adobe/acrobat-reader-dc" not in remaining  # its sole CVE was excepted, so nothing is left to score
+    assert dropped == {}  # not a product exception, so it isn't in the dropped/accepted-risk mapping either
+
+
+def test_compute_drops_product_with_no_remaining_cves_after_cve_exception(tmp_path, monkeypatch):
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "tenant"))
+    (tmp_path / "tenant").mkdir()
+    run = seed(tmp_path / "runs")
+    items = [exc.Exception_(product=None, cve="CVE-2026-24433", reason="only CVE excepted",
+                             until="2099-01-01", owner="frode", added=datetime.now(timezone.utc).isoformat(), source="user")]
+    exc.save(exc.path_for_current(), items)
+    from dva.score_cmd import compute
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    keys = [p["key"] for p in doc["products"]]
+    assert "adobe/acrobat-reader-dc" not in keys
 
 
 def test_compute_active_product_exception_excluded_and_would_be_scored(tmp_path, monkeypatch):
@@ -130,6 +157,37 @@ def test_cli_add_then_list_writes_tenant_file(tmp_path, monkeypatch, capsys):
     for k in ["DVA_TENANT", "DVA_TENANT_DIR", "DVA_TENANT_ID", "DVA_CLIENT_ID", "DVA_CLIENT_SECRET",
               "DVA_RUNS_DIR", "DVA_CACHE_DIR", "DVA_TENANT_NAME", "DVA_RUN"]:
         os.environ.pop(k, None)
+
+
+def test_cli_add_same_key_twice_updates_single_entry(tmp_path, monkeypatch, capsys):
+    tenants_root = tmp_path / "tenants"
+    monkeypatch.setenv("DVA_TENANTS_DIR", str(tenants_root))
+    for k in ["DVA_TENANT", "DVA_TENANT_DIR", "DVA_TENANT_ID", "DVA_CLIENT_ID", "DVA_CLIENT_SECRET",
+              "DVA_RUNS_DIR", "DVA_CACHE_DIR", "DVA_TENANT_NAME", "DVA_RUN"]:
+        monkeypatch.delenv(k, raising=False)
+    d = tenants_root / "contoso"
+    d.mkdir(parents=True)
+    (d / ".env").write_text("DVA_TENANT_ID=t1\nDVA_CLIENT_ID=c1\nDVA_CLIENT_SECRET=s1\n")
+    from dva.__main__ import main
+    try:
+        rc1 = main(["--tenant", "contoso", "exception", "add", "--product", "openssl/openssl",
+                    "--reason", "first reason", "--until", "2099-01-01", "--owner", "frode"])
+        assert rc1 == 0
+        assert "added exception for openssl/openssl" in capsys.readouterr().out
+
+        rc2 = main(["--tenant", "contoso", "exception", "add", "--product", "openssl/openssl",
+                    "--reason", "newer reason", "--until", "2099-06-01", "--owner", "frode"])
+        assert rc2 == 0
+        assert "updated exception for openssl/openssl" in capsys.readouterr().out
+
+        items = exc.load(d / "exceptions.yaml")
+        assert len(items) == 1
+        assert items[0].reason == "newer reason" and items[0].until == "2099-06-01"
+    finally:
+        # see the cleanup note in test_cli_add_then_list_writes_tenant_file above
+        for k in ["DVA_TENANT", "DVA_TENANT_DIR", "DVA_TENANT_ID", "DVA_CLIENT_ID", "DVA_CLIENT_SECRET",
+                  "DVA_RUNS_DIR", "DVA_CACHE_DIR", "DVA_TENANT_NAME", "DVA_RUN"]:
+            os.environ.pop(k, None)
 
 
 def test_cli_add_without_product_or_cve_exits_1(tmp_path, monkeypatch, capsys):
