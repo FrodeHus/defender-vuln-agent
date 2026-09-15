@@ -118,26 +118,30 @@ ollama pull qwen3-coder
 printf 'FROM qwen3-coder\nPARAMETER num_ctx 65536\n' > /tmp/Modelfile && ollama create qwen3-coder-64k -f /tmp/Modelfile
 ```
 
-**a. `ollama launch claude` (recommended).** Ollama's launcher sets the endpoint and auth variables for you, pulls the model if needed and starts Claude Code. Run it in this checkout; arguments after `--` go to Claude Code unchanged, which is how the plugin directory is passed:
+**Keep the prompt small: start Claude Code in bare mode.** Every request carries the definitions of every tool Claude Code can see. With a typical set of installed plugins and MCP servers (Azure, Playwright, docs, a CVE server) that opening request is around 66K tokens before you have typed anything, which a local model chews through at a couple of hundred tokens per second and which does not even fit a 64K window: Ollama truncates it or answers 500 after minutes, and Claude Code shows nothing. `--bare` skips installed plugins, hooks and the LSP, `--strict-mcp-config` skips every MCP server (the assessment does not need one; `dva enrich --fetch` starts the CVE server itself), and `--plugin-dir .` loads only this plugin. With that, a one-word prompt answers in seconds and the `vuln-assessor` subagent runs `dva` commands normally. `--add-dir .` brings this checkout's `CLAUDE.md` back, which bare mode otherwise leaves out, and `CLAUDE_CODE_MAX_CONTEXT_TOKENS` tells Claude Code the real window so it compacts before Ollama truncates.
+
+**a. `ollama launch claude` (recommended).** Ollama's launcher sets the endpoint and auth variables for you, pulls the model if needed and starts Claude Code. Run it in this checkout; arguments after `--` go to Claude Code unchanged:
 
 ```bash
-export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k
-ollama launch claude --model qwen3-coder-64k -- --plugin-dir .
+export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k CLAUDE_CODE_MAX_CONTEXT_TOKENS=65536
+ollama launch claude --model qwen3-coder-64k -- --bare --strict-mcp-config --plugin-dir . --add-dir .
 ```
 
-Without `--model` the launcher shows a model picker; `--yes` skips the picker (and then requires `--model`), which is what you want in scripts or a scheduled job. The `ANTHROPIC_DEFAULT_SONNET_MODEL` export is the one thing the launcher does not do for you: `agents/vuln-assessor.md` pins `model: sonnet`, and that alias has to resolve to your local model or the agent will try to reach Anthropic. A one-shot assessment from a script looks like:
+Without `--model` the launcher shows a model picker; `--yes` skips the picker (and then requires `--model`), which is what you want in scripts or a scheduled job. The two exports are what the launcher does not do for you: `agents/vuln-assessor.md` pins `model: sonnet`, and that alias has to resolve to your local model or the agent will try to reach Anthropic. A one-shot assessment from a script looks like:
 
 ```bash
-ollama launch claude --model qwen3-coder-64k --yes -- --plugin-dir . -p "assess vulnerabilities for contoso"
+ollama launch claude --model qwen3-coder-64k --yes -- --bare --strict-mcp-config --plugin-dir . --add-dir . -p "assess vulnerabilities for contoso"
 ```
 
 **b. By hand.** The launcher only sets three variables; set them yourself if you prefer or if you run an older Ollama without `launch`:
 
 ```bash
-ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_API_KEY= ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k claude --plugin-dir . --model qwen3-coder-64k
+ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_API_KEY= ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k CLAUDE_CODE_MAX_CONTEXT_TOKENS=65536 claude --bare --strict-mcp-config --plugin-dir . --add-dir . --model qwen3-coder-64k
 ```
 
-`ANTHROPIC_AUTH_TOKEN` (any non-empty value) is what bypasses the claude.ai login; the base URL alone keeps your existing login active.
+`ANTHROPIC_AUTH_TOKEN` (any non-empty value) is what bypasses the claude.ai login; the base URL alone keeps your existing login active. Claude Code prints an `unrecognized_model` notice for a local model name; it is harmless.
+
+**If it hangs or returns nothing**, look at `~/.ollama/logs/server.log`: a `truncating input prompt limit=... prompt=...` warning or a `500` on `POST /v1/messages` after minutes means the request is bigger than the window, and the prompt size it prints tells you by how much. Almost always that is plugins or MCP servers being loaded; the flags above remove them.
 
 **What to expect.**
 
