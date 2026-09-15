@@ -72,7 +72,7 @@ A product exception drops that product entirely from scoring and the report; a C
 | `mitigations` | Devices compliant with the compensating controls listed in `scoring.yaml`'s `mitigation_configs`; feeds the `mitigated` asset bonus. Skipped with a note when the list is empty. |
 | `mitigation-catalog` | The full compensating-control catalog, to help you pick ids for `mitigation_configs`. Not scored. |
 | `certificates` | Certificates expiring in the next 30 days; feeds the report's Posture appendix. Not scored. |
-| `config-findings` | Non-compliant secure-configuration assessments; feeds the report's Posture appendix. Not scored. |
+| `config-findings` | Non-compliant secure-configuration assessments with the knowledge-base display name, description and remediation text (the first link in that text becomes the documentation link); feeds the report's Posture appendix. Not scored. |
 
 Ad hoc KQL: `python3 -m dva hunt --kql "DeviceInfo | summarize count() by OSPlatform" --name os-mix`. Every query is capped at 10,000 rows server-side; a capped result marks the source `partial` in the manifest, so narrow the query with `where` or `summarize`. Management and ingestion commands are rejected.
 

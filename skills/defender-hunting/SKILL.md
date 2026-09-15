@@ -25,7 +25,7 @@ Named queries (files in `dva/queries/`, pass the stem as `names`):
 - `mitigations` — devices compliant with the tenant's chosen compensating controls; scoped by `config/scoring.yaml`'s `mitigation_configs` list. With an empty list the query is skipped with a note. Feeds the `mitigated` asset bonus (a discount when all configured controls are compliant).
 - `mitigation-catalog` — the full compensating-control catalog (`ConfigurationId`, name, category, subcategory, impact) so you can pick ids to put in `mitigation_configs`. Not scored itself.
 - `certificates` — certificates expiring in the next 30 days, feeds the report's Posture appendix (not scored).
-- `config-findings` — non-compliant secure-configuration assessments, feeds the report's Posture appendix (not scored).
+- `config-findings` — non-compliant secure-configuration assessments joined to the knowledge base for display name, description and remediation text, feeds the report's Posture appendix (not scored).
 
 `--run` defaults to `$DVA_RUN` or the latest run under `runs/`. `--timespan` bounds the query window as an ISO-8601 duration (e.g. `P1D`, `P7D`, `P30D`), default `P7D`. `--fixture` replaces the live call for offline runs.
 

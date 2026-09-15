@@ -98,3 +98,9 @@ def test_html_card_renders_driving_cve_descriptions():
     out = render(json.loads(FX.read_text()))
     script = out.split("<script")[-1]
     assert "c.description" in script and 'class="desc"' in script
+
+
+def test_html_config_findings_link_display_name_to_documentation():
+    out = render(json.loads(FX.read_text()))
+    script = out.split("<script")[-1]
+    assert "f.doc_url" in script and "f.name || f.id" in script and "attr(f.doc_url)" in script and "attr(f.portal_url)" in script

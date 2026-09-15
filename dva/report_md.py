@@ -40,6 +40,17 @@ def _advisories(advisories: list[dict]) -> list[str]:
     return out
 
 
+def _link(text: str, url) -> str:
+    return f"[{text}]({url})" if isinstance(url, str) and url.startswith(("http://", "https://")) else "-"
+
+
+def _config_label(f: dict) -> str:
+    """Display name (falling back to the configuration id), linked to its documentation when the KB text carried a URL."""
+    name = (f.get("name") or f.get("id") or "-").replace("|", "\\|")
+    url = f.get("doc_url")
+    return f"[{name}]({url})" if isinstance(url, str) and url.startswith(("http://", "https://")) else name
+
+
 def _fmt_severity_counts(d: dict) -> str:
     return ", ".join(f"{d.get(s, 0)} {s}" for s in ("critical", "high", "medium", "low", "unknown") if d.get(s, 0))
 
@@ -175,8 +186,8 @@ def render(doc: dict) -> str:
                 out.append("")
             out += ["### Non-compliant configurations", "",
                     f"By impact: {by_impact.get('high', 0)} high, {by_impact.get('medium', 0)} medium, {by_impact.get('low', 0)} low", "",
-                    "| Configuration | Category | Subcategory | Impact | Devices |", "|---|---|---|---|---|"]
-            out += [f"| {f.get('id') or '-'} | {f.get('category') or '-'} | {f.get('subcategory') or '-'} | {f.get('impact', '-')} | {f.get('devices', 0)} |" for f in findings]
+                    "| Configuration | Category | Subcategory | Impact | Devices | Portal |", "|---|---|---|---|---|---|"]
+            out += [f"| {_config_label(f)} | {f.get('category') or '-'} | {f.get('subcategory') or '-'} | {f.get('impact', '-')} | {f.get('devices', 0)} | {_link('portal', f.get('portal_url'))} |" for f in findings]
     out += ["", "## Method", "", METHOD, "", "## Sources", ""]
     for name, st in sorted(doc["run"].get("sources", {}).items()):
         out.append(f"- {name}: {st.get('status')}" + (f" ({st.get('count')} records)" if st.get("count") is not None else "") + (f" — {st.get('error')}" if st.get("error") else ""))

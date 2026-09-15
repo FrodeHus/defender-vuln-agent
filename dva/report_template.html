@@ -70,6 +70,7 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
   var S = DOC.summary, D = DOC.diff_from_previous, ROWS = DOC.products;
   var state = { filter: 'all', sort: 'score', open: {} };
   ROWS.slice(0, 3).forEach(function(r){ state.open['top:' + r.key] = true; });
+  function attr(u){ return typeof u === 'string' && /^https?:\/\//i.test(u) ? esc(u) : ''; }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function pill(cls, txt){ return '<span class="pill ' + cls + '">' + esc(txt) + '</span>'; }
   function flags(r){ var f = r.flags, sla = r.sla || {}; return (f.kev ? pill('kev','KEV') : '') + (f.exploit ? pill('exploit','Public exploit') : '') + (f.internet_facing ? pill('inet','Internet-facing') : '') + (sla.overdue_cves ? pill('high','Overdue by ' + sla.overdue_by_days + ' days') : '') + (r.eos ? pill('medium','End of support') : '') + (f.exception_expired ? pill('expired','Exception expired') : ''); }
@@ -136,8 +137,11 @@ footer{margin-block:48px 64px;color:var(--muted);font-size:13px}
     if (!certs.length && !findings.length) return '';
     var certRows = certs.map(function(c){ return '<tr><td>' + esc(c.thumbprint || '-') + '</td><td>' + esc(c.name || '-') + '</td><td>' + esc(c.issued_to || '-') + '</td><td>' + esc(c.expires || '-') + '</td><td>' + esc(c.devices == null ? 0 : c.devices) + '</td></tr>'; }).join('');
     var certTable = certs.length ? '<table><thead><tr><th>Thumbprint</th><th>Name</th><th>Issued to</th><th>Expires</th><th>Devices</th></tr></thead><tbody>' + certRows + '</tbody></table>' : '<p>None expiring within 30 days.</p>';
-    var findRows = findings.map(function(f){ return '<tr><td>' + esc(f.id || '-') + '</td><td>' + esc(f.category || '-') + '</td><td>' + esc(f.subcategory || '-') + '</td><td>' + esc(f.impact == null ? '-' : f.impact) + '</td><td>' + esc(f.devices == null ? 0 : f.devices) + '</td></tr>'; }).join('');
-    var findTable = findings.length ? '<p>By impact: ' + esc(by.high || 0) + ' high, ' + esc(by.medium || 0) + ' medium, ' + esc(by.low || 0) + ' low.</p><table><thead><tr><th>Configuration</th><th>Category</th><th>Subcategory</th><th>Impact</th><th>Devices</th></tr></thead><tbody>' + findRows + '</tbody></table>' : '';
+    var findRows = findings.map(function(f){ var label = esc(f.name || f.id || '-'), href = attr(f.doc_url);
+      var cell = (href ? '<a href="' + href + '" title="' + esc(f.description || '') + '">' + label + '</a>' : '<span title="' + esc(f.description || '') + '">' + label + '</span>') + (f.name ? '<div style="color:var(--muted);font-size:12px">' + esc(f.id) + '</div>' : '');
+      var portal = attr(f.portal_url) ? '<a href="' + attr(f.portal_url) + '" target="_blank" rel="noopener">open</a>' : '-';
+      return '<tr><td>' + cell + '</td><td>' + esc(f.category || '-') + '</td><td>' + esc(f.subcategory || '-') + '</td><td>' + esc(f.impact == null ? '-' : f.impact) + '</td><td>' + esc(f.devices == null ? 0 : f.devices) + '</td><td>' + portal + '</td></tr>'; }).join('');
+    var findTable = findings.length ? '<p>By impact: ' + esc(by.high || 0) + ' high, ' + esc(by.medium || 0) + ' medium, ' + esc(by.low || 0) + ' low.</p><table><thead><tr><th>Configuration</th><th>Category</th><th>Subcategory</th><th>Impact</th><th>Devices</th><th>Portal</th></tr></thead><tbody>' + findRows + '</tbody></table>' : '';
     return '<div class="accepted"><h2>Posture</h2><h3 style="margin-top:12px">Certificates expiring within 30 days</h3>' + certTable + (findings.length ? '<h3 style="margin-top:16px">Non-compliant configurations</h3>' + findTable : '') + '</div>'; }
   function sparkline(values, color, opts){
     opts = opts || {};

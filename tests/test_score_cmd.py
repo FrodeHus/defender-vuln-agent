@@ -175,14 +175,25 @@ def test_posture_from_certificates_and_config_findings(tmp_path):
         {"Thumbprint": "ABC123", "FriendlyName": "vpn-gw-01 cert", "IssuedTo": "vpn-gw-01.contoso.com", "Exp": "2026-09-20T00:00:00Z", "Devices": 1},
     ]})
     run.write_json("hunt-config-findings.json", {"results": [
-        {"ConfigurationId": "scid-1", "ConfigurationCategory": "Security controls", "ConfigurationSubcategory": "Firewall", "ConfigurationImpact": 8, "Devices": 5},
-        {"ConfigurationId": "scid-2", "ConfigurationCategory": "Application", "ConfigurationSubcategory": "Browser", "ConfigurationImpact": 5, "Devices": 2},
+        {"ConfigurationId": "scid-1", "ConfigurationCategory": "Security controls", "ConfigurationSubcategory": "Firewall", "ConfigurationImpact": 8, "Devices": 5,
+         "ConfigurationName": "Turn on Windows Firewall",
+         "ConfigurationDescription": "The firewall blocks &amp; logs unsolicited traffic.<br/>This <a href='https://learn.microsoft.com/windows/security/firewall' target='_blank'>control</a> applies to Windows 10 or later.",
+         "RemediationOptions": "Follow these steps:<br/><ol><li>Ensure <a href='/security-recommendations?recommendationId=sca-_-scid-9&search=scid-9' target='_blank'>Defender Antivirus is on</a>.</li><li>Enable it via <a href='https://learn.microsoft.com/windows/security/firewall#policy' target='_blank'>policy</a>.</li></ol>"},
+        {"ConfigurationId": "scid-2", "ConfigurationCategory": "Application", "ConfigurationSubcategory": "Browser", "ConfigurationImpact": 5, "Devices": 2,
+         "ConfigurationName": "Block browser pop-ups", "ConfigurationDescription": None, "RemediationOptions": "Set the policy."},
         {"ConfigurationId": "scid-3", "ConfigurationCategory": "Application", "ConfigurationSubcategory": "Browser", "ConfigurationImpact": 1, "Devices": 1},
     ]})
     doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
     posture = doc["posture"]
     assert posture["certificates_expiring"] == [{"thumbprint": "ABC123", "name": "vpn-gw-01 cert", "issued_to": "vpn-gw-01.contoso.com", "expires": "2026-09-20T00:00:00Z", "devices": 1}]
-    assert posture["config_findings"][0] == {"id": "scid-1", "category": "Security controls", "subcategory": "Firewall", "impact": 8, "devices": 5}
+    assert posture["config_findings"][0] == {"id": "scid-1", "name": "Turn on Windows Firewall", "category": "Security controls", "subcategory": "Firewall", "impact": 8, "devices": 5,
+                                             "description": "The firewall blocks & logs unsolicited traffic. This control applies to Windows 10 or later.",
+                                             "remediation": "Follow these steps: Ensure Defender Antivirus is on. Enable it via policy.",
+                                             "doc_url": "https://learn.microsoft.com/windows/security/firewall",  # the first absolute link; relative portal links point at other recommendations
+                                             "portal_url": "https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-1&search=scid-1"}
+    assert posture["config_findings"][1]["doc_url"] is None and posture["config_findings"][1]["name"] == "Block browser pop-ups"
+    assert posture["config_findings"][1]["portal_url"].endswith("search=scid-2")
+    assert posture["config_findings"][2]["name"] is None  # rows from before the KB join fall back to the id in the reports
     assert posture["config_by_impact"] == {"high": 1, "medium": 1, "low": 1}
 
 

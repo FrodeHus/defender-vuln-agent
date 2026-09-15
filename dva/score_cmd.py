@@ -1,4 +1,6 @@
 from __future__ import annotations
+import html
+import re
 import os
 from datetime import date, datetime, timedelta, timezone
 from dva.cache import IntelCache
@@ -301,6 +303,34 @@ def _new_and_fixed_cves(rows: list[dict], products: dict, prev_doc: dict | None,
     return _bucket(new_pairs, _current_sev), _bucket(fixed_pairs, _prev_sev)
 
 
+_RE_HREF = re.compile(r"""href=['"]([^'"]+)['"]""", re.I)
+_RE_URL = re.compile(r"https?://[^\s<>\"')\]]+")
+_RE_TAG = re.compile(r"<[^>]+>")
+PORTAL_RECOMMENDATION = "https://security.microsoft.com/security-recommendations?recommendationId=sca-_-{id}&search={id}"
+
+
+def _doc_url(*texts: str | None) -> str | None:
+    """The first absolute http(s) link in the knowledge-base HTML, description first: the KB has no URL column, its
+    relative hrefs point at other portal recommendations, and the description's link is the control's own documentation."""
+    for t in texts:
+        for href in _RE_HREF.findall(t or ""):
+            if href.lower().startswith(("http://", "https://")):
+                return href
+        m = _RE_URL.search(_RE_TAG.sub(" ", t or ""))
+        if m:
+            return m.group(0).rstrip(".,;")
+    return None
+
+
+def _plain_text(html_text: str | None) -> str | None:
+    """Knowledge-base HTML (br, ol/li, a, b, i, entities) as one line of plain text."""
+    if not html_text:
+        return None
+    t = re.sub(r"<\s*(br|/li|/ol|/ul|/p)\s*/?\s*>", " ", html_text, flags=re.I)
+    t = html.unescape(_RE_TAG.sub("", t))
+    return re.sub(r"\s+", " ", t).strip() or None
+
+
 def _posture(run: Run) -> dict:
     cert_rows = run.read_json("hunt-certificates.json").get("results", []) if run.path("hunt-certificates.json").exists() else []
     cfg_rows = run.read_json("hunt-config-findings.json").get("results", []) if run.path("hunt-config-findings.json").exists() else []
@@ -318,8 +348,11 @@ def _posture(run: Run) -> dict:
         bucket = "high" if impact_n >= 7 else "medium" if impact_n >= 4 else "low"
         config_by_impact[bucket] += 1
         config_findings.append({
-            "id": r.get("ConfigurationId"), "category": r.get("ConfigurationCategory"),
+            "id": r.get("ConfigurationId"), "name": r.get("ConfigurationName") or None, "category": r.get("ConfigurationCategory"),
             "subcategory": r.get("ConfigurationSubcategory"), "impact": r.get("ConfigurationImpact"), "devices": r.get("Devices"),
+            "description": _plain_text(r.get("ConfigurationDescription")), "remediation": _plain_text(r.get("RemediationOptions")),
+            "doc_url": _doc_url(r.get("ConfigurationDescription"), r.get("RemediationOptions")),
+            "portal_url": PORTAL_RECOMMENDATION.format(id=r.get("ConfigurationId")) if r.get("ConfigurationId") else None,
         })
     return {"certificates_expiring": certificates_expiring, "config_findings": config_findings, "config_by_impact": config_by_impact}
 

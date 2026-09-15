@@ -3142,14 +3142,24 @@
         "category": "Security controls",
         "subcategory": "Firewall",
         "impact": 8,
-        "devices": 412
+        "devices": 412,
+        "name": "Turn on Windows Firewall",
+        "description": "The firewall blocks unsolicited traffic.",
+        "remediation": "Enable it via policy. See https://learn.microsoft.com/windows/security/firewall for details.",
+        "doc_url": "https://learn.microsoft.com/windows/security/firewall",
+        "portal_url": "https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-104&search=scid-104"
       },
       {
         "id": "scid-211",
         "category": "Application",
         "subcategory": "Browser",
         "impact": 5,
-        "devices": 96
+        "devices": 96,
+        "name": null,
+        "description": null,
+        "remediation": null,
+        "doc_url": null,
+        "portal_url": "https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-211&search=scid-211"
       }
     ],
     "config_by_impact": {

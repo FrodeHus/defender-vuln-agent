@@ -54,3 +54,9 @@ def test_markdown_shows_a_description_under_each_described_driving_cve():
     out = render(json.loads(FX.read_text()))
     assert "- CVE-2026-21887 · CVSS 9.8 · EPSS 0.94 · KEV · Exploit · Unauthenticated remote code execution in web component\n  An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance." in out
     assert "  A path traversal in the admin interface lets an authenticated user read arbitrary files." in out
+
+
+def test_markdown_config_findings_show_display_name_and_doc_link():
+    out = render(json.loads(FX.read_text()))
+    assert "| [Turn on Windows Firewall](https://learn.microsoft.com/windows/security/firewall) | Security controls | Firewall | 8 | 412 | [portal](https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-104&search=scid-104) |" in out
+    assert "| scid-211 | Application |" in out  # a finding without a name still shows its id

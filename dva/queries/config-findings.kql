@@ -1,6 +1,12 @@
 // Non-compliant secure-configuration findings, for the posture appendix (not scored).
+// Joined to the knowledge base for the display name, description and remediation text (which may carry a documentation link).
 DeviceTvmSecureConfigurationAssessment
 | where IsApplicable == true and IsCompliant == false
 | summarize Devices = dcount(DeviceId) by ConfigurationId, ConfigurationCategory, ConfigurationSubcategory, ConfigurationImpact
+| join kind=leftouter (
+    DeviceTvmSecureConfigurationAssessmentKB
+    | project ConfigurationId, ConfigurationName, ConfigurationDescription, RemediationOptions
+) on ConfigurationId
+| project ConfigurationId, ConfigurationName, ConfigurationCategory, ConfigurationSubcategory, ConfigurationImpact, Devices, ConfigurationDescription, RemediationOptions
 | order by ConfigurationImpact desc, Devices desc
 | take 200

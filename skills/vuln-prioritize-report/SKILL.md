@@ -32,7 +32,7 @@ After `dva report --all`, run `dva exception suggest`: it prints one JSON line p
 
 ## Outputs
 
-`cve-*.txt` (raw CVE server results, never read by the agent), `enrichment.json` (merged CVE data), `findings.json` (scored products, accepted risks, trend, posture), and under `--all`: `report.md`, `report.html`, `report.json`, `tickets.json` in the run directory. `dva report --tickets` (included in `--all`) writes `tickets.json`, one ticket per listed product not under exception, with a priority, labels and a Markdown description — no API calls are made, it's a file for you to hand to a ticketing system.
+`cve-*.txt` (raw CVE server results, never read by the agent), `enrichment.json` (merged CVE data), `findings.json` (scored products with a description per driving CVE, accepted risks, long-standing products, trend, posture), and under `--all`: `report.md`, `report.html`, `report.json`, `tickets.json` in the run directory. `dva report --tickets` (included in `--all`) writes `tickets.json`, one ticket per listed product not under exception, with a priority, labels and a Markdown description — no API calls are made, it's a file for you to hand to a ticketing system.
 
 ## Long-standing vulnerabilities
 

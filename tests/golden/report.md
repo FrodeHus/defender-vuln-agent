@@ -210,10 +210,10 @@ Expired (back in the ranking; flagged `Exception expired`):
 
 By impact: 1 high, 1 medium, 0 low
 
-| Configuration | Category | Subcategory | Impact | Devices |
-|---|---|---|---|---|
-| scid-104 | Security controls | Firewall | 8 | 412 |
-| scid-211 | Application | Browser | 5 | 96 |
+| Configuration | Category | Subcategory | Impact | Devices | Portal |
+|---|---|---|---|---|---|
+| [Turn on Windows Firewall](https://learn.microsoft.com/windows/security/firewall) | Security controls | Firewall | 8 | 412 | [portal](https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-104&search=scid-104) |
+| scid-211 | Application | Browser | 5 | 96 | [portal](https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-211&search=scid-211) |
 
 ## Method
 
