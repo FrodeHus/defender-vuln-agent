@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Docs: how to run the agent on a local model through Ollama's Anthropic-compatible endpoint (`docs/install.md`).
+- Docs: how to run the agent on a local model through Ollama, with `ollama launch claude` as the primary path and the manual endpoint variables as the fallback (`docs/install.md`).
 - Non-compliant configurations in the Posture appendix show the knowledge-base display name (id underneath in HTML, id alone when the KB has no row) with the description as a tooltip, linked to the control's documentation when the KB text carries an absolute link, plus a Portal column deep-linking to the recommendation in the Defender portal; `config-findings.kql` joins `DeviceTvmSecureConfigurationAssessmentKB`, and the KB's HTML is flattened to plain text in `findings.json`.
 - Every driving CVE of a listed product gets a description and vendor advisories, not just the top one: `enrich --fetch`/`--list` request `lookup_cve` and `get_vendor_advisory` for all `enrich_top_per_product` CVEs, `findings.json` carries `description` per driving CVE, both reports show it under the CVE line, and a product's advisories are merged across its driving CVEs.
 - Long-standing vulnerabilities: `findings.json` gains `long_standing` (products still carrying CVEs first seen more than `long_standing_days`, default 90, ago, regardless of score, with counts, oldest age and severity split) and `summary.long_standing_products`; both reports render it as a section and `report --brief` names them. These are the products no patch regime is picking up.

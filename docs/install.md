@@ -105,15 +105,44 @@ The repository is also a Claude Code plugin (`.claude-plugin/plugin.json`). Pick
 
 Claude Code talks to any Anthropic-compatible endpoint, and [Ollama](https://docs.ollama.com/api/anthropic-compatibility) serves one at `/v1/messages` since version 0.14. Nothing in this repository changes: the CVE server is still started by `dva enrich --fetch`, and the agent only sequences `dva` commands and reads their short summaries, which is work a local model can do.
 
+**Context length first.** Ollama's default context window is far too small for Claude Code; 64K tokens is the documented minimum for comfortable use. Either raise it for the whole server before starting Ollama:
+
+```bash
+OLLAMA_CONTEXT_LENGTH=65536 ollama serve
+```
+
+or bake it into a model alias you then use everywhere below:
+
 ```bash
 ollama pull qwen3-coder
 printf 'FROM qwen3-coder\nPARAMETER num_ctx 65536\n' > /tmp/Modelfile && ollama create qwen3-coder-64k -f /tmp/Modelfile
+```
+
+**a. `ollama launch claude` (recommended).** Ollama's launcher sets the endpoint and auth variables for you, pulls the model if needed and starts Claude Code. Run it in this checkout; arguments after `--` go to Claude Code unchanged, which is how the plugin directory is passed:
+
+```bash
+export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k
+ollama launch claude --model qwen3-coder-64k -- --plugin-dir .
+```
+
+Without `--model` the launcher shows a model picker; `--yes` skips the picker (and then requires `--model`), which is what you want in scripts or a scheduled job. The `ANTHROPIC_DEFAULT_SONNET_MODEL` export is the one thing the launcher does not do for you: `agents/vuln-assessor.md` pins `model: sonnet`, and that alias has to resolve to your local model or the agent will try to reach Anthropic. A one-shot assessment from a script looks like:
+
+```bash
+ollama launch claude --model qwen3-coder-64k --yes -- --plugin-dir . -p "assess vulnerabilities for contoso"
+```
+
+**b. By hand.** The launcher only sets three variables; set them yourself if you prefer or if you run an older Ollama without `launch`:
+
+```bash
 ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_API_KEY= ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k claude --plugin-dir . --model qwen3-coder-64k
 ```
 
-- The second line matters: Ollama's default context window is far too small for Claude Code, and 64K tokens is the documented minimum for comfortable use.
-- `ANTHROPIC_AUTH_TOKEN` (any non-empty value) is what bypasses the claude.ai login; the base URL alone keeps your existing login active. `ANTHROPIC_DEFAULT_SONNET_MODEL` maps the `model: sonnet` pinned in `agents/vuln-assessor.md` to your local model. Newer Ollama builds offer `ollama launch claude`, which sets the first three variables for you.
-- Ollama's docs recommend `qwen3-coder`, `glm-4.7` or `minimax-m2.1` for Claude Code; the useful sizes want a 24 GB or larger GPU. Prompt caching is not available, so every turn resends the context, which costs time rather than money.
+`ANTHROPIC_AUTH_TOKEN` (any non-empty value) is what bypasses the claude.ai login; the base URL alone keeps your existing login active.
+
+**What to expect.**
+
+- Ollama's docs recommend `qwen3-coder`, `glm-4.7` or `minimax-m2.1` for Claude Code; the useful sizes want a 24 GB or larger GPU. Cloud-hosted variants (`:cloud` tags) work through the same launcher.
+- Prompt caching is not available, so every turn resends the context, which costs time rather than money.
 - A smaller model follows instructions less reliably: check its reply against `python3 -m dva report --brief` the first few runs, and treat the tenant-selection and exception-add rules in the agent as the places it is most likely to slip.
 - Ollama Cloud endpoints currently reject the `x-api-key` header Claude Code sends ([ollama/ollama#16922](https://github.com/ollama/ollama/issues/16922)); a local Ollama is fine.
 
