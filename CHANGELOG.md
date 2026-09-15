@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- HTML report: accepted risks, long-standing vulnerabilities and posture move out of the three-column appendix grid, where their tables overflowed into each other, into a full-width tabbed panel (one tab per section with content, counts in the tab labels) above the method notes.
 - Scoring: `score_weights` (default base 0.5, asset 0.3, reach 0.2) replaces the fixed 0.6/0.3/0.1 split so how widespread a product is counts twice as much as before; `severity_floor` (default critical 40) keeps a product with an open critical CVE at Medium or above even without exploit or exposure intel (`flags.floored`); products that look like embedded components (name in `exception_components`, or evidence spanning 3+ top-level product folders) are discounted by `embedded_discount` (default 0.5), flagged `Embedded` in both reports, exempt from the floor, and their reason says they are patched through the parent product.
 - Remediation text prefers Defender's `Update` recommendation for a product over configuration-change or uninstall recommendations, which previously could win by export order (a Windows 11 row showing a firewall setting instead of the cumulative update).
 - `dva report --brief` adds a `Risk:` line under each top product with the driving CVE and its threat signals, so the agent's reply explains the risk instead of only the rank; the agent and skill text ask for it to be repeated.

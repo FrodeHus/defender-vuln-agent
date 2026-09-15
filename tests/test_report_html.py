@@ -104,3 +104,15 @@ def test_html_config_findings_link_display_name_to_documentation():
     out = render(json.loads(FX.read_text()))
     script = out.split("<script")[-1]
     assert "f.doc_url" in script and "f.name || f.id" in script and "attr(f.doc_url)" in script and "attr(f.portal_url)" in script
+
+
+def test_html_puts_accepted_long_standing_and_posture_in_full_width_tabs():
+    """Wide tables must not sit in the auto-fit appendix grid, where they overflow into each other."""
+    out = render(json.loads(FX.read_text()))
+    static, script = out.split("<script")[0], out.split("<script")[-1]
+    assert 'id="panels"' in static and static.index('id="panels"') < static.index('id="appendix"')
+    assert "function panels(" in script and "data-tab" in script
+    appendix_line = next(l for l in script.splitlines() if "function appendix(" in l)
+    for fn in ("acceptedRisks()", "longStanding()", "posture()"):
+        assert fn not in appendix_line
+    assert ".tabs" in out and ".tab.on" in out
