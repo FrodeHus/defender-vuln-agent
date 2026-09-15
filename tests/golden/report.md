@@ -216,12 +216,6 @@ Expired (back in the ranking; flagged `Exception expired`):
 
 ## Posture
 
-### Certificates expiring within 30 days
-
-| Thumbprint | Name | Issued to | Expires | Devices |
-|---|---|---|---|---|
-| AB12CD34 | vpn-gw-01 TLS cert | vpn-gw-01.contoso.com | 2026-09-28T00:00:00Z | 1 |
-
 ### Non-compliant configurations
 
 By impact: 1 high, 1 medium, 0 low
@@ -233,7 +227,7 @@ By impact: 1 high, 1 medium, 0 low
 
 ## Method
 
-Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, known ransomware use, public exploit availability and exploit maturity), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags, privileged-user sign-ins, cloud attack-path membership and applied mitigations) and the number of affected devices. A product with at least one CVE past its SLA deadline gets its score multiplied up (the SLA overdue multiplier in scoring.yaml). A product with an open critical CVE scores at least the severity floor, so it never reads as Low; embedded components (bundled libraries and runtimes, patched through their parent product) are discounted and exempt from the floor. Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.
+Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, known ransomware use, public exploit availability and exploit maturity), the context of the affected assets (internet exposure, Defender exposure level, device value, criticality tags, cloud attack-path membership and applied mitigations) and the number of affected devices. A product with at least one CVE past its SLA deadline gets its score multiplied up (the SLA overdue multiplier in scoring.yaml). A product with an open critical CVE scores at least the severity floor, so it never reads as Low; embedded components (bundled libraries and runtimes, patched through their parent product) are discounted and exempt from the floor. Findings are grouped by software product so one row maps to one patch action; only the three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.
 
 ## Sources
 

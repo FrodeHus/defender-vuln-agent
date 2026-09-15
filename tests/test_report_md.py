@@ -27,7 +27,7 @@ def test_markdown_shows_patched_7d_and_score_trend_lines():
 def test_markdown_method_mentions_ransomware_maturity_sla_and_asset_signals():
     out = render(json.loads(FX.read_text()))
     for marker in ["known ransomware use", "exploit maturity", "SLA overdue multiplier",
-                   "privileged-user sign-ins", "cloud attack-path membership", "applied mitigations"]:
+                   "cloud attack-path membership", "applied mitigations"]:
         assert marker in out
 
 

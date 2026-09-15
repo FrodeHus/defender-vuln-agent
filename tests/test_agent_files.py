@@ -8,10 +8,9 @@ def test_agent_definition():
     assert re.search(r"tools:.*Bash", fm)
     # dva enrich --fetch talks to the CVE server itself: the agent needs no MCP tools and relays no CVE text.
     assert "mcp__cve-mcp__" not in fm
-    for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --fetch", "fetched", "privileged-logons",
-                 "certificates", "dva score", "dva report --all", "dva report --brief", "long-standing", "exception suggest", "exception add"]:
+    for step in ["dva doctor", "dva run new", "dva mde all", "dva hunt", "dva enrich --fetch", "fetched", "dva score", "dva report --all", "dva report --brief", "long-standing", "exception suggest", "exception add"]:
         assert step in text
-    for gone in ["triage_cve", "lookup_cve", "get_vendor_advisory", "<<'TXT'", "enrich --list", "enrich --store"]:
+    for gone in ["triage_cve", "lookup_cve", "get_vendor_advisory", "<<'TXT'", "enrich --list", "enrich --store", "privileged-logons", "certificates"]:
         assert gone not in text, gone
     assert "never read raw" in text.lower() or "never cat" in text.lower()
 

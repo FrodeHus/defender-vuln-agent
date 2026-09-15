@@ -2,7 +2,7 @@ from __future__ import annotations
 
 METHOD = ("Each product's score (0 to 100) combines threat signals for its CVEs (CVSS, EPSS, CISA KEV listing, known ransomware use, "
           "public exploit availability and exploit maturity), the context of the affected assets (internet exposure, Defender exposure "
-          "level, device value, criticality tags, privileged-user sign-ins, cloud attack-path membership and applied mitigations) and "
+          "level, device value, criticality tags, cloud attack-path membership and applied mitigations) and "
           "the number of affected devices. A product with at least one CVE past its SLA deadline gets its score multiplied up (the SLA "
           "overdue multiplier in scoring.yaml). A product with an open critical CVE scores at least the severity floor, so it never reads as Low; "
           "embedded components (bundled libraries and runtimes, patched through their parent product) are discounted and exempt from the floor. Findings are grouped by software product so one row maps to one patch action; only the "
@@ -188,15 +188,10 @@ def render(doc: dict) -> str:
         if len(stale) > len(shown):
             out.append(f"+ {len(stale) - len(shown)} more in findings.json")
     posture = doc.get("posture") or {}
-    certs, findings, by_impact = posture.get("certificates_expiring") or [], posture.get("config_findings") or [], posture.get("config_by_impact") or {}
-    if certs or findings:
+    findings, by_impact = posture.get("config_findings") or [], posture.get("config_by_impact") or {}
+    if findings:
         out += ["", "## Posture", ""]
-        if certs:
-            out += ["### Certificates expiring within 30 days", "", "| Thumbprint | Name | Issued to | Expires | Devices |", "|---|---|---|---|---|"]
-            out += [f"| {c.get('thumbprint') or '-'} | {c.get('name') or '-'} | {c.get('issued_to') or '-'} | {c.get('expires') or '-'} | {c.get('devices', 0)} |" for c in certs]
         if findings:
-            if certs:
-                out.append("")
             out += ["### Non-compliant configurations", "",
                     f"By impact: {by_impact.get('high', 0)} high, {by_impact.get('medium', 0)} medium, {by_impact.get('low', 0)} low", "",
                     "| Configuration | Category | Subcategory | Impact | Devices | Portal |", "|---|---|---|---|---|---|"]

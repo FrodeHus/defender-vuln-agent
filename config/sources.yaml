@@ -5,7 +5,7 @@ hunting: true
 # Findings are de-duplicated against MDE machines in rollup.build (see skills/defender-cloud).
 cloud: false
 subscriptions: []  # e.g. ["00000000-0000-0000-0000-000000000000"], only used when cloud: true
-hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, privileged-logons, mitigations, certificates, config-findings]
+hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, mitigations, config-findings]
 # When true, CVE intel (not run history) is shared across all tenants in one file at
 # <repo>/.cache/cve.sqlite instead of each tenant's own cache. Run history is always per tenant.
 shared_cve_cache: false

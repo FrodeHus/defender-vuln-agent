@@ -123,25 +123,20 @@ def test_build_tolerates_unknown_exploitability_and_non_numeric_cvss(tmp_path):
     assert ref.cvss == 0.0
 
 
-def test_privileged_logons_and_mitigations_set_asset_flags(tmp_path):
+def test_mitigations_set_asset_flags(tmp_path):
     run = seed(tmp_path)
-    run.write_json("hunt-privileged-logons.json", {"results": [
-        {"DeviceId": "m1", "DeviceName": "vpn-gw-01", "Roles": ["GlobalAdmin"], "Users": 1},
-    ]})
     run.write_json("hunt-mitigations.json", {"results": [
         {"DeviceId": "m1", "DeviceName": "vpn-gw-01", "Compliant": 3, "Total": 3},
         {"DeviceId": "m2", "DeviceName": "ws-114", "Compliant": 1, "Total": 2},
     ]})
     _, assets = build(run)
-    assert assets["m1"].privileged_user is True
-    assert assets["m2"].privileged_user is False
     assert assets["m1"].mitigations == 3  # fully compliant
     assert assets["m2"].mitigations == 0  # partially compliant counts as not mitigated
 
 
-def test_privileged_logons_and_mitigations_default_when_absent(tmp_path):
+def test_mitigations_default_when_absent(tmp_path):
     _, assets = build(seed(tmp_path))
-    assert assets["m1"].privileged_user is False and assets["m1"].mitigations == 0
+    assert assets["m1"].mitigations == 0
 
 
 def test_update_recommendation_preferred_over_configuration_change(tmp_path):

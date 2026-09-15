@@ -6,7 +6,6 @@ asset_bonus:
   device_value_high: 0.4
   criticality_tag: 0.5
   public_lb: 0.6
-  privileged_user: 0.4
   attack_path: 0.6
   mitigated: -0.2
 asset_cap: 2.5

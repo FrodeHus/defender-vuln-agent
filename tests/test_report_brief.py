@@ -32,11 +32,11 @@ def test_brief_has_the_reply_ingredients():
 
 def test_brief_names_partial_and_failed_sources_and_suggestions():
     doc = _doc()
-    doc["run"]["sources"]["hunt-certificates"] = {"status": "failed", "count": None, "error": "boom"}
+    doc["run"]["sources"]["hunt-config-findings"] = {"status": "failed", "count": None, "error": "boom"}
     doc["run"]["sources"]["mde-vulns"] = {"status": "partial", "count": 10000, "error": None}
     sugg = [{"product": "openssl/openssl", "reasons": ["embedded component"], "suggested_until": "2026-12-13"}]
     out = render(doc, suggestions=sugg, run_dir="/r")
-    assert "Sources not ok: hunt-certificates failed (boom); mde-vulns partial (10000 records)" in out
+    assert "Sources not ok: hunt-config-findings failed (boom); mde-vulns partial (10000 records)" in out
     assert "Exception suggestions: 1 — openssl/openssl: embedded component (until 2026-12-13)" in out
 
 

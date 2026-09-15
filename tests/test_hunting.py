@@ -15,11 +15,11 @@ def test_named_query_loads():
 
 
 def test_new_named_queries_load():
-    assert "IdentityInfo" in load_query("privileged-logons") and "CriticalityLevel <= 1" in load_query("privileged-logons")
     assert "__CONFIG_IDS__" in load_query("mitigations")
     assert "DeviceTvmSecureConfigurationAssessmentKB" in load_query("mitigation-catalog")
-    assert "DeviceTvmCertificateInfo" in load_query("certificates")
-    assert "IssuedTo = tostring(IssuedTo)" in load_query("certificates")
+    for gone in ("privileged-logons", "certificates"):
+        with pytest.raises(DvaError):
+            load_query(gone)
     assert "IsCompliant == false" in load_query("config-findings")
 
 

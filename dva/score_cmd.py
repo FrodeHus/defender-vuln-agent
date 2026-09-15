@@ -144,7 +144,6 @@ def _facets(assets, cfg: Scoring) -> tuple[list[dict], list[dict]]:
         ("Critical", sum(1 for a in assets if any(t.lower() in crit for t in a.tags)), True),
         ("High value", sum(1 for a in assets if (a.device_value or "").lower() == "high"), False),
         ("Exposure High", sum(1 for a in assets if (a.exposure_level or "").lower() == "high"), False),
-        ("Privileged sign-in", sum(1 for a in assets if a.privileged_user), False),
         ("On attack path", sum(1 for a in assets if a.attack_paths), False),
         ("Mitigated", sum(1 for a in assets if a.mitigations), False),
     ]
@@ -389,12 +388,7 @@ def _plain_text(html_text: str | None) -> str | None:
 
 
 def _posture(run: Run) -> dict:
-    cert_rows = run.read_json("hunt-certificates.json").get("results", []) if run.path("hunt-certificates.json").exists() else []
     cfg_rows = run.read_json("hunt-config-findings.json").get("results", []) if run.path("hunt-config-findings.json").exists() else []
-    certificates_expiring = [{
-        "thumbprint": r.get("Thumbprint"), "name": r.get("FriendlyName"), "issued_to": r.get("IssuedTo"),
-        "expires": r.get("Exp"), "devices": r.get("Devices"),
-    } for r in cert_rows]
     config_findings = []
     config_by_impact = {"high": 0, "medium": 0, "low": 0}
     for r in cfg_rows:
@@ -411,7 +405,7 @@ def _posture(run: Run) -> dict:
             "doc_url": _doc_url(r.get("ConfigurationDescription"), r.get("RemediationOptions")),
             "portal_url": PORTAL_RECOMMENDATION.format(id=r.get("ConfigurationId")) if r.get("ConfigurationId") else None,
         })
-    return {"certificates_expiring": certificates_expiring, "config_findings": config_findings, "config_by_impact": config_by_impact}
+    return {"config_findings": config_findings, "config_by_impact": config_by_impact}
 
 
 def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None, store=None) -> dict:

@@ -22,7 +22,7 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 | Key | Default | Meaning |
 |---|---|---|
 | `threat_weights` | cvss 0.35, epss 0.25, kev 0.25, exploit 0.15, ransomware 0.10 | Weights of the five threat signals in a CVE's threat score (they sum to 1.10 before the score is capped at 1) |
-| `asset_bonus` | internet_facing 0.6, exposure_high 0.4, exposure_medium 0.2, device_value_high 0.4, criticality_tag 0.5, public_lb 0.6, privileged_user 0.4, attack_path 0.6, mitigated -0.2 | Additive multiplier bonuses (and one discount, `mitigated`) for asset context |
+| `asset_bonus` | internet_facing 0.6, exposure_high 0.4, exposure_medium 0.2, device_value_high 0.4, criticality_tag 0.5, public_lb 0.6, attack_path 0.6, mitigated -0.2 | Additive multiplier bonuses (and one discount, `mitigated`) for asset context |
 | `asset_cap` | 2.5 | Ceiling for the asset multiplier |
 | `criticality_tags` | Tier0, Prod, DMZ | Device tags (case-insensitive) that earn `criticality_tag` |
 | `enrich_top_per_product` | 3 | CVEs per product sent for enrichment, ranked by Defender CVSS, exploitability, then recency |
@@ -53,7 +53,7 @@ Edit, then re-run only `dva score` and `dva report --all`; no re-collection need
 | `hunting` | true | Run Advanced Hunting queries |
 | `cloud` | false | Collect Defender for Cloud findings via Azure Resource Graph |
 | `subscriptions` | [] | Subscription ids for `cloud` (the app needs `Reader` on each) |
-| `hunting_queries` | internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, privileged-logons, mitigations, certificates, config-findings | Queries `dva hunt` runs when given no names |
+| `hunting_queries` | internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, mitigations, config-findings | Queries `dva hunt` runs when given no names |
 | `kev` | true | Download CISA's Known Exploited Vulnerabilities catalogue (public JSON, no key) during `dva enrich --fetch` when the cached copy is older than 24 hours, and match it against every CVE in the estate at scoring time. `false` for air-gapped tenants: KEV flags then come only from triaged CVEs. `DVA_KEV_URL` can point at a mirror or a local file. |
 | `shared_cve_cache` | false | When true, CVE intel is shared across all tenants in one file at `<repo>/.cache/cve.sqlite` instead of each tenant's own cache. Run history stays per tenant regardless. |
 

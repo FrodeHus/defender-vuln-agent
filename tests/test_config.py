@@ -11,7 +11,7 @@ def test_scoring_defaults():
     assert s.bands == {"critical": 80, "high": 60, "medium": 40}
     assert "Tier0" in s.criticality_tags
     assert s.threat_weights["ransomware"] == 0.10
-    assert s.asset_bonus["privileged_user"] == 0.4
+    assert "privileged_user" not in s.asset_bonus
     assert s.asset_bonus["attack_path"] == 0.6
     assert s.asset_bonus["mitigated"] == -0.2
     assert s.sla_days == {"critical": 14, "high": 30, "medium": 90, "low": 180}

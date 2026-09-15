@@ -2,7 +2,7 @@
 
 A read-only vulnerability assessment tool for Microsoft Defender estates, with a Claude Code agent that runs it end to end.
 
-It pulls device inventory and per-device vulnerabilities from Defender for Endpoint, runs Advanced Hunting queries for exposure context (internet-facing, exploited CVEs, privileged logons, compensating controls, installation evidence, certificates, configuration findings), optionally adds Defender for Cloud findings and attack paths, enriches the CVEs that matter with CVSS, EPSS, CISA KEV, exploit maturity/ransomware, and public-exploit intelligence through a local [CVE MCP server](https://github.com/mukul975/cve-mcp-server), scores **software products** (one patch action each) rather than individual CVEs, and writes Markdown, HTML and JSON reports that say what to patch first and where.
+It pulls device inventory and per-device vulnerabilities from Defender for Endpoint, runs Advanced Hunting queries for exposure context (internet-facing, exploited CVEs, compensating controls, installation evidence, configuration findings), optionally adds Defender for Cloud findings and attack paths, enriches the CVEs that matter with CVSS, EPSS, CISA KEV, exploit maturity/ransomware, and public-exploit intelligence through a local [CVE MCP server](https://github.com/mukul975/cve-mcp-server), scores **software products** (one patch action each) rather than individual CVEs, and writes Markdown, HTML and JSON reports that say what to patch first and where.
 
 - **Read-only by construction.** The app registration holds only read permissions.
 - **Multi-tenant.** Each tenant has its own credentials, runs, caches, per-tenant SQLite store and config; ask for an assessment by tenant name.
@@ -69,7 +69,7 @@ An executive summary with the estate's exposure score and what changed since the
 export DVA_TENANT=contoso
 export DVA_RUN=$(python3 -m dva run new)
 python3 -m dva mde all
-python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings
+python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence mitigations config-findings
 python3 -m dva enrich --fetch                                 # calls the CVE server per selected CVE and stores the results
 python3 -m dva score
 python3 -m dva report --all                                   # includes tickets.json

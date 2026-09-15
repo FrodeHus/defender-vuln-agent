@@ -169,11 +169,8 @@ def test_top_n_listed_even_below_threshold(tmp_path):
     assert len(doc["products"]) == 2 and doc["products"][0]["rank"] == 1
 
 
-def test_posture_from_certificates_and_config_findings(tmp_path):
+def test_posture_from_config_findings(tmp_path):
     run = seed(tmp_path / "runs")
-    run.write_json("hunt-certificates.json", {"results": [
-        {"Thumbprint": "ABC123", "FriendlyName": "vpn-gw-01 cert", "IssuedTo": "vpn-gw-01.contoso.com", "Exp": "2026-09-20T00:00:00Z", "Devices": 1},
-    ]})
     run.write_json("hunt-config-findings.json", {"results": [
         {"ConfigurationId": "scid-1", "ConfigurationCategory": "Security controls", "ConfigurationSubcategory": "Firewall", "ConfigurationImpact": 8, "Devices": 5,
          "ConfigurationName": "Turn on Windows Firewall",
@@ -185,7 +182,6 @@ def test_posture_from_certificates_and_config_findings(tmp_path):
     ]})
     doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
     posture = doc["posture"]
-    assert posture["certificates_expiring"] == [{"thumbprint": "ABC123", "name": "vpn-gw-01 cert", "issued_to": "vpn-gw-01.contoso.com", "expires": "2026-09-20T00:00:00Z", "devices": 1}]
     assert posture["config_findings"][0] == {"id": "scid-1", "name": "Turn on Windows Firewall", "category": "Security controls", "subcategory": "Firewall", "impact": 8, "devices": 5,
                                              "description": "The firewall blocks & logs unsolicited traffic. This control applies to Windows 10 or later.",
                                              "remediation": "Follow these steps: Ensure Defender Antivirus is on. Enable it via policy.",
@@ -200,7 +196,7 @@ def test_posture_from_certificates_and_config_findings(tmp_path):
 def test_posture_defaults_to_empty_lists_when_no_hunt_files(tmp_path):
     run = seed(tmp_path / "runs")
     doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
-    assert doc["posture"] == {"certificates_expiring": [], "config_findings": [], "config_by_impact": {"high": 0, "medium": 0, "low": 0}}
+    assert doc["posture"] == {"config_findings": [], "config_by_impact": {"high": 0, "medium": 0, "low": 0}}
 
 
 def test_patched_7d_grouped_by_product_from_vuln_changes(tmp_path):

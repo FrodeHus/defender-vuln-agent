@@ -27,13 +27,8 @@ def test_asset_multiplier_bonuses_and_cap():
     assert abs(asset_multiplier(b, cfg) - 1.2) < 1e-9
 
 
-def test_asset_signals_privileged_user_and_mitigated():
+def test_asset_signals_mitigated():
     from dva.scoring import asset_signals
-
-    priv = Asset(id="p", name="p", privileged_user=True)
-    sig = asset_signals(priv, cfg)
-    assert ("Privileged user signs in", cfg.asset_bonus["privileged_user"]) in sig
-    assert abs(asset_multiplier(priv, cfg) - (1.0 + cfg.asset_bonus["privileged_user"])) < 1e-9
 
     mitigated = Asset(id="m", name="m", mitigations=3)
     sig2 = asset_signals(mitigated, cfg)

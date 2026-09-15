@@ -92,9 +92,6 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
     for row in _hunt(run, "internet-facing"):
         a = assets.setdefault(row["DeviceId"], Asset(id=row["DeviceId"], name=row.get("DeviceName") or row["DeviceId"]))
         a.internet_facing = True
-    for row in _hunt(run, "privileged-logons"):
-        a = assets.setdefault(row["DeviceId"], Asset(id=row["DeviceId"], name=row.get("DeviceName") or row["DeviceId"]))
-        a.privileged_user = True
     for row in _hunt(run, "mitigations"):
         a = assets.setdefault(row["DeviceId"], Asset(id=row["DeviceId"], name=row.get("DeviceName") or row["DeviceId"]))
         compliant, total = row.get("Compliant") or 0, row.get("Total") or 0
