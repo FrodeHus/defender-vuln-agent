@@ -48,7 +48,9 @@ Patched in the last 7 days: 2 critical, 1 high.
 
 Driving vulnerabilities (26 open CVEs in total):
 - CVE-2026-21887 · CVSS 9.8 · EPSS 0.94 · KEV · Exploit · Unauthenticated remote code execution in web component
+  An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance.
 - CVE-2026-20124 · CVSS 9.1 · EPSS 0.71 · KEV · Authentication bypass in SAML endpoint
+  A path traversal in the admin interface lets an authenticated user read arbitrary files.
 - CVE-2025-46512 · CVSS 8.2 · EPSS 0.33 · Exploit · Path traversal allowing config read
 
 Affected assets (6): All 6 internet-facing · 6 Tier0 · exposure High

@@ -12,12 +12,14 @@ from dva import exceptions as exceptions_mod
 def test_findings_document(tmp_path):
     run = seed(tmp_path / "runs")
     cache = IntelCache(tmp_path / "cache", 7)
-    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, epss=0.94, epss_percentile=0.99, kev=True, exploit_public=True, title="Unauthenticated RCE"))
+    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, epss=0.94, epss_percentile=0.99, kev=True, exploit_public=True, title="Unauthenticated RCE", description="Unauthenticated RCE. A crafted request runs code on the appliance."))
     run.write_json("exposure.json", {"score": 54.0, "by_group": {}})
     doc = compute(run, load_scoring(), cache)
     top = doc["products"][0]
     assert top["product"] == "Connect Secure" and top["rank"] == 1 and top["label"] == "Critical"
-    assert top["driving_cves"][0] == {"id": "CVE-2026-21887", "severity": "Critical", "cvss": 9.8, "epss": 0.94, "kev": True, "poc": True, "title": "Unauthenticated RCE"}
+    assert top["driving_cves"][0] == {"id": "CVE-2026-21887", "severity": "Critical", "cvss": 9.8, "epss": 0.94, "kev": True, "poc": True, "title": "Unauthenticated RCE",
+                                      "description": "Unauthenticated RCE. A crafted request runs code on the appliance."}
+    assert top["driving_cves"][1]["description"] is None  # no intel for it
     assert top["assets"]["count"] == 2 and top["assets"]["top"][0]["name"] == "vpn-gw-01"
     assert "1 internet-facing" in top["assets"]["breakdown"] and "1 Tier0" in top["assets"]["breakdown"]
     assert top["partial_intel"] is True  # CVE-2025-46512 has no intel
@@ -262,3 +264,13 @@ def test_long_standing_cves_listed_even_below_threshold(tmp_path):
         "devices": 2, "cves_over_threshold": 2, "total_cves": 3, "oldest_days": 166,
         "by_severity": {"critical": 0, "high": 0, "medium": 1, "low": 1},
     }]
+
+
+def test_advisories_merged_across_driving_cves(tmp_path):
+    run = seed(tmp_path / "runs")
+    cache = IntelCache(tmp_path / "cache", 7)
+    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, advisories=[{"source": "MSRC", "id": "A", "url": None}]))
+    cache.put("CVE-2025-46512", CveIntel(cvss=7.0, advisories=[{"source": "MSRC", "id": "A", "url": None}, {"source": "Red Hat", "id": "B", "url": None}]))
+    doc = compute(run, load_scoring(), cache)
+    top = doc["products"][0]
+    assert [a["id"] for a in top["advisories"]] == ["A", "B"]  # top CVE first, the rest deduplicated by id

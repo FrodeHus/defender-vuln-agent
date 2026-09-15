@@ -242,8 +242,8 @@ def test_list_prints_describe_ids(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
     assert main(["enrich", "--list", "--run", str(run.dir)]) == 0
     lines = [json.loads(l) for l in capsys.readouterr().out.splitlines() if l.startswith("{")]
-    assert any("describe" in l and l["describe"] == ["CVE-2024-0001"] for l in lines)
-    assert run.read_json("enrich-describe.json") == ["CVE-2024-0001"]
+    assert any("describe" in l and l["describe"] == ["CVE-2024-0001", "CVE-2024-0002"] for l in lines)
+    assert run.read_json("enrich-describe.json") == ["CVE-2024-0001", "CVE-2024-0002"]
 
 
 def test_cache_get_stale_ok_returns_an_expired_entry(tmp_path):
@@ -287,3 +287,14 @@ def test_store_refreshes_volatile_signals_but_keeps_stable_fields_of_a_stale_ent
     assert after.epss == 0.0194 and after.kev is False and after.ransomware is False and after.exploit_public is False
     assert after.description == "Stable description" and after.cwe == "CWE-94" and after.advisories == [{"source": "MSRC", "id": "x"}]
     assert after.vector == "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+
+
+def test_select_describe_covers_every_driving_cve_of_a_product(tmp_path):
+    """All enrich_top_per_product (3) CVEs that drive a product's score get a description, not just the top one."""
+    from dva.enrich import select_describe
+    cache = IntelCache(tmp_path, 7)
+    p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"},
+                cves={f"CVE-{i}": ref(i, 9.8 - i * 0.1, "ExploitIsInKit") for i in range(5)})
+    assets = {"x": Asset(id="x", name="x", internet_facing=True)}
+    cache.put("CVE-1", CveIntel(cvss=9.7, description="already described"))
+    assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == ["CVE-0", "CVE-2"]

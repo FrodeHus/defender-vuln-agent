@@ -48,3 +48,9 @@ def test_markdown_lists_long_standing_products():
 def test_markdown_tolerates_findings_without_long_standing():
     doc = json.loads(FX.read_text()); doc.pop("long_standing"); doc["summary"].pop("long_standing_products")
     assert "Long-standing" not in render(doc)
+
+
+def test_markdown_shows_a_description_under_each_described_driving_cve():
+    out = render(json.loads(FX.read_text()))
+    assert "- CVE-2026-21887 · CVSS 9.8 · EPSS 0.94 · KEV · Exploit · Unauthenticated remote code execution in web component\n  An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance." in out
+    assert "  A path traversal in the admin interface lets an authenticated user read arbitrary files." in out

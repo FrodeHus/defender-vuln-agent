@@ -92,3 +92,9 @@ def test_html_score_trend_uses_two_panels_with_direction_hints():
     assert "function scorePanel(" in script
     assert "not collected" in script  # a series with no values says so instead of drawing nothing
     assert 'class="spark"' in script  # sparklines are framed boxes, not bare lines
+
+
+def test_html_card_renders_driving_cve_descriptions():
+    out = render(json.loads(FX.read_text()))
+    script = out.split("<script")[-1]
+    assert "c.description" in script and 'class="desc"' in script

@@ -45,21 +45,22 @@ def select_candidates(products: dict[str, Product], assets: dict[str, Asset], ca
     return out
 
 
-def select_describe(products: dict[str, Product], assets: dict[str, Asset], cache: IntelCache, cfg: Scoring, estate_size: int, limit: int = 25) -> list[str]:
-    """The single top CVE of each product that will be listed, for lookup_cve descriptions (skips ids already described)."""
+def select_describe(products: dict[str, Product], assets: dict[str, Asset], cache: IntelCache, cfg: Scoring, estate_size: int, limit: int | None = None) -> list[str]:
+    """The CVEs that drive each product that will be listed (its top enrich_top_per_product by CVSS, exploitability and
+    recency), for lookup_cve descriptions and vendor advisories; skips ids already described."""
     prelim = sorted(products.values(), key=lambda p: (-product_score(p, assets, {}, cfg, estate_size).score, p.key))
+    per_product = max(cfg.enrich_top_per_product, 1)
+    window = max(cfg.top_n, 0) + 15
+    limit = limit if limit is not None else window * per_product
     out: list[str] = []
-    for p in prelim[: max(cfg.top_n, 0) + 15]:
-        if not p.cves:
-            continue
-        top = sorted(p.cves.values(), key=_rank_key)[0]
-        cached = cache.get(top.id, stale_ok=True)  # descriptions never change: an expired entry that has one still counts
-        if cached is not None and cached.description:
-            continue
-        if top.id not in out:
-            out.append(top.id)
-        if len(out) >= limit:
-            break
+    for p in prelim[:window]:
+        for ref in sorted(p.cves.values(), key=_rank_key)[:per_product]:
+            cached = cache.get(ref.id, stale_ok=True)  # descriptions never change: an expired entry that has one still counts
+            if (cached is not None and cached.description) or ref.id in out:
+                continue
+            out.append(ref.id)
+            if len(out) >= limit:
+                return out
     return out
 
 

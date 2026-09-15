@@ -86,7 +86,8 @@
           "epss": 0.94,
           "kev": true,
           "poc": true,
-          "title": "Unauthenticated remote code execution in web component"
+          "title": "Unauthenticated remote code execution in web component",
+          "description": "An unauthenticated attacker can send a crafted request to the web component to execute arbitrary code on the appliance."
         },
         {
           "id": "CVE-2026-20124",
@@ -95,7 +96,8 @@
           "epss": 0.71,
           "kev": true,
           "poc": false,
-          "title": "Authentication bypass in SAML endpoint"
+          "title": "Authentication bypass in SAML endpoint",
+          "description": "A path traversal in the admin interface lets an authenticated user read arbitrary files."
         },
         {
           "id": "CVE-2025-46512",
@@ -104,7 +106,8 @@
           "epss": 0.33,
           "kev": false,
           "poc": true,
-          "title": "Path traversal allowing config read"
+          "title": "Path traversal allowing config read",
+          "description": null
         }
       ],
       "assets": {
@@ -243,7 +246,8 @@
           "epss": 0.89,
           "kev": true,
           "poc": true,
-          "title": "SQL injection in DAS component"
+          "title": "SQL injection in DAS component",
+          "description": null
         },
         {
           "id": "CVE-2025-52970",
@@ -252,7 +256,8 @@
           "epss": 0.42,
           "kev": false,
           "poc": false,
-          "title": "Improper access control on API"
+          "title": "Improper access control on API",
+          "description": null
         },
         {
           "id": "CVE-2025-49202",
@@ -261,7 +266,8 @@
           "epss": 0.12,
           "kev": false,
           "poc": false,
-          "title": "Information disclosure via log endpoint"
+          "title": "Information disclosure via log endpoint",
+          "description": null
         }
       ],
       "assets": {
@@ -345,7 +351,8 @@
           "epss": 0.82,
           "kev": true,
           "poc": true,
-          "title": "Remote code execution via NTLM relay"
+          "title": "Remote code execution via NTLM relay",
+          "description": null
         },
         {
           "id": "CVE-2026-21334",
@@ -354,7 +361,8 @@
           "epss": 0.55,
           "kev": false,
           "poc": true,
-          "title": "Privilege escalation in PowerShell backend"
+          "title": "Privilege escalation in PowerShell backend",
+          "description": null
         },
         {
           "id": "CVE-2025-53786",
@@ -363,7 +371,8 @@
           "epss": 0.19,
           "kev": false,
           "poc": false,
-          "title": "Hybrid configuration elevation of privilege"
+          "title": "Hybrid configuration elevation of privilege",
+          "description": null
         }
       ],
       "assets": {
@@ -475,7 +484,8 @@
           "epss": 0.61,
           "kev": true,
           "poc": true,
-          "title": "Win32k elevation of privilege"
+          "title": "Win32k elevation of privilege",
+          "description": null
         },
         {
           "id": "CVE-2026-21290",
@@ -484,7 +494,8 @@
           "epss": 0.27,
           "kev": false,
           "poc": false,
-          "title": "LDAP remote code execution"
+          "title": "LDAP remote code execution",
+          "description": null
         },
         {
           "id": "CVE-2026-21250",
@@ -493,7 +504,8 @@
           "epss": 0.14,
           "kev": false,
           "poc": false,
-          "title": "Kerberos elevation of privilege"
+          "title": "Kerberos elevation of privilege",
+          "description": null
         }
       ],
       "assets": {
@@ -1010,7 +1022,8 @@
           "epss": 0.45,
           "kev": true,
           "poc": false,
-          "title": "Use after free leading to code execution"
+          "title": "Use after free leading to code execution",
+          "description": null
         },
         {
           "id": "CVE-2026-24432",
@@ -1019,7 +1032,8 @@
           "epss": 0.11,
           "kev": false,
           "poc": false,
-          "title": "Out of bounds write in font parser"
+          "title": "Out of bounds write in font parser",
+          "description": null
         },
         {
           "id": "CVE-2025-47172",
@@ -1028,7 +1042,8 @@
           "epss": 0.06,
           "kev": false,
           "poc": false,
-          "title": "Integer overflow in JavaScript engine"
+          "title": "Integer overflow in JavaScript engine",
+          "description": null
         }
       ],
       "assets": {
@@ -2308,7 +2323,8 @@
           "epss": 0.01,
           "kev": false,
           "poc": false,
-          "title": "Time-of-check time-of-use race"
+          "title": "Time-of-check time-of-use race",
+          "description": null
         },
         {
           "id": "CVE-2025-30664",
@@ -2317,7 +2333,8 @@
           "epss": 0.01,
           "kev": false,
           "poc": false,
-          "title": "Improper neutralization of special elements"
+          "title": "Improper neutralization of special elements",
+          "description": null
         },
         {
           "id": "CVE-2025-30665",
@@ -2326,7 +2343,8 @@
           "epss": 0.0,
           "kev": false,
           "poc": false,
-          "title": "Null pointer dereference"
+          "title": "Null pointer dereference",
+          "description": null
         }
       ],
       "assets": {

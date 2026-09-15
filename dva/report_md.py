@@ -124,6 +124,8 @@ def render(doc: dict) -> str:
         for c in r["driving_cves"]:
             bits = [c["id"], f"CVSS {c['cvss']}"] + ([f"EPSS {c['epss']}"] if c.get("epss") is not None else []) + (["KEV"] if c["kev"] else []) + (["Exploit"] if c["poc"] else []) + ([c["title"]] if c.get("title") else [])
             out.append("- " + " · ".join(str(b) for b in bits))
+            if c.get("description"):
+                out.append("  " + c["description"])
         a = r["assets"]
         out += ["", f"Affected assets ({a['count']}): {a['breakdown']}"] + [f"- {x['name']} — {x['why']}" for x in a["top"]]
         more = a["count"] - len(a["top"])

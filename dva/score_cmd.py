@@ -79,6 +79,20 @@ def _long_standing(products: dict, assets: dict, scored_by_key: dict, cfg: Scori
     return out
 
 
+def _advisories(driving, intel: dict, limit: int = 5) -> list[dict]:
+    """Vendor advisories across a product's driving CVEs, top CVE first, deduplicated by advisory id."""
+    out: list[dict] = []
+    for r, _ in driving:
+        for adv in (intel[r.id].advisories if r.id in intel else []):
+            aid = adv.get("id")
+            if (aid and any(a.get("id") == aid for a in out)) or (not aid and adv in out):
+                continue
+            out.append(adv)
+            if len(out) >= limit:
+                return out
+    return out
+
+
 def _fixes(p, total: int) -> list[dict]:
     ranked = sorted(p.fixes.items(), key=lambda kv: (-len(kv[1]), kv[0]))
     return [{"update": u, "cves": len(ids), "share": round(len(ids) / total, 2) if total else 0.0} for u, ids in ranked[:5]]
@@ -344,9 +358,10 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "driving_cves": [{"id": r.id, "severity": r.severity, "cvss": (intel[r.id].cvss if r.id in intel and intel[r.id].cvss is not None else r.cvss),
                               "epss": intel[r.id].epss if r.id in intel else None, "kev": bool(r.id in intel and intel[r.id].kev),
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
-                              "title": intel[r.id].title if r.id in intel else None} for r, _ in sp.driving],
+                              "title": intel[r.id].title if r.id in intel else None,
+                              "description": intel[r.id].description if r.id in intel else None} for r, _ in sp.driving],
             "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
-            "advisories": intel[top.id].advisories[:5] if top is not None and top.id in intel else [],
+            "advisories": _advisories(sp.driving, intel),
             "risk_summary": _risk(sp, intel, pa, cfg, display_name(p)),
             "paths": paths_by_key.get(p.key, []),
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
