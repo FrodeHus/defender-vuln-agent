@@ -370,7 +370,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     active_exceptions, expired_exceptions = exceptions_mod.split(exc_items, date.today())
     listed_products, dropped_exceptions = exceptions_mod.apply(products, active_exceptions)
     sla_by_key = {key: _sla(p, cfg, now) for key, p in listed_products.items()}
-    scored = sorted((product_score(p, assets, intel, cfg, estate, overdue=sla_by_key[p.key]["overdue_cves"] > 0) for p in listed_products.values()), key=lambda s: (-s.score, s.product.name))
+    embedded = {key: bool(exceptions_mod.embedded_reasons(display_name(p), paths_by_key.get(key), cfg)) for key, p in listed_products.items()}
+    scored = sorted((product_score(p, assets, intel, cfg, estate, overdue=sla_by_key[p.key]["overdue_cves"] > 0, embedded=embedded[p.key]) for p in listed_products.values()), key=lambda s: (-s.score, s.product.name))
     rows = []
     # Always list at least the top_n products so a small or clean estate still gets a ranked view;
     # report_threshold decides how many of them count as "needing action".
@@ -389,7 +390,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "remediation_type": p.remediation_type, "recommended_version": p.recommended_version, "versions": p.versions,
             "sla": sla_by_key[p.key], "eos": p.eos, "fixes": _fixes(p, len(p.cves)),
             "driving_cves": [{"id": r.id, "severity": r.severity, "cvss": (intel[r.id].cvss if r.id in intel and intel[r.id].cvss is not None else r.cvss),
-                              "epss": intel[r.id].epss if r.id in intel else None, "kev": bool(r.id in intel and intel[r.id].kev),
+                              "epss": (round(intel[r.id].epss, 3) if intel[r.id].epss is not None else None) if r.id in intel else None, "kev": bool(r.id in intel and intel[r.id].kev),
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
                               "title": intel[r.id].title if r.id in intel else None,
                               "description": intel[r.id].description if r.id in intel else None} for r, _ in sp.driving],

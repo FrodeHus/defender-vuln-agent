@@ -125,3 +125,13 @@ def test_several_tenants_require_a_choice(tenants, capsys):
     assert "contoso, fabrikam" in err and "--tenant" in err
     assert main(["tenant", "show"]) == 0          # informational commands still work
     assert "no tenant active" in capsys.readouterr().out
+
+
+def test_sole_tenant_not_activated_when_shell_points_at_a_tenant_dir(tenants, tmp_path, monkeypatch, capsys):
+    import shutil
+    shutil.rmtree(tenants / "fabrikam")
+    monkeypatch.setenv("DVA_TENANT_DIR", str(tmp_path / "scratch"))
+    monkeypatch.setenv("DVA_RUNS_DIR", str(tmp_path / "scratch" / "runs"))
+    assert main(["run", "new"]) == 0
+    assert capsys.readouterr().out.strip().startswith(str(tmp_path / "scratch" / "runs"))
+    assert "DVA_TENANT_ID" not in os.environ or os.environ["DVA_TENANT_ID"] != "t-contoso"

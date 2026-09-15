@@ -53,7 +53,7 @@ def test_product_score_ranks_kev_gateway_above_fleet_mediums():
     s_gw = product_score(gw, assets, intel, cfg, estate_size=2000)
     s_fleet = product_score(fleet, assets, {}, cfg, estate_size=2000)
     assert s_gw.score > s_fleet.score and s_gw.label == "Critical"
-    assert s_gw.flags == {"kev": True, "exploit": True, "internet_facing": True}
+    assert s_gw.flags == {"kev": True, "exploit": True, "internet_facing": True, "embedded": False, "floored": False}
     assert s_gw.top_assets[0][2] == "Internet-facing · Tier0"
     assert s_fleet.counts == {"critical": 0, "high": 0, "medium": 20, "low": 0}
     assert len(s_gw.driving) == 1 and len(s_fleet.driving) == 3
@@ -74,3 +74,34 @@ def test_overdue_boost_raises_score():
     normal = product_score(p, assets, {}, cfg, estate_size=100)
     overdue = product_score(p, assets, {}, cfg, estate_size=100, overdue=True)
     assert overdue.score > normal.score
+
+
+def test_reach_weight_makes_estate_wide_products_score_higher():
+    one = Product(key="x/y", vendor="x", name="y", asset_ids={"d0"}, cves={"CVE-1": ref(cvss=8.0, sev="High")})
+    fleet = Product(key="x/y", vendor="x", name="y", asset_ids={f"d{i}" for i in range(1000)}, cves={"CVE-1": ref(cvss=8.0, sev="High")})
+    assets = {f"d{i}": Asset(id=f"d{i}", name=f"d{i}") for i in range(1000)}
+    s_one = product_score(one, assets, {}, cfg, estate_size=1000)
+    s_fleet = product_score(fleet, assets, {}, cfg, estate_size=1000)
+    assert cfg.score_weights == {"base": 0.5, "asset": 0.3, "reach": 0.2}
+    assert s_fleet.score - s_one.score >= 5
+
+
+def test_severity_floor_keeps_a_critical_cve_out_of_low():
+    p = Product(key="x/y", vendor="x", name="y", asset_ids={"d0"}, cves={"CVE-1": ref(cvss=9.8, sev="Critical")})
+    s = product_score(p, {"d0": Asset(id="d0", name="d0")}, {}, cfg, estate_size=1000)
+    assert cfg.severity_floor == {"critical": 40}
+    assert s.score >= 40 and s.label == "Medium" and s.flags["floored"] is True
+    low = Product(key="x/y", vendor="x", name="y", asset_ids={"d0"}, cves={"CVE-1": ref(cvss=5.0, sev="Medium")})
+    s_low = product_score(low, {"d0": Asset(id="d0", name="d0")}, {}, cfg, estate_size=1000)
+    assert s_low.score < 40 and s_low.flags["floored"] is False
+
+
+def test_embedded_products_are_discounted_and_not_floored():
+    p = Product(key="python/python", vendor="python", name="python", asset_ids={"d0"}, cves={"CVE-1": ref(cvss=9.8, sev="Critical")})
+    assets = {"d0": Asset(id="d0", name="d0")}
+    plain = product_score(p, assets, {}, cfg, estate_size=1000)
+    emb = product_score(p, assets, {}, cfg, estate_size=1000, embedded=True)
+    assert cfg.embedded_discount == 0.5
+    assert emb.score < 40 and emb.flags["embedded"] is True and emb.flags["floored"] is False
+    assert plain.score == 40 and plain.flags["floored"] is True and emb.score < plain.score
+    assert plain.flags["embedded"] is False

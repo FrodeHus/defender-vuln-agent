@@ -86,10 +86,21 @@ def _as_float(v) -> float | None:
         return None
 
 
+def short_title(text: str, limit: int = 120) -> str:
+    """Cut a description to a title at a word boundary, ending with an ellipsis when shortened."""
+    text = re.sub(r"\s+", " ", text or "").strip()
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1]
+    if " " in cut:
+        cut = cut[: cut.rfind(" ")]
+    return cut.rstrip(" ,;:") + "…"
+
+
 def _one(cve_id: str, d: dict) -> CveIntel:
     exploits = _first(d, "exploits") or []
     sources = _first(d, "exploit_sources") or [e.get("source") or e.get("name") for e in exploits if isinstance(e, dict)]
-    desc = _first(d, "title") or (_first(d, "description") or "")[:120] or None
+    desc = _first(d, "title") or short_title(_first(d, "description") or "") or None
     return CveIntel(
         cvss=_as_float(_first(d, "cvss_v3_score", "cvss_score", "cvss.base_score", "cvss")),
         epss=_as_float(_first(d, "epss_score", "epss.score")),
@@ -316,7 +327,7 @@ def parse_text(text: str) -> dict[str, CveIntel]:
         if d:
             full = re.sub(r"\s+", " ", d.group(1)).strip()
             intel.description = full[:600]
-            intel.title = full[:120]
+            intel.title = short_title(full)
         add(cid, intel)
     # compare_cves table rows
     for m in _RE_COMPARE_ROW.finditer(text):

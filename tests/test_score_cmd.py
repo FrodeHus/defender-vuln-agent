@@ -285,3 +285,29 @@ def test_advisories_merged_across_driving_cves(tmp_path):
     doc = compute(run, load_scoring(), cache)
     top = doc["products"][0]
     assert [a["id"] for a in top["advisories"]] == ["A", "B"]  # top CVE first, the rest deduplicated by id
+
+
+def test_embedded_component_flag_from_name_and_paths(tmp_path):
+    run = seed(tmp_path / "runs")
+    run.write_jsonl("vulns.jsonl", [
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "python", "product": "python", "version": "3.14", "cve_id": "CVE-2007-4559", "severity": "Critical", "cvss": 9.8, "exploitability": "NoExploit", "first_seen": "2026-09-08", "recommendation_ref": None},
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "acme", "product": "widget", "version": "1", "cve_id": "CVE-2026-1", "severity": "Critical", "cvss": 9.8, "exploitability": "NoExploit", "first_seen": "2026-09-08", "recommendation_ref": None},
+        {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "acme", "product": "gadget", "version": "1", "cve_id": "CVE-2026-2", "severity": "Critical", "cvss": 9.8, "exploitability": "NoExploit", "first_seen": "2026-09-08", "recommendation_ref": None},
+    ])
+    run.write_json("hunt-evidence.json", {"results": [
+        {"SoftwareVendor": "acme", "SoftwareName": "widget", "Path": p, "Devices": 1, "Kind": "disk"} for p in
+        ["%ProgramFiles%\\Alpha\\widget.dll", "%ProgramFiles%\\Beta\\widget.dll", "%ProgramFiles%\\Gamma\\widget.dll"]]})
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache", 7))
+    rows = {r["key"]: r for r in doc["products"]}
+    assert rows["python/python"]["flags"]["embedded"] is True      # name matches exception_components
+    assert rows["acme/gadget"]["flags"]["embedded"] is False
+    assert rows["acme/gadget"]["score"] >= 40 and rows["python/python"]["score"] < rows["acme/gadget"]["score"]
+    assert doc["products"][0]["key"] != "python/python"
+
+
+def test_epss_rounded_in_driving_cves(tmp_path):
+    run = seed(tmp_path / "runs")
+    cache = IntelCache(tmp_path / "cache", 7)
+    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, epss=0.48210000000000003))
+    doc = compute(run, load_scoring(), cache)
+    assert doc["products"][0]["driving_cves"][0]["epss"] == 0.482

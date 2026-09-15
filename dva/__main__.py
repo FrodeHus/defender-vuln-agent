@@ -31,7 +31,9 @@ def main(argv: list[str] | None = None) -> int:
         selected = args.tenant or os.environ.get("DVA_TENANT")
         is_show = args.command == "tenant" and getattr(args, "tenant_cmd", None) == "show"
         needs_tenant = args.command != "tenant" or is_show
-        if needs_tenant and not selected:
+        if needs_tenant and not selected and not os.environ.get("DVA_TENANT_DIR"):
+            # An explicit DVA_TENANT_DIR from the shell (fixtures, scripts, tests) is honoured as-is;
+            # auto-selecting the lone tenant would silently redirect runs and caches into it.
             names = _tenant.list_tenants()
             if len(names) == 1:
                 selected = names[0]  # a lone tenant needs no explicit selection

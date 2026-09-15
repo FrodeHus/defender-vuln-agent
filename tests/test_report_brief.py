@@ -54,3 +54,9 @@ def test_report_brief_cli_prints_and_writes_nothing(tmp_path, capsys):
     out = capsys.readouterr().out
     assert out.startswith("Tenant: Contoso") and "a/b: no vendor fix" in out
     assert not run.path("report.md").exists() and not run.path("report.html").exists()
+
+
+def test_brief_carries_a_risk_line_per_top_product():
+    out = render(_doc(), suggestions=None, run_dir="/r")
+    assert "     Risk: The most critical issue is CVE-2026-21887 (critical, CVSS 9.8): it is in CISA's Known Exploited Vulnerabilities catalog" in out
+    assert out.count("     Risk: ") == 3

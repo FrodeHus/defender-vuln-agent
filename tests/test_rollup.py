@@ -142,3 +142,24 @@ def test_privileged_logons_and_mitigations_set_asset_flags(tmp_path):
 def test_privileged_logons_and_mitigations_default_when_absent(tmp_path):
     _, assets = build(seed(tmp_path))
     assert assets["m1"].privileged_user is False and assets["m1"].mitigations == 0
+
+
+def test_update_recommendation_preferred_over_configuration_change(tmp_path):
+    run = seed(tmp_path)
+    run.write_json("recommendations.json", [
+        {"id": "sca-1", "vendor": "ivanti", "product": "connect_secure", "name": "Enable 'Require domain users to elevate'", "recommended_version": None, "remediation_type": "ConfigurationChange"},
+        {"id": "va-1", "vendor": "ivanti", "product": "connect_secure", "name": "Update Ivanti Connect Secure to 22.7R2.5", "recommended_version": "22.7R2.5", "remediation_type": "Update"},
+        {"id": "sca-2", "vendor": "ivanti", "product": "connect_secure", "name": "Disable something", "recommended_version": None, "remediation_type": "ConfigurationChange"},
+    ])
+    products, _ = build(run)
+    ics = products[product_key("ivanti", "connect_secure")]
+    assert ics.remediation.startswith("Update Ivanti") and ics.remediation_type == "Update"
+
+
+def test_configuration_recommendation_kept_when_no_update_exists(tmp_path):
+    run = seed(tmp_path)
+    run.write_json("recommendations.json", [
+        {"id": "sca-1", "vendor": "ivanti", "product": "connect_secure", "name": "Enable a control", "recommended_version": None, "remediation_type": "ConfigurationChange"},
+    ])
+    products, _ = build(run)
+    assert products[product_key("ivanti", "connect_secure")].remediation == "Enable a control"

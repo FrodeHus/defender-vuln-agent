@@ -52,6 +52,14 @@ def _merge_cve_ref(cur: CveRef | None, new: CveRef) -> CveRef:
     return CveRef(id=cur.id, severity=severity, cvss=cvss, exploitability=exploitability, first_seen=first_seen)
 
 
+def _rec_rank(rec: dict) -> int:
+    if rec.get("remediation_type") == "Update":
+        return 2
+    if rec.get("recommended_version"):
+        return 1
+    return 0
+
+
 def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
     assets: dict[str, Asset] = {}
     azure_id_map: dict[str, str] = {}  # lower(azure_resource_id) -> asset id
@@ -93,10 +101,14 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
         a.mitigations = compliant if compliant == total else 0
 
     exploited = {r["CveId"] for r in _hunt(run, "exploited-cves")}
-    recs = {}
+    recs: dict[str, dict] = {}
     if run.path("recommendations.json").exists():
+        # A product can carry several recommendations (updates, configuration changes, uninstalls);
+        # the remediation shown must be the patch, so an Update wins over anything else.
         for r in run.read_json("recommendations.json"):
-            recs[product_key(r.get("vendor"), r.get("product"))] = r
+            key = product_key(r.get("vendor"), r.get("product"))
+            if key not in recs or _rec_rank(r) > _rec_rank(recs[key]):
+                recs[key] = r
 
     version_devices: dict[str, dict[str, set[str]]] = {}
     products: dict[str, Product] = {}

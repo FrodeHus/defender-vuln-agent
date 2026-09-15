@@ -26,6 +26,9 @@ class Scoring:
     exception_components: list[str]
     trend_runs: int
     long_standing_days: int = 90
+    score_weights: dict[str, float] = field(default_factory=lambda: {"base": 0.5, "asset": 0.3, "reach": 0.2})
+    severity_floor: dict[str, int] = field(default_factory=lambda: {"critical": 40})
+    embedded_discount: float = 0.5
 
 
 @dataclass

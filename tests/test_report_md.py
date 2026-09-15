@@ -60,3 +60,12 @@ def test_markdown_config_findings_show_display_name_and_doc_link():
     out = render(json.loads(FX.read_text()))
     assert "| [Turn on Windows Firewall](https://learn.microsoft.com/windows/security/firewall) | Security controls | Firewall | 8 | 412 | [portal](https://security.microsoft.com/security-recommendations?recommendationId=sca-_-scid-104&search=scid-104) |" in out
     assert "| scid-211 | Application |" in out  # a finding without a name still shows its id
+
+
+def test_markdown_flags_embedded_products():
+    import json
+    from pathlib import Path
+    from dva.report_md import render
+    doc = json.loads((Path(__file__).parent / "fixtures" / "sample-run" / "findings.json").read_text())
+    doc["products"][0]["flags"]["embedded"] = True
+    assert "| KEV, exploit, internet-facing, Overdue by 7 days, Embedded |" in render(doc)

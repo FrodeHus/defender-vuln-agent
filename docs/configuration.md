@@ -37,6 +37,9 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 | `mitigation_configs` | [] | `DeviceTvmSecureConfigurationAssessment` `ConfigurationId`s treated as compensating controls for the `mitigations` hunting query and the `mitigated` asset bonus; pick ids from the `mitigation-catalog` query. Empty list skips the query. |
 | `exception_components` | openssl, zlib, curl, libxml2, libxslt, sqlite, log4j, jre, jdk, java, python, node, ".net runtime", redistributable, msxml, expat, libpng | Case-insensitive substrings of a product's name that `dva exception suggest` flags as a commonly-bundled embedded component |
 | `long_standing_days` | 90 | Age (from a CVE's earliest `first_seen`) after which it counts as long-standing; products carrying such CVEs are listed in their own report section regardless of score |
+| `score_weights` | base 0.5, asset 0.3, reach 0.2 | How much of a product's score comes from its threat alone, from asset context, and from how widespread it is (`reach`); raise `reach` to make fleet-wide products climb faster |
+| `severity_floor` | critical 40 | Minimum score for a product with at least one open CVE of that severity, so a critical CVE never reads as Low even without exploit or exposure signals; floored rows carry `flags.floored` |
+| `embedded_discount` | 0.5 | Multiplier for products that look like embedded components (name in `exception_components`, or evidence paths spanning 3+ top-level product folders); they carry `flags.embedded`, are exempt from `severity_floor`, and are patched through their parent product |
 | `trend_runs` | 8 | How many previous runs' `findings.json` feed the run-to-run trend table when no SQLite store history is available |
 
 Edit, then re-run only `dva score` and `dva report --all`; no re-collection needed. A tenant can carry its own copy at `tenants/<name>/scoring.yaml`, which replaces the defaults entirely for that tenant.

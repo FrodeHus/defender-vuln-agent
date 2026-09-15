@@ -64,8 +64,14 @@ asset_mean = weighted mean multiplier over affected assets, top 5 counted double
 reach      = log10(1 + affected assets) / log10(1 + estate size)
 boost      = 1.25 if a driving CVE is in KEV and an asset is internet-facing, else 1.0
 overdue    = overdue_boost (default 1.10) if any of the product's CVEs has exceeded its severity's sla_days age, else 1.0
-score      = 100 · min(1, top3 · (0.6 + 0.3 · asset_mean / asset_cap + 0.1 · reach) · boost · overdue)
+embedded   = embedded_discount (default 0.5) if the product looks like an embedded component, else 1.0
+score      = 100 · min(1, top3 · (base + asset · asset_mean / asset_cap + reach_w · reach) · boost · overdue · embedded)
+score      = max(score, severity_floor[s]) for any severity s with an open CVE, unless embedded
 ```
+
+`base`, `asset` and `reach_w` are `score_weights` (defaults 0.5, 0.3, 0.2). The floor (default: critical 40) keeps a product with an open critical CVE at Medium or above even when no exploit or exposure signal is known; `flags.floored` marks such rows. A product whose name matches `exception_components` or whose installation evidence spans three or more top-level product folders is treated as embedded (`flags.embedded`): its score is discounted, it is exempt from the floor, and its reason text says it is patched through its parent product. The same detection feeds `dva exception suggest`.
+
+The remediation shown for a product is Defender's `Update` recommendation when one exists; a configuration or uninstall recommendation is used only when no update is known.
 
 The intent: one KEV-listed CVE on one internet-facing gateway outranks many medium CVEs on hundreds of workstations, reach still lifts fleet-wide problems, and a CVE that has sat open past its SLA window nudges its product back to the top even without a context change.
 

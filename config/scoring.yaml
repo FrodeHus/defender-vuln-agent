@@ -24,3 +24,6 @@ mitigation_configs: []
 exception_components: [openssl, zlib, curl, libxml2, libxslt, sqlite, log4j, jre, jdk, java, python, node, ".net runtime", redistributable, msxml, expat, libpng]
 trend_runs: 8
 long_standing_days: 90
+score_weights: { base: 0.5, asset: 0.3, reach: 0.2 }
+severity_floor: { critical: 40 }
+embedded_discount: 0.5

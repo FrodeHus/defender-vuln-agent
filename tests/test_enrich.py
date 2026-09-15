@@ -298,3 +298,12 @@ def test_select_describe_covers_every_driving_cve_of_a_product(tmp_path):
     assets = {"x": Asset(id="x", name="x", internet_facing=True)}
     cache.put("CVE-1", CveIntel(cvss=9.7, description="already described"))
     assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == ["CVE-0", "CVE-2"]
+
+
+def test_title_cuts_at_a_word_boundary():
+    from dva.enrich import short_title
+    text = "Directory traversal vulnerability in the extract and extractall functions in the tarfile module in Python allows user-assisted remote attackers to overwrite arbitrary files"
+    t = short_title(text, 120)
+    assert len(t) <= 120 and t.endswith("…") and not t[:-1].endswith(" ") and t[:-1] in text
+    assert t[:-1].split(" ")[-1] in text.split(" ")
+    assert short_title("short one.", 120) == "short one."

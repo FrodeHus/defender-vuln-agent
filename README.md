@@ -8,7 +8,7 @@ It pulls device inventory and per-device vulnerabilities from Defender for Endpo
 - **Multi-tenant.** Each tenant has its own credentials, runs, caches, per-tenant SQLite store and config; ask for an assessment by tenant name.
 - **Nothing sensitive leaves your machine** except CVE identifiers sent to the CVE server you run locally.
 - **Works without the agent.** Every step is a `dva` command; the whole pipeline also runs offline on fixtures.
-- **Prioritized, not just listed.** SLA-age boosts, end-of-support and attack-path flags, fix-version rollups and a 12-month exposure/secure-score trend surface what actually needs attention first.
+- **Prioritized, not just listed.** Configurable weight for how widespread a product is, a severity floor so a critical CVE never reads as Low, discounted embedded components (patched through their parent product), SLA-age boosts, end-of-support and attack-path flags, fix-version rollups and a 12-month exposure/secure-score trend surface what actually needs attention first.
 - **Accepted risk, tracked.** `dva exception` records known, accepted risks (bundled components, EOS software on a deprecation plan) so they stop competing for attention while staying visible in the report; `dva exception suggest` proposes candidates.
 - **Ticket-ready.** `dva report --tickets` exports one ticket per action item, ready to hand to a ticketing system.
 

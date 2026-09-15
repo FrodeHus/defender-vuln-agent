@@ -100,7 +100,7 @@ def label_for(score: int, cfg: Scoring) -> str:
     return "Low"
 
 
-def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveIntel], cfg: Scoring, estate_size: int, overdue: bool = False) -> ScoredProduct:
+def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveIntel], cfg: Scoring, estate_size: int, overdue: bool = False, embedded: bool = False) -> ScoredProduct:
     threats = sorted(((ref, threat_score(ref, intel.get(ref.id), cfg)) for ref in p.cves.values()), key=lambda x: (-x[1], -x[0].cvss, x[0].id))
     driving = threats[:3]
     top3 = sum(t for _, t in driving) / len(driving) if driving else 0.0
@@ -115,15 +115,27 @@ def product_score(p: Product, assets: dict[str, Asset], intel: dict[str, CveInte
     any_kev = any(intel.get(r.id) and intel[r.id].kev for r, _ in driving)
     any_inet = any(a.internet_facing for a in ranked_assets)
     boost = 1.25 if (any_kev and any_inet) else 1.0
-    raw = top3 * (0.6 + 0.3 * asset_mean / cfg.asset_cap + 0.1 * reach) * boost
+    sw = cfg.score_weights
+    raw = top3 * (sw["base"] + sw["asset"] * asset_mean / cfg.asset_cap + sw["reach"] * reach) * boost
     if overdue:
         raw *= cfg.overdue_boost
+    if embedded:
+        raw *= cfg.embedded_discount
     score = int(round(100 * min(1.0, raw)))
     counts = {s.lower(): sum(1 for r in p.cves.values() if r.severity == s) for s in SEVERITIES}
+    # A product carrying an open CVE of a floored severity never reads as "Low", however weak the
+    # exposure signals are; embedded components are exempt because their fix belongs to a parent product.
+    floored = False
+    if not embedded:
+        floor = max((v for s, v in cfg.severity_floor.items() if counts.get(s.lower(), 0) > 0), default=0)
+        if score < floor:
+            score, floored = floor, True
     flags = {
         "kev": any_kev,
         "exploit": any((intel.get(r.id) and intel[r.id].exploit_public) or EXPLOIT_RANK.get(r.exploitability, 0) >= 1 for r in p.cves.values()),
         "internet_facing": any_inet,
+        "embedded": embedded,
+        "floored": floored,
     }
     top_assets = [(a, asset_multiplier(a, cfg), " · ".join(n for n, _ in asset_signals(a, cfg)) or "No extra exposure") for a in ranked_assets[:5]]
     return ScoredProduct(p, score, label_for(score, cfg), driving, counts, asset_mean, reach, flags, top_assets)
@@ -141,4 +153,9 @@ def reason_for(sp: ScoredProduct) -> str:
         bits.append(f"{len(sp.product.asset_ids)} devices affected")
     if sp.counts["critical"]:
         bits.append(f"{sp.counts['critical']} critical CVEs")
-    return ", ".join(bits).capitalize() if bits else "Open vulnerabilities without exposure signals"
+    if sp.flags.get("embedded"):
+        bits.append("embedded component, patched through its parent product")
+    if not bits:
+        return "Open vulnerabilities without exposure signals"
+    text = ", ".join(bits)
+    return text[0].upper() + text[1:]

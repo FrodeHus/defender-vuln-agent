@@ -4,7 +4,8 @@ METHOD = ("Each product's score (0 to 100) combines threat signals for its CVEs 
           "public exploit availability and exploit maturity), the context of the affected assets (internet exposure, Defender exposure "
           "level, device value, criticality tags, privileged-user sign-ins, cloud attack-path membership and applied mitigations) and "
           "the number of affected devices. A product with at least one CVE past its SLA deadline gets its score multiplied up (the SLA "
-          "overdue multiplier in scoring.yaml). Findings are grouped by software product so one row maps to one patch action; only the "
+          "overdue multiplier in scoring.yaml). A product with an open critical CVE scores at least the severity floor, so it never reads as Low; "
+          "embedded components (bundled libraries and runtimes, patched through their parent product) are discounted and exempt from the floor. Findings are grouped by software product so one row maps to one patch action; only the "
           "three CVEs contributing most to a product's score and its most critical assets are shown. Weights live in scoring.yaml.")
 
 
@@ -16,6 +17,8 @@ def _flags(r: dict) -> str:
         bits.append(f"Overdue by {sla['overdue_by_days']} days")
     if r.get("eos"):
         bits.append("End of support")
+    if f.get("embedded"):
+        bits.append("Embedded")
     return ", ".join(bits) or "-"
 
 

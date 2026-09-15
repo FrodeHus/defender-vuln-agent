@@ -1,10 +1,18 @@
 """The few lines the agent needs for its reply, so it never reads report.md (about 3.5K tokens) into its context."""
 from __future__ import annotations
 
+import re
+
 
 def _names(rows: list[dict], keys: list[str]) -> str:
     by_key = {r["key"]: r["product"] for r in rows}
     return ", ".join(by_key.get(k, k) for k in keys) or "none"
+
+
+def _first_sentence(text: str) -> str:
+    """The head of the risk summary: the driving CVE with its threat signals, up to the first sentence end."""
+    m = re.match(r"(.+?[.!?])(\s|$)", text.strip())
+    return m.group(1) if m else text.strip()
 
 
 def render(doc: dict, suggestions: list[dict] | None, run_dir: str) -> str:
@@ -12,6 +20,8 @@ def render(doc: dict, suggestions: list[dict] | None, run_dir: str) -> str:
     out = [f"Tenant: {s.get('tenant', 'tenant')} · run {doc['run'].get('run_id')} · {run_dir}", "Top products:"]
     for r in rows[:3]:
         out.append(f"  {r['rank']}. {r['product']} ({r['vendor']}) {r['score']} {r['label']} — {r['reason']}")
+        if r.get("risk_summary"):
+            out.append(f"     Risk: {_first_sentence(r['risk_summary'])}")
     out.append(f"Needing action: {s['products_action']} of {s['products_total']} products across {s['devices']} devices; "
                f"{s['kev_cves']} KEV-listed CVEs; {s['internet_facing_at_risk']} internet-facing devices with a critical CVE")
     breaches = [r for r in rows if (r.get("sla") or {}).get("overdue_cves")]

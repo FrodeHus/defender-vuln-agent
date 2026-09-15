@@ -127,6 +127,23 @@ def apply(products: dict[str, Product], items_active: list[Exception_]) -> tuple
     return remaining, dropped
 
 
+def embedded_reasons(name: str | None, paths: list[dict] | None, cfg) -> list[str]:
+    """Why a product looks like an embedded component: its name matches `exception_components`,
+    or its evidence paths span 3+ distinct top-level product folders."""
+    reasons: list[str] = []
+    name_l = (name or "").lower()
+    if any(component.lower() in name_l for component in cfg.exception_components):
+        reasons.append("embedded component")
+    top_level: set[str] = set()
+    for entry in paths or []:
+        m = _TOP_LEVEL_FOLDER_RE.match(entry.get("path") or "")
+        if m:
+            top_level.add(m.group(1))
+    if len(top_level) >= 3:
+        reasons.append(f"bundled across {len(top_level)} products")
+    return reasons
+
+
 def suggest(run, cfg) -> list[dict]:
     """Score-reason suggestions for accepted-risk exceptions (spec §1).
 
@@ -150,17 +167,7 @@ def suggest(run, cfg) -> list[dict]:
     suggested_until = (date.today() + timedelta(days=90)).isoformat()
     out: list[dict] = []
     for row in doc["products"]:
-        reasons: list[str] = []
-        name_l = (row.get("product") or "").lower()
-        if any(component.lower() in name_l for component in cfg.exception_components):
-            reasons.append("embedded component")
-        top_level: set[str] = set()
-        for entry in row.get("paths") or []:
-            m = _TOP_LEVEL_FOLDER_RE.match(entry.get("path") or "")
-            if m:
-                top_level.add(m.group(1))
-        if len(top_level) >= 3:
-            reasons.append(f"bundled across {len(top_level)} products")
+        reasons = embedded_reasons(row.get("product"), row.get("paths"), cfg)
         remediation_type = row.get("remediation_type")
         if not remediation_type or remediation_type in ("Uninstall", "ConfigurationChange"):
             reasons.append("no vendor fix")
