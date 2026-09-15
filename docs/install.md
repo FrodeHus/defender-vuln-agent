@@ -101,6 +101,22 @@ The repository is also a Claude Code plugin (`.claude-plugin/plugin.json`). Pick
 
 **b. From the marketplace, into another project.** Run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent` in any project. The plugin's `.mcp.json` starts the CVE server from the plugin's own directory through `uvx`, so it needs no configuration; the NVD key then comes from an exported `NVD_API_KEY` (the plugin directory has no `.env`). The `dva` CLI, tenants and run data still live in this checkout: set `DVA_HOME` to its absolute path before starting `claude` (the agent runs `cd "${DVA_HOME:-.}"` and activates the venv before every `dva` command).
 
+### Running the agent on a local model with Ollama
+
+Claude Code talks to any Anthropic-compatible endpoint, and [Ollama](https://docs.ollama.com/api/anthropic-compatibility) serves one at `/v1/messages` since version 0.14. Nothing in this repository changes: the CVE server is still started by `dva enrich --fetch`, and the agent only sequences `dva` commands and reads their short summaries, which is work a local model can do.
+
+```bash
+ollama pull qwen3-coder
+printf 'FROM qwen3-coder\nPARAMETER num_ctx 65536\n' > /tmp/Modelfile && ollama create qwen3-coder-64k -f /tmp/Modelfile
+ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_AUTH_TOKEN=ollama ANTHROPIC_API_KEY= ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k claude --plugin-dir . --model qwen3-coder-64k
+```
+
+- The second line matters: Ollama's default context window is far too small for Claude Code, and 64K tokens is the documented minimum for comfortable use.
+- `ANTHROPIC_AUTH_TOKEN` (any non-empty value) is what bypasses the claude.ai login; the base URL alone keeps your existing login active. `ANTHROPIC_DEFAULT_SONNET_MODEL` maps the `model: sonnet` pinned in `agents/vuln-assessor.md` to your local model. Newer Ollama builds offer `ollama launch claude`, which sets the first three variables for you.
+- Ollama's docs recommend `qwen3-coder`, `glm-4.7` or `minimax-m2.1` for Claude Code; the useful sizes want a 24 GB or larger GPU. Prompt caching is not available, so every turn resends the context, which costs time rather than money.
+- A smaller model follows instructions less reliably: check its reply against `python3 -m dva report --brief` the first few runs, and treat the tenant-selection and exception-add rules in the agent as the places it is most likely to slip.
+- Ollama Cloud endpoints currently reject the `x-api-key` header Claude Code sends ([ollama/ollama#16922](https://github.com/ollama/ollama/issues/16922)); a local Ollama is fine.
+
 Continue with [usage.md](usage.md).
 
 ## Upgrading
