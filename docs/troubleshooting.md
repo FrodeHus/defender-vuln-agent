@@ -21,6 +21,9 @@ Run `claude mcp list` in the repo. If `cve-mcp` is missing, start `claude` from 
 **CVE server logs `NVD_API_KEY not set`**
 Put `NVD_API_KEY=...` in this repo's `.env` (or export it before starting `claude`). For a marketplace install the plugin directory has no `.env`, so export it.
 
+**Claude Code on Ollama waits minutes and then replies with nothing (even to "hi")**
+The opening request does not fit the model's context window. Every request carries every tool definition Claude Code can see, and installed plugins and MCP servers push that to 60K tokens or more; Ollama truncates it (`truncating input prompt limit=... prompt=...` in its log) or answers `500` on `POST /v1/messages` after minutes of prompt processing. Start Claude Code with `--bare --strict-mcp-config --plugin-dir . --add-dir .`, give the model a 64K context and set `CLAUDE_CODE_MAX_CONTEXT_TOKENS` to it; see [install.md](install.md#running-the-agent-on-a-local-model-with-ollama). If Ollama runs as `ollama serve` in a terminal, the log is that terminal, not `~/.ollama/logs/server.log`.
+
 **`enrich --fetch` prints `CVE server could not be started` or `exited before answering initialize`**
 The server command failed to boot. Run `scripts/cve-mcp.sh --warm` by hand to see the real error (usually a missing `uvx` or no network for the first download). `DVA_CVE_MCP` or `--server CMD` overrides the command. Per-CVE `warning:` lines mean one lookup failed; those CVEs stay in `enrichment.json`'s `missing` list and scoring falls back to Defender's own signals for them.
 

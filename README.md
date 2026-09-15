@@ -29,6 +29,15 @@ claude --plugin-dir .                                # approve the cve-mcp serve
 
 This repository is also a Claude Code plugin. To use the agent and skills from another project instead of this checkout, run `/plugin marketplace add FrodeHus/defender-vuln-agent` then `/plugin install defender-vuln-agent`, and see [docs/install.md](docs/install.md#6-claude-code) for pointing the agent at this checkout with `DVA_HOME`.
 
+To run the agent on a local model instead of Anthropic's API, point Claude Code at [Ollama](https://ollama.com) and start it in bare mode so the request fits a local context window:
+
+```bash
+export ANTHROPIC_DEFAULT_SONNET_MODEL=qwen3-coder-64k CLAUDE_CODE_MAX_CONTEXT_TOKENS=65536
+ollama launch claude --model qwen3-coder-64k -- --bare --strict-mcp-config --plugin-dir . --add-dir .
+```
+
+The model alias, the 64K context and why bare mode is required are in [docs/install.md](docs/install.md#running-the-agent-on-a-local-model-with-ollama). Nothing in the pipeline changes: `dva` still starts the CVE server itself and the agent only sequences commands.
+
 Then, in Claude Code:
 
 ```
@@ -45,7 +54,7 @@ An executive summary with the estate's exposure score and what changed since the
 
 | | |
 |---|---|
-| [docs/install.md](docs/install.md) | Requirements, installer, NVD key, app registration, credentials, tenants, verifying |
+| [docs/install.md](docs/install.md) | Requirements, installer, NVD key, app registration, credentials, tenants, verifying, running on a local model with Ollama |
 | [docs/usage.md](docs/usage.md) | Using the agent, the command line, hunting queries, reading reports, offline demo, run files |
 | [docs/configuration.md](docs/configuration.md) | Environment variables, `scoring.yaml`, `sources.yaml`, tenant overrides |
 | [docs/architecture.md](docs/architecture.md) | Pipeline, modules, data model, scoring formulas, failure model |
@@ -70,7 +79,7 @@ python3 -m dva report --brief                                 # dozen-line summa
 
 ## Requirements
 
-[uv](https://docs.astral.sh/uv/), a Defender for Endpoint tenant, an Entra app registration with read permissions (the setup script creates it), and Claude Code for the agent. See [docs/install.md](docs/install.md).
+[uv](https://docs.astral.sh/uv/), a Defender for Endpoint tenant, an Entra app registration with read permissions (the setup script creates it), and Claude Code for the agent, with either an Anthropic account or a local [Ollama](https://ollama.com) model (24 GB or more of GPU memory for the useful sizes). See [docs/install.md](docs/install.md).
 
 ## Acknowledgements
 

@@ -14,6 +14,8 @@ What should fabrikam patch first this week?
 
 The agent lists tenants, matches the name (a unique prefix is enough; it stops and asks if the name is missing or ambiguous), verifies permissions with `dva doctor`, creates a run, collects inventory and vulnerabilities, runs the hunting queries, runs `dva enrich --fetch` (which sends the selected CVEs to the CVE server one `triage_cve` call at a time and stores the results), scores, renders the reports, and replies with the top products, the count needing action and any source that was partial or failed. It replies from `dva report --brief` (a dozen lines) and reads `report.md` only when asked for more; raw data never enters the conversation.
 
+The same works on a local model: the agent makes no CVE tool calls and reads only short summaries, so a 30B-class coding model through Ollama handles it. Start Claude Code as described in [install.md](install.md#running-the-agent-on-a-local-model-with-ollama) (bare mode, no MCP servers, only this plugin) or the opening request will not fit the model's context window. Expect a slower first turn and check the reply against `python3 -m dva report --brief` the first few runs.
+
 Follow-ups that work well:
 
 - `Continue the assessment from runs/<id>` (or `tenants/<name>/runs/<id>`) resumes after a failure.

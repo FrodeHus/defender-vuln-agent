@@ -29,7 +29,7 @@ Golden report files regenerate with `DVA_UPDATE_GOLDEN=1 python3 -m pytest tests
 
 ## Running the agent
 
-From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks up the project `.mcp.json`). From a marketplace install in another project, set `DVA_HOME` to this checkout's path first — see `docs/install.md` step 6.
+From this checkout: `claude --plugin-dir .` (or plain `claude`, which also picks up the project `.mcp.json`). From a marketplace install in another project, set `DVA_HOME` to this checkout's path first — see `docs/install.md` step 6. On a local model through Ollama, start Claude Code with `--bare --strict-mcp-config --plugin-dir . --add-dir .` and map `ANTHROPIC_DEFAULT_SONNET_MODEL` to the local model: installed plugins and MCP servers push the opening request past a 64K window, and the assessment needs neither.
 
 ## Rules
 
