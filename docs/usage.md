@@ -37,7 +37,7 @@ python3 -m dva mde all                                      # machines, vulns, r
 python3 -m dva hunt internet-facing exploited-cves device-tags product-versions evidence privileged-logons mitigations certificates config-findings
 python3 -m dva cloud vulns                                  # only if sources.yaml has cloud: true
 python3 -m dva cloud attack-paths                            # only if sources.yaml has cloud: true
-python3 -m dva enrich --fetch                               # calls the CVE server per selected CVE; prints "fetched N results, M failed" and "stored N, missing M"
+python3 -m dva enrich --fetch                               # refreshes the CISA KEV catalogue (daily), then calls the CVE server per selected CVE; prints "KEV catalogue: N entries; M in this estate listed", "fetched N results, M failed" and "stored N, missing M"
 python3 -m dva score                                        # writes findings.json
 python3 -m dva report --all                                 # report.md, report.html, report.json, tickets.json
 python3 -m dva exception suggest                             # suggested accepted-risk exceptions, writes exception-suggestions.json

@@ -424,6 +424,8 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
     estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
     intel = cache.all_fresh(all_ids)
+    from dva import kev as _kev
+    _kev.apply(intel, _kev.load(), all_ids)
     exc_items = exceptions_mod.load(exceptions_mod.path_for_current())
     active_exceptions, expired_exceptions = exceptions_mod.split(exc_items, date.today())
     listed_products, dropped_exceptions = exceptions_mod.apply(products, active_exceptions)

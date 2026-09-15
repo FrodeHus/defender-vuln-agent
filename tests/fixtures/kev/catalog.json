@@ -1,0 +1,11 @@
+{
+  "title": "CISA Catalog of Known Exploited Vulnerabilities",
+  "catalogVersion": "2026.09.14",
+  "dateReleased": "2026-09-14T14:00:00.0000Z",
+  "count": 3,
+  "vulnerabilities": [
+    {"cveID": "CVE-2026-21887", "vendorProject": "Ivanti", "product": "Connect Secure", "vulnerabilityName": "Ivanti Connect Secure Unauthenticated RCE", "dateAdded": "2026-09-08", "shortDescription": "Unauthenticated remote code execution in the web component.", "requiredAction": "Apply mitigations per vendor instructions.", "dueDate": "2026-09-29", "knownRansomwareCampaignUse": "Known", "notes": "", "cwes": ["CWE-94"]},
+    {"cveID": "CVE-2026-24433", "vendorProject": "Adobe", "product": "Acrobat Reader", "vulnerabilityName": "Adobe Acrobat Reader Use-After-Free", "dateAdded": "2026-09-10", "shortDescription": "Use after free leading to code execution.", "requiredAction": "Apply updates per vendor instructions.", "dueDate": "2026-10-01", "knownRansomwareCampaignUse": "Unknown", "notes": "", "cwes": ["CWE-416"]},
+    {"cveID": "CVE-2020-0001", "vendorProject": "Example", "product": "Nothing installed", "vulnerabilityName": "Not in this estate", "dateAdded": "2020-01-01", "shortDescription": "", "requiredAction": "", "dueDate": "2020-01-15", "knownRansomwareCampaignUse": "Unknown", "notes": "", "cwes": []}
+  ]
+}

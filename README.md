@@ -6,7 +6,7 @@ It pulls device inventory and per-device vulnerabilities from Defender for Endpo
 
 - **Read-only by construction.** The app registration holds only read permissions.
 - **Multi-tenant.** Each tenant has its own credentials, runs, caches, per-tenant SQLite store and config; ask for an assessment by tenant name.
-- **Nothing sensitive leaves your machine** except CVE identifiers sent to the CVE server you run locally.
+- **Nothing sensitive leaves your machine** except CVE identifiers sent to the CVE server you run locally. The only other outbound call is a daily download of CISA's public Known Exploited Vulnerabilities catalogue (`kev: false` in `sources.yaml` turns it off), matched locally against every CVE in the estate.
 - **Works without the agent.** Every step is a `dva` command; the whole pipeline also runs offline on fixtures.
 - **Prioritized, not just listed.** Configurable weight for how widespread a product is, a severity floor so a critical CVE never reads as Low, discounted embedded components (patched through their parent product), SLA-age boosts, end-of-support and attack-path flags, fix-version rollups and a 12-month exposure/secure-score trend surface what actually needs attention first.
 - **Accepted risk, tracked.** `dva exception` records known, accepted risks (bundled components, EOS software on a deprecation plan) so they stop competing for attention while staying visible in the report; `dva exception suggest` proposes candidates.

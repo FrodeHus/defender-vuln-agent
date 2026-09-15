@@ -36,8 +36,9 @@ def test_select_top_per_product_and_caps(tmp_path):
     assets = {"x": Asset(id="x", name="x", internet_facing=True, tags=["Tier0"]), "y": Asset(id="y", name="y")}
     cache.put("CVE-0", CveIntel(cvss=9.0))
     ids = select_candidates({"a/b": hot, "c/d": cold}, assets, cache, cfg, estate_size=10)
-    # top 3 by cvss: CVE-0 (cached, skipped), CVE-1, CVE-2 ; cold product below threshold is excluded
-    assert ids == ["CVE-1", "CVE-2"]
+    # top 3 by cvss: CVE-0 (cached, skipped), CVE-1, CVE-2 ; the cold product scores below the threshold but sits
+    # inside the report window (top_n + 15), so its CVE is triaged too
+    assert ids == ["CVE-1", "CVE-2", "CVE-99"]
 
 
 def test_select_candidates_uses_enrich_threshold_not_report_threshold(tmp_path):
@@ -319,3 +320,25 @@ def test_select_describe_follows_the_intel_ranked_driving_cves(tmp_path):
     assets = {"x": Asset(id="x", name="x", internet_facing=True)}
     cache.put("CVE-3", CveIntel(cvss=7.0, epss_percentile=0.99, kev=True))
     assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == ["CVE-3", "CVE-0", "CVE-1"]
+
+
+def test_select_candidates_covers_the_report_window_below_the_threshold(tmp_path):
+    """Every product the report can list gets its driving CVEs triaged, whatever its preliminary score."""
+    cache = IntelCache(tmp_path, 7)
+    products = {f"v/p{i}": Product(key=f"v/p{i}", vendor="v", name=f"p{i}", asset_ids={"x"}, cves={f"CVE-{i}": ref(i, 3.0)}) for i in range(5)}
+    assets = {"x": Asset(id="x", name="x")}
+    ids = select_candidates(products, assets, cache, cfg, estate_size=1000)
+    assert sorted(ids) == [f"CVE-{i}" for i in range(5)]
+
+
+def test_select_candidates_ranks_kev_catalogue_cves_first(tmp_path, monkeypatch):
+    from pathlib import Path
+    from dva import kev
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    kev.refresh(fixture=Path(__file__).parent / "fixtures" / "kev" / "catalog.json")
+    cache = IntelCache(tmp_path / "cache" / "cve", 7)
+    cves = {f"CVE-{i}": ref(i, 9.8 - i * 0.1) for i in range(5)}
+    cves["CVE-2026-24433"] = CveRef(id="CVE-2026-24433", severity="High", cvss=7.0, exploitability="NoExploit", first_seen="2026-01-01")
+    p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"}, cves=cves)
+    ids = select_candidates({"a/b": p}, {"x": Asset(id="x", name="x")}, cache, cfg, estate_size=1)
+    assert ids[0] == "CVE-2026-24433" and len(ids) == cfg.enrich_top_per_product

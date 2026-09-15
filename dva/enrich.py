@@ -12,7 +12,7 @@ from dva.mcp_client import McpStdioClient
 from dva.model import Asset, Product, EXPLOIT_RANK
 from dva.rollup import build
 from dva.run import Run, add_run_arg, resolve_run, cache_dir
-from dva.scoring import CveIntel, product_score
+from dva.scoring import CveIntel, product_score, threat_score
 
 CHUNK = 20
 
@@ -27,15 +27,35 @@ def _rank_key(r):
     )
 
 
+def _known_intel(products: dict[str, Product], cache: IntelCache) -> dict[str, CveIntel]:
+    """Whatever is already known about the estate's CVEs: cached intel (stale entries included, old EPSS beats
+    none) plus the KEV catalogue, so selection ranks the way the report will."""
+    from dva import kev
+    intel: dict[str, CveIntel] = {}
+    for p in products.values():
+        for cid in p.cves:
+            if cid not in intel:
+                cached = cache.get(cid, stale_ok=True)
+                if cached is not None:
+                    intel[cid] = cached
+    kev.apply(intel, kev.load(), {cid for p in products.values() for cid in p.cves})
+    return intel
+
+
 def select_candidates(products: dict[str, Product], assets: dict[str, Asset], cache: IntelCache, cfg: Scoring, estate_size: int) -> list[str]:
-    prelim = [(product_score(p, assets, {}, cfg, estate_size).score, p) for p in products.values()]
+    """CVEs to triage: for every product the report can list (the top_n + 15 window) or that scores at least
+    enrich_threshold, its enrich_top_per_product strongest CVEs by threat with what is known so far."""
+    intel = _known_intel(products, cache)
+    prelim = [(product_score(p, assets, intel, cfg, estate_size).score, p) for p in products.values()]
     prelim.sort(key=lambda x: (-x[0], x[1].key))
+    window = max(cfg.top_n, 0) + 15
     out: list[str] = []
     seen: set[str] = set()
-    for score, p in prelim:
-        if score < cfg.enrich_threshold:
+    for i, (score, p) in enumerate(prelim):
+        if score < cfg.enrich_threshold and i >= window:
             break
-        for r in sorted(p.cves.values(), key=_rank_key)[: cfg.enrich_top_per_product]:
+        ranked = sorted(p.cves.values(), key=lambda r: (-threat_score(r, intel.get(r.id), cfg), _rank_key(r)))
+        for r in ranked[: cfg.enrich_top_per_product]:
             if r.id in seen or cache.get(r.id) is not None:
                 continue
             seen.add(r.id)
@@ -50,13 +70,7 @@ def select_describe(products: dict[str, Product], assets: dict[str, Asset], cach
     recency), for lookup_cve descriptions and vendor advisories; skips ids already described."""
     # Rank with whatever intel the cache holds (stale entries included: old EPSS/KEV beats none) so the
     # selection is the same "driving" list the report will print; run it after triage for the best match.
-    intel: dict[str, CveIntel] = {}
-    for p in products.values():
-        for cid in p.cves:
-            if cid not in intel:
-                cached = cache.get(cid, stale_ok=True)
-                if cached is not None:
-                    intel[cid] = cached
+    intel = _known_intel(products, cache)
     scored = sorted((product_score(p, assets, intel, cfg, estate_size) for p in products.values()), key=lambda s: (-s.score, s.product.key))
     per_product = max(cfg.enrich_top_per_product, 1)
     window = max(cfg.top_n, 0) + 15
@@ -497,6 +511,13 @@ def _run(args) -> int:
     if args.fetch:
         # Two phases: triage first and merge it, then pick the CVEs to describe with that intel in hand, so the
         # described CVEs are exactly the ones the report will show as driving each product.
+        from dva import kev
+        kev.ensure_fresh()
+        catalog = kev.load()
+        if catalog:
+            hits = sum(1 for p in products.values() for cid in p.cves if cid.upper() in catalog)
+            run.set_source("kev", "ok", count=hits)
+            print(f"KEV catalogue: {len(catalog)} entries; {hits} CVE{'s' if hits != 1 else ''} in this estate listed")
         ids = select_candidates(products, assets, cache, cfg, estate)
         run.write_json("enrich-candidates.json", ids)
         server = shlex.split(args.server) if args.server else default_server_command()

@@ -54,6 +54,7 @@ Edit, then re-run only `dva score` and `dva report --all`; no re-collection need
 | `cloud` | false | Collect Defender for Cloud findings via Azure Resource Graph |
 | `subscriptions` | [] | Subscription ids for `cloud` (the app needs `Reader` on each) |
 | `hunting_queries` | internet-facing, exploited-cves, device-tags, vuln-counts-by-device, product-versions, evidence, privileged-logons, mitigations, certificates, config-findings | Queries `dva hunt` runs when given no names |
+| `kev` | true | Download CISA's Known Exploited Vulnerabilities catalogue (public JSON, no key) during `dva enrich --fetch` when the cached copy is older than 24 hours, and match it against every CVE in the estate at scoring time. `false` for air-gapped tenants: KEV flags then come only from triaged CVEs. `DVA_KEV_URL` can point at a mirror or a local file. |
 | `shared_cve_cache` | false | When true, CVE intel is shared across all tenants in one file at `<repo>/.cache/cve.sqlite` instead of each tenant's own cache. Run history stays per tenant regardless. |
 
 A tenant's `tenants/<name>/sources.yaml` is merged over the defaults, so it can contain only the keys that differ, typically `cloud` and `subscriptions`.
@@ -63,6 +64,7 @@ A tenant's `tenants/<name>/sources.yaml` is merged over the defaults, so it can 
 Each tenant's cache directory holds two SQLite files (both mode 600, WAL journaling), not one:
 
 - `<cache>/dva.sqlite` — run history: a `runs`/`product_history` pair recording every `dva score` run (`exposure_score`, `secure_score`, and per-product scores) for trend reporting without rescanning old `findings.json` files. Opened by `open_store()`, always per tenant.
+- `<cache>/kev.json` — the CISA KEV catalogue as last downloaded (`fetched_at`, `released`, entries), refreshed daily by `dva enrich --fetch` or on demand by `dva kev [--fixture FILE]`.
 - `<cache>/cve/dva.sqlite` — CVE intel: the `cve_intel` table backing `IntelCache`. Opened by `open_intel_store()`; when `shared_cve_cache` is true this instead points at the repo-level `<repo>/.cache/cve.sqlite`, shared across tenants.
 
 The intel store is the sole source of truth for CVE intel: `dva/cache.py`'s `IntelCache.get`/`put`/`all_fresh` read and write only it. Pre-existing per-CVE JSON files from before this cache was store-backed are imported into it once, the first time a cache directory is opened; after that the JSON files are never read again, even if new ones are dropped in later. `dva/score_cmd.py`'s `compute()` reads trend rows from the run-history store when one is passed and it already has rows, otherwise it falls back to scanning previous run directories.

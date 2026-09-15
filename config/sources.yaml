@@ -9,3 +9,7 @@ hunting_queries: [internet-facing, exploited-cves, device-tags, vuln-counts-by-d
 # When true, CVE intel (not run history) is shared across all tenants in one file at
 # <repo>/.cache/cve.sqlite instead of each tenant's own cache. Run history is always per tenant.
 shared_cve_cache: false
+# Download CISA's Known Exploited Vulnerabilities catalogue (public, no key, nothing about the tenant is
+# sent) once a day during `dva enrich --fetch` and match it against every CVE in the estate. Set false
+# for air-gapped runs; KEV flags then come only from the triaged CVEs.
+kev: true

@@ -20,6 +20,7 @@ def test_offline_pipeline(tmp_path):
     run_dir = dva("run", "new", env=env).strip(); env["DVA_RUN"] = run_dir
     dva("mde", "all", "--fixture", str(FX / "mde" / "all.json"), env=env)
     dva("hunt", "internet-facing", "--fixture", str(FX / "hunting" / "internet-facing.json"), env=env)
+    dva("kev", "--fixture", str(FX / "kev" / "catalog.json"), env=env)
     listing = dva("enrich", "--list", env=env)
     chunks = [json.loads(l) for l in listing.splitlines() if l.startswith("{")]
     assert chunks and "CVE-2026-21887" in chunks[0]["cve_ids"]
@@ -33,6 +34,7 @@ def test_offline_pipeline(tmp_path):
         assert (Path(run_dir) / f).exists()
     doc = json.loads((Path(run_dir) / "findings.json").read_text())
     assert doc["products"][0]["driving_cves"][0]["kev"] is True
+    assert doc["summary"]["kev_cves"] >= 2 and doc["run"]["sources"]["kev"]["count"] == 2  # the catalogue covers the estate; triage adds one more
     assert "adobe/acrobat-reader-dc" not in [p["key"] for p in doc["products"]]
     assert any(r["key"] == "adobe/acrobat-reader-dc" for r in doc["accepted_risks"]["active"])
     suggest_out = dva("exception", "suggest", env=env)

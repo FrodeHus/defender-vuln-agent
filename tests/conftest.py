@@ -12,6 +12,7 @@ def _isolated_tenants(tmp_path_factory, monkeypatch):
     snapshot = dict(os.environ)
     monkeypatch.setenv("DVA_TENANTS_DIR", str(tmp_path_factory.mktemp("no-tenants")))
     monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path_factory.mktemp("cache")))  # never the checkout's real .cache
+    monkeypatch.setenv("DVA_KEV_URL", str(os.path.join(os.path.dirname(__file__), "fixtures", "kev", "catalog.json")))  # never the network
     for k in ("DVA_TENANT", "DVA_TENANT_DIR", "DVA_TENANT_NAME"):
         monkeypatch.delenv(k, raising=False)
     yield

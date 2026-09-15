@@ -338,3 +338,17 @@ def test_asset_facets_and_path_totals_in_row(tmp_path):
     assert [f["label"] for f in top["assets"]["facets"]][:2] == ["Linux", "Windows"]  # platforms first, by count then name
     assert top["assets"]["tags"] == [{"label": "Finance", "count": 1}, {"label": "Prod", "count": 1}, {"label": "Tier0", "count": 1}]
     assert cfg.max_paths == 10 and len(top["paths"]) == 10 and top["paths_total"] == 12
+
+
+def test_kev_flag_comes_from_the_catalogue_without_any_triage(tmp_path, monkeypatch):
+    from dva import kev
+    from pathlib import Path
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    kev.refresh(fixture=Path(__file__).parent / "fixtures" / "kev" / "catalog.json")
+    run = seed(tmp_path / "runs")
+    doc = compute(run, load_scoring(), IntelCache(tmp_path / "cache" / "cve", 7))
+    rows = {r["key"]: r for r in doc["products"]}
+    assert rows["ivanti/connect-secure"]["flags"]["kev"] is True and rows["adobe/acrobat-reader-dc"]["flags"]["kev"] is True
+    assert doc["summary"]["kev_cves"] == 2
+    assert "Known Exploited Vulnerabilities" in rows["ivanti/connect-secure"]["risk_summary"]
+    assert rows["ivanti/connect-secure"]["driving_cves"][0] == {**rows["ivanti/connect-secure"]["driving_cves"][0], "id": "CVE-2026-21887", "kev": True}
