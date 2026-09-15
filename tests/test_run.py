@@ -67,3 +67,54 @@ def test_runs_dir_option(tmp_path, capsys):
     output = capsys.readouterr().out.strip()
     assert result == 0
     assert output.startswith(str(tmp_path)), f"output {output} should be under {tmp_path}"
+
+
+def _mk(runs_dir, rid, manifest=True):
+    d = runs_dir / rid; d.mkdir(parents=True)
+    if manifest:
+        (d / "manifest.json").write_text('{"run_id": "%s", "sources": {}}' % rid)
+    return d
+
+
+def test_prune_keeps_the_latest_run_per_day(tmp_path):
+    from dva.run import prune
+    for rid in ("20260910T080000000Z", "20260910T120000000Z", "20260911T070000000Z", "20260912T060000000Z", "20260912T090000000Z"):
+        _mk(tmp_path, rid)
+    _mk(tmp_path, "notes", manifest=False)
+    kept, pruned = prune(tmp_path)
+    assert kept == ["20260910T120000000Z", "20260911T070000000Z", "20260912T090000000Z"]
+    assert pruned == ["20260910T080000000Z", "20260912T060000000Z"]
+
+
+def test_prune_older_than_removes_whole_days_and_spares_the_active_run(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from dva.run import prune
+    for rid in ("20260801T080000000Z", "20260910T080000000Z", "20260910T120000000Z"):
+        _mk(tmp_path, rid)
+    monkeypatch.setenv("DVA_RUN", str(tmp_path / "20260910T080000000Z"))
+    kept, pruned = prune(tmp_path, older_than_days=30, now=datetime(2026, 9, 15, tzinfo=timezone.utc))
+    assert pruned == ["20260801T080000000Z"] and kept == ["20260910T080000000Z", "20260910T120000000Z"]
+
+
+def test_run_prune_cli_dry_run_then_delete(tmp_path, monkeypatch, capsys):
+    from dva.__main__ import main
+    from dva.store import Store
+    monkeypatch.setenv("DVA_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.delenv("DVA_RUN", raising=False)
+    runs = tmp_path / "runs"
+    for rid in ("20260910T080000000Z", "20260910T120000000Z"):
+        _mk(runs, rid)
+        (runs / rid / "findings.json").write_text("{}")
+    store = Store(tmp_path / "cache" / "dva.sqlite")
+    for rid in ("20260910T080000000Z", "20260910T120000000Z"):
+        store.record_run(rid, "t", {}, [])
+    store.close()
+    assert main(["run", "prune", "--runs-dir", str(runs), "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "would prune 1 run(s), keeping 1: 20260910T080000000Z" in out
+    assert (runs / "20260910T080000000Z").exists()
+    assert main(["run", "prune", "--runs-dir", str(runs)]) == 0
+    out = capsys.readouterr().out
+    assert "pruned 1 run(s), keeping 1: 20260910T080000000Z" in out
+    assert not (runs / "20260910T080000000Z").exists() and (runs / "20260910T120000000Z" / "findings.json").exists()
+    assert [r["run_id"] for r in Store(tmp_path / "cache" / "dva.sqlite").recent_runs(10)] == ["20260910T120000000Z"]

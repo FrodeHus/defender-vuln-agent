@@ -42,5 +42,8 @@ Without enrichment (EPSS, KEV), scores are lower by design. Check that the enric
 **Two runs created within the same second**
 Run ids get a `-001` suffix; `dva run latest` still returns the newest.
 
+**Too many run directories**
+`dva run prune` keeps the newest run of each day and deletes the rest (with `--older-than DAYS`, whole days older than that too); `--dry-run` lists what would go. Pruned runs also leave the trend history.
+
 **Reports show `unknown` as the tenant**
 Set `DVA_TENANT_NAME` in the tenant's `.env` (multi tenant defaults to the directory name).

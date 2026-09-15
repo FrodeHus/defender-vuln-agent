@@ -128,6 +128,17 @@ class Store:
         except sqlite3.Error as exc:
             raise DvaError(f"store record_run failed for {run_id}: {exc}")
 
+    def delete_runs(self, run_ids) -> None:
+        ids = [(r,) for r in run_ids]
+        if not ids:
+            return
+        try:
+            self._conn.executemany("DELETE FROM product_history WHERE run_id = ?", ids)
+            self._conn.executemany("DELETE FROM runs WHERE run_id = ?", ids)
+            self._conn.commit()
+        except sqlite3.Error as exc:
+            raise DvaError(f"store delete_runs failed: {exc}")
+
     def recent_runs(self, n: int) -> list[dict]:
         try:
             rows = self._conn.execute(

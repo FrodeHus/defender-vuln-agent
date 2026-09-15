@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `dva run prune [--older-than DAYS] [--dry-run]` keeps only the newest run of each UTC day (never the run in `$DVA_RUN`), deletes the other run directories and their rows in the tenant's run-history store, and with `--older-than` drops whole days beyond the cut-off.
 - Affected assets are summarised as counts by type (platform from the device's OS, internet-facing, critical, high value, exposure high, privileged sign-in, attack path, mitigated) plus the ten most common tags, in `findings.json` (`assets.facets`, `assets.tags`) and both reports, with the five most exposed devices named after; estates with thousands of devices no longer depend on the free-text breakdown. Assets carry `os_platform` from `machines.json`. Installation paths stay capped per product (`max_paths`, default 10) and the header shows `10 of N`.
 - `dva enrich --fetch` looks up descriptions after triage, for the CVEs that drive each product once EPSS/KEV intel is in, instead of the top CVEs by Defender CVSS chosen up front; previously a product with several equal-CVSS CVEs could show driving CVEs without a description. A title that is only the cut-off start of the description is dropped from `findings.json`, so the reports no longer print the same sentence twice.
 - HTML report: accepted risks, long-standing vulnerabilities and posture move out of the three-column appendix grid, where their tables overflowed into each other, into a full-width tabbed panel (one tab per section with content, counts in the tab labels) above the method notes.

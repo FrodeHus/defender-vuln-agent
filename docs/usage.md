@@ -42,7 +42,10 @@ python3 -m dva score                                        # writes findings.js
 python3 -m dva report --all                                 # report.md, report.html, report.json, tickets.json
 python3 -m dva exception suggest                             # suggested accepted-risk exceptions, writes exception-suggestions.json
 python3 -m dva report --brief                               # a dozen-line summary for the reply; writes nothing
+python3 -m dva run prune --dry-run                          # housekeeping: keep only the newest run of each day (add --older-than 90 to drop old days); drop --dry-run to delete
 ```
+
+`dva run prune` deletes the earlier run directories of a day and their rows in the tenant's run-history store, so the trend and run-to-run diff continue from the run that was kept. The run named by `$DVA_RUN` is never deleted.
 
 `python3 -m dva --help` and `python3 -m dva <command> --help` list every flag. The package also installs a `dva` console script, so `dva doctor` works inside the venv.
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
-import json, os
-from datetime import datetime, timezone
+import json, os, shutil
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 from dva.errors import DvaError
@@ -132,16 +132,61 @@ def resolve_run(args) -> Run:
     return latest
 
 
+def prune(runs_dir: Path, older_than_days: int | None = None, now: datetime | None = None) -> tuple[list[str], list[str]]:
+    """Which runs to keep and which to drop: the newest run of each UTC day stays, earlier runs of that day go, and
+    with ``older_than_days`` every run from a day before the cut-off goes too. The run in ``$DVA_RUN`` is never
+    dropped. Returns (kept, pruned) run ids, sorted; nothing is deleted here."""
+    runs_dir = Path(runs_dir)
+    if not runs_dir.exists():
+        return [], []
+    ids = sorted(p.name for p in runs_dir.iterdir() if p.is_dir() and (p / "manifest.json").exists())
+    active = os.environ.get("DVA_RUN")
+    active_id = Path(active).name if active else None
+    now = now or datetime.now(timezone.utc)
+    cutoff = (now - timedelta(days=older_than_days)).strftime("%Y%m%d") if older_than_days is not None else None
+    newest_per_day: dict[str, str] = {}
+    for rid in ids:
+        newest_per_day[rid[:8]] = rid  # sorted ascending, so the last one wins
+    kept, pruned = [], []
+    for rid in ids:
+        keep = rid == active_id or (newest_per_day.get(rid[:8]) == rid and (cutoff is None or rid[:8] >= cutoff))
+        (kept if keep else pruned).append(rid)
+    return kept, pruned
+
+
 def register(sub) -> None:
     p = sub.add_parser("run", help="Manage run directories")
     s = p.add_subparsers(dest="run_cmd", required=True)
     n = s.add_parser("new"); n.add_argument("--runs-dir", help="run directory (default: $DVA_RUNS_DIR or runs)"); n.set_defaults(func=_new)
     l = s.add_parser("latest"); l.add_argument("--runs-dir", help="run directory (default: $DVA_RUNS_DIR or runs)"); l.set_defaults(func=_latest)
+    pr = s.add_parser("prune", help="keep only the newest run of each day (and drop whole days older than --older-than)")
+    pr.add_argument("--runs-dir", help="run directory (default: $DVA_RUNS_DIR or runs)")
+    pr.add_argument("--older-than", type=int, metavar="DAYS", help="also drop every run from a day more than DAYS days ago")
+    pr.add_argument("--dry-run", action="store_true", help="print what would be pruned and delete nothing")
+    pr.set_defaults(func=_prune)
 
 
 def _new(args) -> int:
     rd = Path(args.runs_dir) if args.runs_dir else runs_dir()
     print(Run.create(rd).dir); return 0
+
+
+def _prune(args) -> int:
+    from dva.store import open_store
+    rd = Path(args.runs_dir) if args.runs_dir else runs_dir()
+    kept, pruned = prune(rd, older_than_days=args.older_than)
+    verb = "would prune" if args.dry_run else "pruned"
+    print(f"{verb} {len(pruned)} run(s), keeping {len(kept)}" + (": " + ", ".join(pruned) if pruned else ""))
+    if args.dry_run or not pruned:
+        return 0
+    for rid in pruned:
+        shutil.rmtree(rd / rid)
+    store = open_store()
+    try:
+        store.delete_runs(pruned)
+    finally:
+        store.close()
+    return 0
 
 
 def _latest(args) -> int:

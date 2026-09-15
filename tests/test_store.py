@@ -216,3 +216,12 @@ def test_intel_rows_written_before_newer_fields_load_with_defaults(tmp_path):
     assert intel is not None and intel.cvss == 7.4
     assert intel.advisories == [] and intel.exploit_sources == [] and intel.description is None
     cache.close()
+
+
+def test_delete_runs_removes_history_rows(tmp_path):
+    store = Store(tmp_path / "dva.sqlite")
+    for rid in ("r1", "r2", "r3"):
+        store.record_run(rid, "t", {"generated_at": "2026-01-01T00:00:00Z"}, [{"key": "a/b", "score": 1, "label": "Low"}])
+    store.delete_runs(["r1", "r3", "missing"])
+    assert [r["run_id"] for r in store.recent_runs(10)] == ["r2"]
+    assert [h["run_id"] for h in store.product_history("a/b", 10)] == ["r2"]
