@@ -141,13 +141,23 @@ def render(doc: dict) -> str:
             if c.get("description"):
                 out.append("  " + c["description"])
         a = r["assets"]
-        out += ["", f"Affected assets ({a['count']}): {a['breakdown']}"] + [f"- {x['name']} — {x['why']}" for x in a["top"]]
+        facets = a.get("facets") or []
+        if facets:
+            out += ["", f"Affected assets ({a['count']}):"] + [f"- {f['label']}: {f['count']}" for f in facets]
+            if a.get("tags"):
+                out.append("- Tags: " + ", ".join(f"{t['label']} {t['count']}" for t in a["tags"]))
+            out += ["", "Most exposed:"]
+        else:
+            out += ["", f"Affected assets ({a['count']}): {a['breakdown']}"]
+        out += [f"- {x['name']} — {x['why']}" for x in a["top"]]
         more = a["count"] - len(a["top"])
         if more > 0:
             out.append(f"+ {more} more in findings.json")
         paths = r.get("paths") or []
         if paths:
-            out += ["", f"<details><summary>Installation paths ({len(paths)})</summary>", ""]
+            total = r.get("paths_total") or len(paths)
+            shown = f"{len(paths)} of {total}" if total > len(paths) else str(len(paths))
+            out += ["", f"<details><summary>Installation paths ({shown})</summary>", ""]
             out += [f"- `{x['path']}` — {x['devices']} device{'s' if x['devices'] != 1 else ''}" + (" (registry)" if x.get("kind") == "registry" else "") for x in paths]
             out += ["", "</details>"]
     if rest:

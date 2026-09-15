@@ -114,6 +114,49 @@ def _fixes(p, total: int) -> list[dict]:
     return [{"update": u, "cves": len(ids), "share": round(len(ids) / total, 2) if total else 0.0} for u, ids in ranked[:5]]
 
 
+def _platform(a) -> str:
+    if a.kind == "image":
+        return "Container images"
+    p = (a.os_platform or "").lower()
+    if p.startswith("windows"):
+        return "Windows"
+    if p.startswith("linux") or p in ("ubuntu", "redhat", "centos", "debian", "sles", "oracle"):
+        return "Linux"
+    if p.startswith("mac"):
+        return "macOS"
+    if p.startswith("ios"):
+        return "iOS"
+    if p.startswith("android"):
+        return "Android"
+    return a.os_platform or "Unknown platform"
+
+
+def _facets(assets, cfg: Scoring) -> tuple[list[dict], list[dict]]:
+    """Counts by asset type: platforms first (most common first), then the exposure signals that drive the score.
+    Internet-facing and Critical are always present, even at zero, because they are the first two questions asked."""
+    platforms: dict[str, int] = {}
+    for a in assets:
+        platforms[_platform(a)] = platforms.get(_platform(a), 0) + 1
+    facets = [{"label": k, "count": n} for k, n in sorted(platforms.items(), key=lambda kv: (-kv[1], kv[0]))]
+    crit = {t.lower() for t in cfg.criticality_tags}
+    signals = [
+        ("Internet-facing", sum(1 for a in assets if a.internet_facing), True),
+        ("Critical", sum(1 for a in assets if any(t.lower() in crit for t in a.tags)), True),
+        ("High value", sum(1 for a in assets if (a.device_value or "").lower() == "high"), False),
+        ("Exposure High", sum(1 for a in assets if (a.exposure_level or "").lower() == "high"), False),
+        ("Privileged sign-in", sum(1 for a in assets if a.privileged_user), False),
+        ("On attack path", sum(1 for a in assets if a.attack_paths), False),
+        ("Mitigated", sum(1 for a in assets if a.mitigations), False),
+    ]
+    facets += [{"label": k, "count": n} for k, n, always in signals if n or always]
+    tags: dict[str, int] = {}
+    for a in assets:
+        for t in a.tags:
+            tags[t] = tags.get(t, 0) + 1
+    top_tags = [{"label": k, "count": n} for k, n in sorted(tags.items(), key=lambda kv: (-kv[1], kv[0]))[:10]]
+    return facets, top_tags
+
+
 def _breakdown(assets, cfg: Scoring) -> str:
     parts = []
     inet = sum(1 for a in assets if a.internet_facing)
@@ -374,9 +417,10 @@ def _posture(run: Run) -> dict:
 def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None = None, now: datetime | None = None, store=None) -> dict:
     now = now or datetime.now(timezone.utc)
     products, assets = build(run)
-    from dva.evidence import summarize as _summarize_paths
+    from dva.evidence import summarize as _summarize_paths, count_paths as _count_paths
     ev = run.read_json("hunt-evidence.json").get("results", []) if run.path("hunt-evidence.json").exists() else []
-    paths_by_key = _summarize_paths(ev)
+    paths_by_key = _summarize_paths(ev, limit=cfg.max_paths)
+    paths_total = _count_paths(ev)
     estate = len(assets) if run.path("machines.json").exists() else sum(1 for a in assets.values() if a.kind == "device")
     all_ids = {cid for p in products.values() for cid in p.cves}
     intel = cache.all_fresh(all_ids)
@@ -408,10 +452,11 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
                               "title": _title(intel[r.id]) if r.id in intel else None,
                               "description": intel[r.id].description if r.id in intel else None} for r, _ in sp.driving],
-            "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
+            "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "facets": _facets(pa, cfg)[0], "tags": _facets(pa, cfg)[1],
+                       "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
             "advisories": _advisories(sp.driving, intel),
             "risk_summary": _risk(sp, intel, pa, cfg, display_name(p)),
-            "paths": paths_by_key.get(p.key, []),
+            "paths": paths_by_key.get(p.key, []), "paths_total": paths_total.get(p.key, 0),
             "all_cves": sorted(p.cves), "all_assets": sorted(a.name for a in pa),
             "partial_intel": any(r.id not in intel for r, _ in sp.driving),
         })

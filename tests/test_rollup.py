@@ -6,8 +6,8 @@ from dva.model import product_key
 def seed(tmp_path):
     run = Run.create(tmp_path)
     run.write_json("machines.json", [
-        {"id": "m1", "name": "vpn-gw-01", "exposure_level": "High", "device_value": "High", "tags": ["Tier0"], "group": "Perimeter", "is_internet_facing": None, "azure_resource_id": None},
-        {"id": "m2", "name": "ws-114", "exposure_level": "Medium", "device_value": "Normal", "tags": [], "group": "Workstations", "is_internet_facing": None, "azure_resource_id": None},
+        {"id": "m1", "name": "vpn-gw-01", "os_platform": "Linux", "exposure_level": "High", "device_value": "High", "tags": ["Tier0"], "group": "Perimeter", "is_internet_facing": None, "azure_resource_id": None},
+        {"id": "m2", "name": "ws-114", "os_platform": "Windows11", "exposure_level": "Medium", "device_value": "Normal", "tags": [], "group": "Workstations", "is_internet_facing": None, "azure_resource_id": None},
     ])
     run.write_jsonl("vulns.jsonl", [
         {"device_id": "m1", "device_name": "vpn-gw-01", "vendor": "ivanti", "product": "connect_secure", "version": "22.7R2.1", "cve_id": "CVE-2026-21887", "severity": "Critical", "cvss": 9.8, "exploitability": "ExploitIsInKit", "first_seen": "2026-09-08", "recommendation_ref": "va-_-ivanti-_-connect_secure", "security_update": "22.7R2.5"},
@@ -163,3 +163,8 @@ def test_configuration_recommendation_kept_when_no_update_exists(tmp_path):
     ])
     products, _ = build(run)
     assert products[product_key("ivanti", "connect_secure")].remediation == "Enable a control"
+
+
+def test_assets_carry_os_platform(tmp_path):
+    _, assets = build(seed(tmp_path))
+    assert assets["m1"].os_platform == "Linux" and assets["m2"].os_platform == "Windows11"

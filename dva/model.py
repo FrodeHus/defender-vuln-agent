@@ -17,6 +17,7 @@ class Asset:
     id: str
     name: str
     kind: str = "device"
+    os_platform: str | None = None
     internet_facing: bool = False
     exposure_level: str | None = None
     device_value: str | None = None

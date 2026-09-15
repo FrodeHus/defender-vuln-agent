@@ -69,3 +69,17 @@ def test_markdown_flags_embedded_products():
     doc = json.loads((Path(__file__).parent / "fixtures" / "sample-run" / "findings.json").read_text())
     doc["products"][0]["flags"]["embedded"] = True
     assert "| KEV, exploit, internet-facing, Overdue by 7 days, Embedded |" in render(doc)
+
+
+def test_markdown_lists_asset_facets_and_path_totals():
+    import json
+    from pathlib import Path
+    from dva.report_md import render
+    doc = json.loads((Path(__file__).parent / "fixtures" / "sample-run" / "findings.json").read_text())
+    r = doc["products"][0]
+    r["assets"]["facets"] = [{"label": "Linux", "count": 6}, {"label": "Internet-facing", "count": 6}, {"label": "Critical", "count": 6}]
+    r["assets"]["tags"] = [{"label": "Tier0", "count": 6}, {"label": "VPN", "count": 2}]
+    r["paths_total"] = 37
+    out = render(doc)
+    assert "Affected assets (6):\n- Linux: 6\n- Internet-facing: 6\n- Critical: 6\n- Tags: Tier0 6, VPN 2\n\nMost exposed:\n- vpn-gw-01" in out
+    assert "<details><summary>Installation paths (2 of 37)</summary>" in out

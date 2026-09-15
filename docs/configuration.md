@@ -40,6 +40,7 @@ Precedence: a selected tenant's `.env` overrides everything; otherwise exported 
 | `score_weights` | base 0.5, asset 0.3, reach 0.2 | How much of a product's score comes from its threat alone, from asset context, and from how widespread it is (`reach`); raise `reach` to make fleet-wide products climb faster |
 | `severity_floor` | critical 40 | Minimum score for a product with at least one open CVE of that severity, so a critical CVE never reads as Low even without exploit or exposure signals; floored rows carry `flags.floored` |
 | `embedded_discount` | 0.5 | Multiplier for products that look like embedded components (name in `exception_components`, or evidence paths spanning 3+ top-level product folders); they carry `flags.embedded`, are exempt from `severity_floor`, and are patched through their parent product |
+| `max_paths` | 10 | Installation paths shown per product (most devices first); the report header says `10 of N` when more exist |
 | `trend_runs` | 8 | How many previous runs' `findings.json` feed the run-to-run trend table when no SQLite store history is available |
 
 Edit, then re-run only `dva score` and `dva report --all`; no re-collection needed. A tenant can carry its own copy at `tenants/<name>/scoring.yaml`, which replaces the defaults entirely for that tenant.

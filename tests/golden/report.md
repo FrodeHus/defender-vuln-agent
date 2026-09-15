@@ -53,7 +53,15 @@ Driving vulnerabilities (26 open CVEs in total):
   A path traversal in the admin interface lets an authenticated user read arbitrary files.
 - CVE-2025-46512 · CVSS 8.2 · EPSS 0.33 · Exploit · Path traversal allowing config read
 
-Affected assets (6): All 6 internet-facing · 6 Tier0 · exposure High
+Affected assets (6):
+- Linux: 6
+- Internet-facing: 6
+- Critical: 6
+- High value: 2
+- Exposure High: 6
+- Tags: Tier0 6, VPN 6
+
+Most exposed:
 - vpn-gw-01 — Internet-facing · Tier0 · High
 - vpn-gw-02 — Internet-facing · Tier0 · High
 - vpn-gw-03 — Internet-facing · Tier0
@@ -145,7 +153,15 @@ Driving vulnerabilities (46 open CVEs in total):
 - CVE-2026-24432 · CVSS 7.8 · EPSS 0.11 · Out of bounds write in font parser
 - CVE-2025-47172 · CVSS 7.8 · EPSS 0.06 · Integer overflow in JavaScript engine
 
-Affected assets (1140): 1,140 workstations · 0 internet-facing · 62 High value
+Affected assets (1140):
+- Windows: 1102
+- macOS: 38
+- Internet-facing: 0
+- Critical: 0
+- High value: 62
+- Tags: Finance 210, HR 44, PII 12
+
+Most exposed:
 - ws-finance-114 — High value · CFO office
 - ws-legal-021 — High value
 - ws-hr-007 — High value · PII
@@ -153,7 +169,7 @@ Affected assets (1140): 1,140 workstations · 0 internet-facing · 62 High value
 - ws-finance-102 — High value
 + 1135 more in findings.json
 
-<details><summary>Installation paths (3)</summary>
+<details><summary>Installation paths (3 of 41)</summary>
 
 - `%ProgramFiles(x86)%\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe` — 1102 devices
 - `%ProgramFiles%\Adobe\Acrobat DC\Acrobat\Acrobat.exe` — 38 devices

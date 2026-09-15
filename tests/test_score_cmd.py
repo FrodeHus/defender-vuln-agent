@@ -323,3 +323,18 @@ def test_title_dropped_when_it_only_repeats_the_description(tmp_path):
     rows = {c["id"]: c for c in compute(run, load_scoring(), cache)["products"][0]["driving_cves"]}
     assert rows["CVE-2026-21887"]["title"] is None and rows["CVE-2026-21887"]["description"] == desc
     assert rows["CVE-2025-46512"]["title"] == "Path traversal allowing config read"
+
+
+def test_asset_facets_and_path_totals_in_row(tmp_path):
+    run = seed(tmp_path / "runs")
+    run.write_json("hunt-evidence.json", {"results": [
+        {"SoftwareVendor": "ivanti", "SoftwareName": "connect_secure", "Path": f"/opt/ivanti/ics/bin/mod{i}", "Devices": 1, "Kind": "disk"} for i in range(12)]})
+    cfg = load_scoring()
+    top = compute(run, cfg, IntelCache(tmp_path / "cache", 7))["products"][0]
+    assert top["key"] == "ivanti/connect-secure"
+    facets = {f["label"]: f["count"] for f in top["assets"]["facets"]}
+    assert facets["Linux"] == 1 and facets["Windows"] == 1
+    assert facets["Internet-facing"] == 1 and facets["Critical"] == 2 and facets["High value"] == 1  # Tier0 and Prod are both critical tags
+    assert [f["label"] for f in top["assets"]["facets"]][:2] == ["Linux", "Windows"]  # platforms first, by count then name
+    assert top["assets"]["tags"] == [{"label": "Finance", "count": 1}, {"label": "Prod", "count": 1}, {"label": "Tier0", "count": 1}]
+    assert cfg.max_paths == 10 and len(top["paths"]) == 10 and top["paths_total"] == 12

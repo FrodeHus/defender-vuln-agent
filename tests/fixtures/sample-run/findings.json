@@ -134,6 +134,38 @@
             "name": "vpn-gw-05",
             "why": "Internet-facing \u00b7 Tier0"
           }
+        ],
+        "facets": [
+          {
+            "label": "Linux",
+            "count": 6
+          },
+          {
+            "label": "Internet-facing",
+            "count": 6
+          },
+          {
+            "label": "Critical",
+            "count": 6
+          },
+          {
+            "label": "High value",
+            "count": 2
+          },
+          {
+            "label": "Exposure High",
+            "count": 6
+          }
+        ],
+        "tags": [
+          {
+            "label": "Tier0",
+            "count": 6
+          },
+          {
+            "label": "VPN",
+            "count": 6
+          }
         ]
       },
       "all_cves": [
@@ -211,7 +243,8 @@
           "date": null,
           "url": null
         }
-      ]
+      ],
+      "paths_total": 2
     },
     {
       "rank": 2,
@@ -1069,6 +1102,42 @@
           {
             "name": "ws-finance-102",
             "why": "High value"
+          }
+        ],
+        "facets": [
+          {
+            "label": "Windows",
+            "count": 1102
+          },
+          {
+            "label": "macOS",
+            "count": 38
+          },
+          {
+            "label": "Internet-facing",
+            "count": 0
+          },
+          {
+            "label": "Critical",
+            "count": 0
+          },
+          {
+            "label": "High value",
+            "count": 62
+          }
+        ],
+        "tags": [
+          {
+            "label": "Finance",
+            "count": 210
+          },
+          {
+            "label": "HR",
+            "count": 44
+          },
+          {
+            "label": "PII",
+            "count": 12
           }
         ]
       },
@@ -2288,7 +2357,8 @@
       },
       "eos": null,
       "fixes": [],
-      "patched_7d": null
+      "patched_7d": null,
+      "paths_total": 41
     },
     {
       "rank": 6,

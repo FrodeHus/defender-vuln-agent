@@ -67,7 +67,7 @@ def build(run: Run) -> tuple[dict[str, Product], dict[str, Asset]]:
     machines = run.read_json("machines.json") if run.path("machines.json").exists() else []
     for m in machines:
         assets[m["id"]] = Asset(
-            id=m["id"], name=m.get("name") or m["id"],
+            id=m["id"], name=m.get("name") or m["id"], os_platform=m.get("os_platform"),
             internet_facing=bool(m.get("is_internet_facing")),
             exposure_level=m.get("exposure_level"), device_value=m.get("device_value"),
             tags=list(m.get("tags") or []), group=m.get("group"),

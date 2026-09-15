@@ -27,3 +27,4 @@ long_standing_days: 90
 score_weights: { base: 0.5, asset: 0.3, reach: 0.2 }
 severity_floor: { critical: 40 }
 embedded_discount: 0.5
+max_paths: 10

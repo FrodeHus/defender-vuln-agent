@@ -116,3 +116,8 @@ def test_html_puts_accepted_long_standing_and_posture_in_full_width_tabs():
     for fn in ("acceptedRisks()", "longStanding()", "posture()"):
         assert fn not in appendix_line
     assert ".tabs" in out and ".tab.on" in out
+
+
+def test_html_renders_asset_facets_and_path_totals():
+    script = render(json.loads(FX.read_text())).split("<script")[-1]
+    assert "a.facets" in script and "a.tags" in script and "r.paths_total" in script

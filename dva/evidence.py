@@ -94,6 +94,18 @@ def summarize(rows: list[dict], limit: int = 10) -> dict[str, list[dict]]:
     return out
 
 
+def count_paths(rows: list[dict]) -> dict[str, int]:
+    """Distinct generalized paths per product key, before the display cap."""
+    seen: dict[str, set[tuple[str, str]]] = defaultdict(set)
+    for r in rows:
+        path = r.get("Path") or ""
+        if not path:
+            continue
+        kind = (r.get("Kind") or ("registry" if path.upper().startswith("HKEY_") else "disk")).lower()
+        seen[product_key(r.get("SoftwareVendor"), r.get("SoftwareName"))].add((kind, generalize(path)))
+    return {k: len(v) for k, v in seen.items()}
+
+
 def listed_pairs(run, cfg) -> list[tuple[str, str]]:
     """(vendor, name) of the products the report will list, by preliminary score, for scoping the query."""
     from dva.rollup import build

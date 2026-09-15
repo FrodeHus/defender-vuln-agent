@@ -74,3 +74,10 @@ def test_score_attaches_paths(tmp_path):
     assert top["product"] == "Connect Secure"
     assert top["paths"] == [{"path": r"%ProgramFiles%\Ivanti\Connect Secure\ics.exe", "kind": "disk", "devices": 2}]
     assert all("paths" in r for r in doc["products"])
+
+
+def test_summarize_caps_paths_and_count_paths_gives_the_total():
+    from dva.evidence import count_paths
+    rows = [{"SoftwareVendor": "v", "SoftwareName": "n", "Kind": "disk", "Path": rf"C:\Program Files\App{i}\app.exe", "Devices": i + 1} for i in range(15)]
+    assert len(summarize(rows, limit=10)["v/n"]) == 10
+    assert count_paths(rows) == {"v/n": 15}
