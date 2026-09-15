@@ -67,3 +67,14 @@ def test_server_flag_overrides_the_environment(tmp_path):
     run_dir, env = _collected_run(tmp_path, DVA_CVE_MCP=str(tmp_path / "no-such-server"))
     r = dva("enrich", "--fetch", "--server", FAKE, env=env)
     assert "0 failed" in r.stdout
+
+
+def test_fetch_describes_every_driving_cve_the_report_shows(tmp_path):
+    """Descriptions are looked up after triage, for the CVEs that drive each listed product once intel is in."""
+    run_dir, env = _collected_run(tmp_path)
+    dva("enrich", "--fetch", env=env)
+    dva("score", env=env)
+    doc = json.loads((run_dir / "findings.json").read_text())
+    for row in doc["products"]:
+        for c in row["driving_cves"]:
+            assert c["description"], f"{row['key']} {c['id']} has no description"

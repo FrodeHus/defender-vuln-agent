@@ -311,3 +311,15 @@ def test_epss_rounded_in_driving_cves(tmp_path):
     cache.put("CVE-2026-21887", CveIntel(cvss=9.8, epss=0.48210000000000003))
     doc = compute(run, load_scoring(), cache)
     assert doc["products"][0]["driving_cves"][0]["epss"] == 0.482
+
+
+def test_title_dropped_when_it_only_repeats_the_description(tmp_path):
+    from dva.enrich import short_title
+    run = seed(tmp_path / "runs")
+    cache = IntelCache(tmp_path / "cache", 7)
+    desc = "Incomplete comparison with missing factors in Visual Studio Code allows an unauthorized attacker to bypass a security feature over a network."
+    cache.put("CVE-2026-21887", CveIntel(cvss=9.8, title=short_title(desc), description=desc))
+    cache.put("CVE-2025-46512", CveIntel(cvss=8.2, title="Path traversal allowing config read", description="A path traversal lets a user read files."))
+    rows = {c["id"]: c for c in compute(run, load_scoring(), cache)["products"][0]["driving_cves"]}
+    assert rows["CVE-2026-21887"]["title"] is None and rows["CVE-2026-21887"]["description"] == desc
+    assert rows["CVE-2025-46512"]["title"] == "Path traversal allowing config read"

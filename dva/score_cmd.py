@@ -13,6 +13,20 @@ from dva.run import Run, add_run_arg, resolve_run, cache_dir
 from dva.scoring import product_score, reason_for
 
 
+def _title(it) -> str | None:
+    """A title that only repeats the start of the description (cut from it, ellipsis or not) is dropped, so the
+    reports show the sentence once."""
+    t = (it.title or "").strip()
+    if not t:
+        return None
+    desc = (it.description or "").strip()
+    core = t.rstrip("…").rstrip()
+    derived = t.endswith("…") or len(core) >= 100 or core.lower() == desc.lower()  # cut from the description, not a real title
+    if desc and derived and desc.lower().startswith(core.lower()):
+        return None
+    return t
+
+
 def _risk(sp, intel, pa, cfg: Scoring, product_name: str) -> str:
     from dva.summary import risk_summary
     if not sp.driving:
@@ -392,7 +406,7 @@ def compute(run: Run, cfg: Scoring, cache: IntelCache, tenant_name: str | None =
             "driving_cves": [{"id": r.id, "severity": r.severity, "cvss": (intel[r.id].cvss if r.id in intel and intel[r.id].cvss is not None else r.cvss),
                               "epss": (round(intel[r.id].epss, 3) if intel[r.id].epss is not None else None) if r.id in intel else None, "kev": bool(r.id in intel and intel[r.id].kev),
                               "poc": bool((r.id in intel and intel[r.id].exploit_public) or r.exploitability != "NoExploit"),
-                              "title": intel[r.id].title if r.id in intel else None,
+                              "title": _title(intel[r.id]) if r.id in intel else None,
                               "description": intel[r.id].description if r.id in intel else None} for r, _ in sp.driving],
             "assets": {"count": len(p.asset_ids), "breakdown": _breakdown(pa, cfg), "top": [{"name": a.name, "why": why} for a, _, why in sp.top_assets]},
             "advisories": _advisories(sp.driving, intel),

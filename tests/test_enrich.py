@@ -307,3 +307,15 @@ def test_title_cuts_at_a_word_boundary():
     assert len(t) <= 120 and t.endswith("…") and not t[:-1].endswith(" ") and t[:-1] in text
     assert t[:-1].split(" ")[-1] in text.split(" ")
     assert short_title("short one.", 120) == "short one."
+
+
+def test_select_describe_follows_the_intel_ranked_driving_cves(tmp_path):
+    """The described CVEs must be the ones the report will show as driving: ranked with the cached
+    intel (EPSS/KEV), not by Defender CVSS alone, or a KEV-listed CVE ends up without a description."""
+    from dva.enrich import select_describe
+    cache = IntelCache(tmp_path, 7)
+    p = Product(key="a/b", vendor="a", name="b", asset_ids={"x"},
+                cves={"CVE-0": ref(0, 9.8), "CVE-1": ref(1, 9.7), "CVE-2": ref(2, 9.6), "CVE-3": ref(3, 7.0)})
+    assets = {"x": Asset(id="x", name="x", internet_facing=True)}
+    cache.put("CVE-3", CveIntel(cvss=7.0, epss_percentile=0.99, kev=True))
+    assert select_describe({"a/b": p}, assets, cache, cfg, estate_size=1) == ["CVE-3", "CVE-0", "CVE-1"]

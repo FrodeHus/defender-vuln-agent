@@ -48,14 +48,23 @@ def select_candidates(products: dict[str, Product], assets: dict[str, Asset], ca
 def select_describe(products: dict[str, Product], assets: dict[str, Asset], cache: IntelCache, cfg: Scoring, estate_size: int, limit: int | None = None) -> list[str]:
     """The CVEs that drive each product that will be listed (its top enrich_top_per_product by CVSS, exploitability and
     recency), for lookup_cve descriptions and vendor advisories; skips ids already described."""
-    prelim = sorted(products.values(), key=lambda p: (-product_score(p, assets, {}, cfg, estate_size).score, p.key))
+    # Rank with whatever intel the cache holds (stale entries included: old EPSS/KEV beats none) so the
+    # selection is the same "driving" list the report will print; run it after triage for the best match.
+    intel: dict[str, CveIntel] = {}
+    for p in products.values():
+        for cid in p.cves:
+            if cid not in intel:
+                cached = cache.get(cid, stale_ok=True)
+                if cached is not None:
+                    intel[cid] = cached
+    scored = sorted((product_score(p, assets, intel, cfg, estate_size) for p in products.values()), key=lambda s: (-s.score, s.product.key))
     per_product = max(cfg.enrich_top_per_product, 1)
     window = max(cfg.top_n, 0) + 15
     limit = limit if limit is not None else window * per_product
     out: list[str] = []
-    for p in prelim[:window]:
-        for ref in sorted(p.cves.values(), key=_rank_key)[:per_product]:
-            cached = cache.get(ref.id, stale_ok=True)  # descriptions never change: an expired entry that has one still counts
+    for sp in scored[:window]:
+        for ref, _ in sp.driving[:per_product]:
+            cached = intel.get(ref.id)  # descriptions never change: an expired entry that has one still counts
             if (cached is not None and cached.description) or ref.id in out:
                 continue
             out.append(ref.id)
@@ -423,7 +432,8 @@ def _select(run: Run, cache: IntelCache, cfg: Scoring, products, assets, estate:
     return ids, describe
 
 
-def _store(run: Run, cache: IntelCache, files: list[Path]) -> None:
+def _merge(cache: IntelCache, files: list[Path]) -> set[str]:
+    """Parse saved tool outputs into the cache; returns the ids that were merged."""
     parsed: dict[str, CveIntel] = {}
     for path in files:
         if not path.exists():
@@ -433,10 +443,18 @@ def _store(run: Run, cache: IntelCache, files: list[Path]) -> None:
     for cid, intel in parsed.items():
         fresh = cache.get(cid)
         cache.put(cid, _merge_intel(fresh, intel) if fresh is not None else _refresh_intel(cache.get(cid, stale_ok=True), intel))
-    wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else list(parsed)
+    return set(parsed)
+
+
+def _finish(run: Run, cache: IntelCache, stored: set[str]) -> None:
+    wanted = run.read_json("enrich-candidates.json") if run.path("enrich-candidates.json").exists() else sorted(stored)
     doc = write_enrichment(run, cache, wanted)
-    print(f"stored {len(parsed)}, missing {len(doc['missing'])}")
-    run.summary(f"Enrichment stored: {len(parsed)} CVEs; enrichment.json now has {len(doc['cves'])} CVEs, {len(doc['missing'])} still missing.")
+    print(f"stored {len(stored)}, missing {len(doc['missing'])}")
+    run.summary(f"Enrichment stored: {len(stored)} CVEs; enrichment.json now has {len(doc['cves'])} CVEs, {len(doc['missing'])} still missing.")
+
+
+def _store(run: Run, cache: IntelCache, files: list[Path]) -> None:
+    _finish(run, cache, _merge(cache, files))
 
 
 def fetch(run: Run, ids: list[str], describe: list[str], server: list[str]) -> tuple[list[Path], int]:
@@ -477,16 +495,22 @@ def _run(args) -> int:
         run.summary(f"Enrichment candidates: {len(ids)} CVEs in {(len(ids) + CHUNK - 1) // CHUNK} chunks (cached ones excluded); {len(describe)} CVEs need a description for the risk summaries.")
         return 0
     if args.fetch:
-        ids, describe = _select(run, cache, cfg, products, assets, estate)
+        # Two phases: triage first and merge it, then pick the CVEs to describe with that intel in hand, so the
+        # described CVEs are exactly the ones the report will show as driving each product.
+        ids = select_candidates(products, assets, cache, cfg, estate)
+        run.write_json("enrich-candidates.json", ids)
         server = shlex.split(args.server) if args.server else default_server_command()
-        files, failed = fetch(run, ids, describe, server)
+        files, failed = fetch(run, ids, [], server)
+        stored = _merge(cache, files) if files else set()
+        describe = select_describe(products, assets, cache, cfg, estate)
+        run.write_json("enrich-describe.json", describe)
+        more, failed2 = fetch(run, [], describe, server)
+        files, failed = files + more, failed + failed2
         print(f"fetched {len(files)} results, {failed} failed")
         run.summary(f"Enrichment fetched: {len(ids)} CVEs triaged and {len(describe)} described through the CVE server; {failed} call(s) failed.")
-        if files:
-            _store(run, cache, files)
-        else:
-            doc = write_enrichment(run, cache, ids)
-            print(f"stored 0, missing {len(doc['missing'])}")
+        if more:
+            stored |= _merge(cache, more)
+        _finish(run, cache, stored)
         return 0
     _store(run, cache, [Path(raw) for raw in args.store])
     return 0
